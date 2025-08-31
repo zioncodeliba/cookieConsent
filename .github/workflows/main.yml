@@ -12,7 +12,7 @@ permissions:
 env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
-  PUBLIC_BASE_URL: https://digitalpay.co.il/updates     # ככה ייבנה ה-download_url
+  PUBLIC_BASE_URL: https://digitalpay.co.il/ck_updates     # ככה ייבנה ה-download_url
   REMOTE_DIR: /public_html/ck_updates                      # יעד ב-FTP (התאם אם צריך)
 
 jobs:
