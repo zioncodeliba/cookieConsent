@@ -1,0 +1,267 @@
+/* Admin Detection Page Styles */
+
+.wpccm-detect-container {
+    max-width: 1200px;
+    margin: 20px 0;
+}
+
+.wpccm-scan-section,
+.wpccm-results-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.wpccm-scan-section h2,
+.wpccm-results-section h2 {
+    margin-top: 0;
+    color: #23282d;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.wpccm-scan-section p,
+.wpccm-results-section p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.wpccm-scan-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.wpccm-scan-controls input[type="text"] {
+    flex: 1;
+    max-width: 300px;
+}
+
+.wpccm-scan-controls .spinner {
+    display: none;
+}
+
+.wpccm-scan-iframe-container {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.wpccm-results-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.wpccm-results-table {
+    overflow-x: auto;
+}
+
+.wpccm-results-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wpccm-results-table th {
+    background: #f9f9f9;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-weight: 600;
+}
+
+.wpccm-results-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+
+.wpccm-item-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.wpccm-type-script {
+    background: #e7f5ff;
+    color: #0066cc;
+}
+
+.wpccm-type-iframe {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.wpccm-cc-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.wpccm-cc-analytics {
+    background: #d4edda;
+    color: #155724;
+}
+
+.wpccm-cc-marketing {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.wpccm-cc-functional {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.wpccm-cc-necessary {
+    background: #d4edda;
+    color: #155724;
+}
+
+.wpccm-cc-performance {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.wpccm-cc-others {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* Suggested category badges */
+.wpccm-suggested-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    border: 2px dashed #ccc;
+}
+
+.wpccm-suggested-analytics {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+.wpccm-suggested-marketing {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #dc3545;
+}
+
+.wpccm-suggested-functional {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-color: #17a2b8;
+}
+
+.wpccm-suggested-necessary {
+    background: #d4edda;
+    color: #155724;
+    border-color: #28a745;
+}
+
+.wpccm-suggested-performance {
+    background: #fff3cd;
+    color: #856404;
+    border-color: #ffc107;
+}
+
+.wpccm-suggested-others {
+    background: #e2e3e5;
+    color: #383d41;
+    border-color: #6c757d;
+}
+
+.wpccm-category-select {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.wpccm-help-section {
+    background: #f9f9f9;
+    border-left: 4px solid #0073aa;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.wpccm-help-section h3 {
+    margin-top: 0;
+    color: #0073aa;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.wpccm-help-section ul {
+    margin: 15px 0;
+    padding-left: 20px;
+}
+
+.wpccm-help-section li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.wpccm-help-section strong {
+    color: #23282d;
+}
+
+/* Checkbox styling */
+.wpccm-item-checkbox {
+    margin: 0;
+}
+
+#wpccm-select-all-checkbox {
+    margin: 0;
+}
+
+/* URL truncation */
+.wpccm-results-table a {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+.wpccm-results-table a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .wpccm-scan-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .wpccm-scan-controls input[type="text"] {
+        max-width: none;
+    }
+    
+    .wpccm-results-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .wpccm-results-table {
+        font-size: 14px;
+    }
+    
+    .wpccm-results-table th,
+    .wpccm-results-table td {
+        padding: 8px;
+    }
+}

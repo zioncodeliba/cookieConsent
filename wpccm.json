@@ -1,0 +1,17 @@
+{
+    "name": "WP Cookie Consent Manager",
+    "slug": "wp-cookie-consent-manager/wp-cookie-consent-manager.php",
+    "version": "1.0.4",
+    "author": "Your Name",
+    "author_homepage": "https://digitalpay.co.il",
+    "download_url": "https://digitalpay.co.il/ck_updates/wp-cookie-consent-manager-1.0.3.zip",
+    "requires": "5.8",
+    "tested": "6.6",
+    "requires_php": "7.4",
+    "homepage": "https://digitalpay.co.il/wp-cookie-consent-manager",
+    "sections": {
+      "description": "Bug fixes and performance improvements.",
+      "changelog": "1.0.4 - Fix: defer script handling; Add: admin notice polish."
+    }
+  }
+  
