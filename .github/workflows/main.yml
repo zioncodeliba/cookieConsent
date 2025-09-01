@@ -86,5 +86,5 @@ jobs:
           server: ${{ secrets.SFTP_SERVER }}
           port: ${{ secrets.SFTP_PORT }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          local_path: './*.zip,./*.json'
+          local_path: './wp-cookie-consent-manager-*.zip,./wpccm.json'
           remote_path: '${{ env.REMOTE_DIR }}/'
