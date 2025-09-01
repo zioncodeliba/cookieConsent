@@ -63,6 +63,15 @@ jobs:
           }
           JSON
 
+      - name: Create remote directory
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SFTP_SERVER }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          port: ${{ secrets.SFTP_PORT }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          script: mkdir -p "${{ env.REMOTE_DIR }}"
+
       - name: Upload to server
         uses: appleboy/scp-action@v0.1.7
         with:
