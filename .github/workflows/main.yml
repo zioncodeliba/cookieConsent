@@ -14,10 +14,10 @@ env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
 
-  # כתובת ציבורית לקבצים (עדכן אם הדומיין שונה)
+  # ===== Public URLs (Cloudways domain) =====
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
 
-  # ===== Cloudways target paths =====
+  # ===== Cloudways target path =====
   REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 1) קובעים גרסה מה-tag (v1.2.3). אם אין, ננסה מהקובץ הראשי של הפלאגין.
+      # 1) גרסה מה-tag (v1.2.3). אם אין – מהכותרת בקובץ הראשי
       - name: Determine version
         id: ver
         run: |
@@ -42,7 +42,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version is: $VERSION"
 
-      # 2) מכינים תיקיית dist ושומרים ש-root ה-ZIP יהיה תיקיית הפלאגין (חשוב לעדכונים)
+      # 2) מכינים dist עם תיקיית פלאגין כ-root של ה-ZIP
       - name: Prepare dist
         run: |
           mkdir -p dist/${PLUGIN_SLUG}
@@ -52,7 +52,7 @@ jobs:
             rsync -a ./ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
           fi
 
-      # 3) יוצרים ZIP
+      # 3) יוצר ZIP
       - name: Create ZIP
         id: zip
         run: |
@@ -62,7 +62,7 @@ jobs:
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           ls -lah
 
-      # 4) בונים wpccm.json עם download_url לגרסה החדשה
+      # 4) בונה wpccm.json עם download_url
       - name: Build update JSON
         id: json
         run: |
@@ -91,22 +91,24 @@ jobs:
             }
           }
           JSON
-          echo "json_name=wpccm.json" >> $GITHUB_OUTPUT
-          cat dist/wpccm.json
 
-      # 5) העלאת ה-ZIP ב-SFTP (SCP)
-      - name: Upload ZIP via SCP (SFTP)
+      # 4.1) מכין עותק זמני של ה-JSON כדי להעלות ואז לבצע mv אטומי בשרת
+      - name: Prepare temp JSON
+        run: cp dist/wpccm.json dist/wpccm.json.tmp
+
+      # 5) מעלה את ה-ZIP וה-JSON.tmp ב-SFTP (SCP)
+      - name: Upload artifacts via SCP (SFTP)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SFTP_HOST }}      # 139.59.157.193
           username: ${{ secrets.SFTP_USER }}  # zion_cookie
           port: ${{ secrets.SFTP_PORT || 22 }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }} # private key (ed25519 / rsa)
-          source: "dist/${{ steps.zip.outputs.zip_name }}"
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # private key
+          source: "dist/${{ steps.zip.outputs.zip_name }},dist/wpccm.json.tmp"
           target: "${{ env.REMOTE_DIR }}/"
 
-      # 6) העלאת ה-JSON בצורה אטומית (write -> mv)
-      - name: Upload JSON via SSH (atomic)
+      # 6) בשרת: mv wpccm.json.tmp -> wpccm.json
+      - name: Atomically publish JSON on server
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.SFTP_HOST }}
@@ -115,9 +117,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            TMP_JSON="${REMOTE_DIR}/wpccm.json.tmp"
-            cat > "$TMP_JSON" <<'JSON'
-$(cat dist/wpccm.json)
-JSON
-            mv -f "$TMP_JSON" "${REMOTE_DIR}/wpccm.json"
+            mv -f "${REMOTE_DIR}/wpccm.json.tmp" "${REMOTE_DIR}/wpccm.json"
             ls -lah "${REMOTE_DIR}"
