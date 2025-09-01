@@ -13,7 +13,7 @@ env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
-  REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
+  REMOTE_DIR: /tmp/ck_updates
 
 jobs:
   build:
