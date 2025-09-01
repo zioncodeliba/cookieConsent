@@ -61,7 +61,7 @@ jobs:
               "changelog": "Release ${VERSION}"
             }
           }
-JSON
+          JSON
           ls -la wpccm.json
 
       - name: Check generated files before upload
