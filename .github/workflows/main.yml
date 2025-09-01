@@ -88,7 +88,10 @@ jobs:
           port: ${{ secrets.SFTP_PORT }}
           password: ${{ secrets.SFTP_PASSWORD }}
           script: |
-            echo "Uploading files..."
-            scp -r wp-cookie-consent-manager-*.zip wpccm.json "${{ env.REMOTE_DIR }}/"
+            echo "Creating remote directory..."
+            mkdir -p "${{ env.REMOTE_DIR }}"
+            echo "Uploading files from local directory..."
+            # Upload files from the GitHub workspace
+            scp -r /github/workspace/wp-cookie-consent-manager-*.zip /github/workspace/wpccm.json "${{ env.REMOTE_DIR }}/"
             echo "Files uploaded successfully!"
             ls -la "${{ env.REMOTE_DIR }}/"
