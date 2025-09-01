@@ -1,102 +1,102 @@
-name: Build & Publish WPCCM (SFTP to Cloudways)
+  name: Build & Publish WPCCM (SFTP to Cloudways)
 
-on:
-  push:
-    tags:
-      - "v*.*.*"
-  workflow_dispatch:
+  on:
+    push:
+      tags:
+        - "v*.*.*"
+    workflow_dispatch:
 
-permissions:
-  contents: read
+  permissions:
+    contents: read
 
-env:
-  PLUGIN_SLUG: wp-cookie-consent-manager
-  MAIN_FILE: wp-cookie-consent-manager.php
-  PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
-  REMOTE_DIR: public_html/ck_updates
+  env:
+    PLUGIN_SLUG: wp-cookie-consent-manager
+    MAIN_FILE: wp-cookie-consent-manager.php
+    PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
+    REMOTE_DIR: public_html/ck_updates
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-      - name: Get version
-        id: ver
-        run: |
-          VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" ${MAIN_FILE})
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Using version: $VERSION"
+        - name: Get version
+          id: ver
+          run: |
+            VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" ${MAIN_FILE})
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Using version: $VERSION"
 
-      - name: Create ZIP
-        id: zip
-        run: |
-          ZIP_NAME="${PLUGIN_SLUG}-${{ steps.ver.outputs.version }}.zip"
-          zip -r "$ZIP_NAME" . -x "*.git*" "*.github*" "dist/*" "node_modules/*" "*.log"
-          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
-          ls -la
+        - name: Create ZIP
+          id: zip
+          run: |
+            ZIP_NAME="${PLUGIN_SLUG}-${{ steps.ver.outputs.version }}.zip"
+            zip -r "$ZIP_NAME" . -x "*.git*" "*.github*" "dist/*" "node_modules/*" "*.log"
+            echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+            ls -la
 
-      - name: Create update JSON
-        run: |
-          VERSION="${{ steps.ver.outputs.version }}"
-          ZIP_NAME="${{ steps.zip.outputs.zip_name }}"
-          DOWNLOAD_URL="${PUBLIC_BASE_URL}/${ZIP_NAME}"
+        - name: Create update JSON
+          run: |
+            VERSION="${{ steps.ver.outputs.version }}"
+            ZIP_NAME="${{ steps.zip.outputs.zip_name }}"
+            DOWNLOAD_URL="${PUBLIC_BASE_URL}/${ZIP_NAME}"
 
-          cat > wpccm.json <<JSON
-          {
-            "name": "WP Cookie Consent Manager",
-            "slug": "${PLUGIN_SLUG}/${MAIN_FILE}",
-            "version": "${VERSION}",
-            "author": "code&core",
-            "download_url": "${DOWNLOAD_URL}",
-            "requires": "5.8",
-            "tested": "6.6",
-            "requires_php": "7.4",
-            "sections": {
-              "description": "Release ${VERSION}",
-              "changelog": "Release ${VERSION}"
+            cat > wpccm.json <<JSON
+            {
+              "name": "WP Cookie Consent Manager",
+              "slug": "${PLUGIN_SLUG}/${MAIN_FILE}",
+              "version": "${VERSION}",
+              "author": "code&core",
+              "download_url": "${DOWNLOAD_URL}",
+              "requires": "5.8",
+              "tested": "6.6",
+              "requires_php": "7.4",
+              "sections": {
+                "description": "Release ${VERSION}",
+                "changelog": "Release ${VERSION}"
+              }
             }
-          }
-          JSON
-          echo "=== Files in current directory ==="
-          ls -la
-          echo "=== ZIP and JSON files ==="
-          ls -la *.zip *.json 2>/dev/null || echo "No zip or json files found"
+            JSON
+            echo "=== Files in current directory ==="
+            ls -la
+            echo "=== ZIP and JSON files ==="
+            ls -la *.zip *.json 2>/dev/null || echo "No zip or json files found"
 
-      - name: Debug files
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "All files:"
-          find . -name "*.zip" -o -name "*.json" | head -10
-          
-      - name: Ensure target dir exists
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          script: |
-            mkdir -p public_html/ck_updates
-            ls -ld public_html/ck_updates
+        - name: Debug files
+          run: |
+            echo "Current directory: $(pwd)"
+            echo "All files:"
+            find . -name "*.zip" -o -name "*.json" | head -10
+            
+        - name: Ensure target dir exists
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.SFTP_SERVER }}
+            username: ${{ secrets.SFTP_USERNAME }}
+            port: ${{ secrets.SFTP_PORT }}
+            password: ${{ secrets.SFTP_PASSWORD }}
+            script: |
+              mkdir -p public_html/ck_updates
+              ls -ld public_html/ck_updates
 
-      # - name: Create remote directory
-      #   uses: appleboy/ssh-action@v1.1.0
-      #   with:
-      #     host: ${{ secrets.SFTP_SERVER }}
-      #     username: ${{ secrets.SFTP_USERNAME }}
-      #     port: ${{ secrets.SFTP_PORT }}
-      #     password: ${{ secrets.SFTP_PASSWORD }}
-      #     script: mkdir -p "${{ env.REMOTE_DIR }}"
+        # - name: Create remote directory
+        #   uses: appleboy/ssh-action@v1.1.0
+        #   with:
+        #     host: ${{ secrets.SFTP_SERVER }}
+        #     username: ${{ secrets.SFTP_USERNAME }}
+        #     port: ${{ secrets.SFTP_PORT }}
+        #     password: ${{ secrets.SFTP_PASSWORD }}
+        #     script: mkdir -p "${{ env.REMOTE_DIR }}"
 
-      - name: Upload to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          source: "wp-cookie-consent-manager-*.zip,wpccm.json"
-          target: "${{ env.REMOTE_DIR }}/"
-          strip_components: 0
+        - name: Upload to server
+          uses: appleboy/scp-action@v0.1.7
+          with:
+            host: ${{ secrets.SFTP_SERVER }}
+            username: ${{ secrets.SFTP_USERNAME }}
+            port: ${{ secrets.SFTP_PORT }}
+            password: ${{ secrets.SFTP_PASSWORD }}
+            source: "./wp-cookie-consent-manager-*.zip,./wpccm.json"
+            target: "${{ env.REMOTE_DIR }}/"
+            strip_components: 0
