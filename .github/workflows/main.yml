@@ -99,4 +99,5 @@
             password: ${{ secrets.SFTP_PASSWORD }}
             source: "./wp-cookie-consent-manager-*.zip,./wpccm.json"
             target: "${{ env.REMOTE_DIR }}/"
-            strip_components: 0
+            overwrite: true
+            debug: true
