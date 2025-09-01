@@ -81,17 +81,12 @@ jobs:
           script: mkdir -p "${{ env.REMOTE_DIR }}"
 
       - name: Upload to server
-        uses: appleboy/ssh-action@v1.1.0
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
           port: ${{ secrets.SFTP_PORT }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          script: |
-            echo "Creating remote directory..."
-            mkdir -p "${{ env.REMOTE_DIR }}"
-            echo "Uploading files from local directory..."
-            # Upload files from the GitHub workspace
-            scp -r /github/workspace/wp-cookie-consent-manager-*.zip /github/workspace/wpccm.json "${{ env.REMOTE_DIR }}/"
-            echo "Files uploaded successfully!"
-            ls -la "${{ env.REMOTE_DIR }}/"
+          source: "wp-cookie-consent-manager-*.zip,wpccm.json"
+          target: "${{ env.REMOTE_DIR }}/"
+          strip_components: 0
