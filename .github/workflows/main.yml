@@ -73,9 +73,10 @@ jobs:
       - name: Ensure target dir exists
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 139.59.157.193
-          username: zion_cookie
-          key: ${{ secrets.COOKIE_CI_KEY }}
+          host: ${{ secrets.SFTP_SERVER }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          port: ${{ secrets.SFTP_PORT }}
+          password: ${{ secrets.SFTP_PASSWORD }}
           script: |
             mkdir -p public_html/ck_updates
             ls -ld public_html/ck_updates
