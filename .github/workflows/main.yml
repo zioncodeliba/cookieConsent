@@ -79,3 +79,4 @@ jobs:
           password: ${{ secrets.SFTP_PASSWORD }}
           source: "${{ steps.zip.outputs.zip_name }},wpccm.json"
           target: "${{ env.REMOTE_DIR }}/"
+          strip_components: 0
