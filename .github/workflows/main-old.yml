@@ -1,10 +1,10 @@
-name: Build & Publish WPCCM (SFTP to Cloudways)
+# name: Build & Publish WPCCM (SFTP to Cloudways)
 
-on:
-  push:
-    tags:
-      - "v*.*.*"
-  workflow_dispatch:
+# on:
+#   push:
+#     tags:
+#       - "v*.*.*"     # e.g. v1.0.1
+#   workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,10 +14,10 @@ env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
 
-  # ===== Public URL (Cloudways domain) =====
+  # ===== Public URLs (Cloudways domain) =====
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
 
-  # ===== Cloudways target path (absolute) =====
+  # ===== Cloudways target path =====
   REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
 
 jobs:
@@ -29,6 +29,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 1) גרסה מה-tag (v1.2.3). אם אין – מהכותרת בקובץ הראשי
       - name: Determine version
         id: ver
         run: |
@@ -41,6 +42,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version is: $VERSION"
 
+      # 2) מכינים dist עם תיקיית פלאגין כ-root של ה-ZIP
       - name: Prepare dist
         run: |
           mkdir -p dist/${PLUGIN_SLUG}
@@ -50,6 +52,7 @@ jobs:
             rsync -a ./ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
           fi
 
+      # 3) יוצר ZIP
       - name: Create ZIP
         id: zip
         run: |
@@ -59,6 +62,7 @@ jobs:
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           ls -lah
 
+      # 4) בונה wpccm.json עם download_url
       - name: Build update JSON
         id: json
         run: |
@@ -87,33 +91,31 @@ jobs:
             }
           }
           JSON
-          ls -lah dist
 
-      # ודואגים שהתיקייה קיימת בצד השרת (חד-פעמי/בכל ריצה)
-      - name: Ensure remote dir exists
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SFTP_SERVER }}     # <-- משתמש ב-SFTP_SERVER
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            mkdir -p "${REMOTE_DIR}"
-            ls -lah "${REMOTE_DIR%/*}"
+      # 4.1) מכין עותק זמני של ה-JSON כדי להעלות ואז לבצע mv אטומי בשרת
+      - name: Prepare temp JSON
+        run: cp dist/wpccm.json dist/wpccm.json.tmp
 
-      # מעלים את ה-ZIP וה-JSON ישירות (אין צורך בשלב mv אטומי)
+      # 5) מעלה את ה-ZIP וה-JSON.tmp ב-SFTP (SCP)
       - name: Upload artifacts via SCP (SFTP)
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SFTP_SERVER }}     # <-- משתמש ב-SFTP_SERVER
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/${{ steps.zip.outputs.zip_name }},dist/wpccm.json"
+          host: ${{ secrets.SFTP_HOST }}      # 139.59.157.193
+          username: ${{ secrets.SFTP_USER }}  # zion_cookie
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # private key
+          source: "dist/${{ steps.zip.outputs.zip_name }},dist/wpccm.json.tmp"
           target: "${{ env.REMOTE_DIR }}/"
 
-      # בדיקת פריסה: URL אמור להחזיר 200
-      - name: Verify JSON is reachable
-        run: |
-          curl -I --fail "${PUBLIC_BASE_URL}/wpccm.json"
+      # 6) בשרת: mv wpccm.json.tmp -> wpccm.json
+      - name: Atomically publish JSON on server
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            mv -f "${REMOTE_DIR}/wpccm.json.tmp" "${REMOTE_DIR}/wpccm.json"
+            ls -lah "${REMOTE_DIR}"
