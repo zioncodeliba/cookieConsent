@@ -39,6 +39,7 @@ jobs:
           ZIP_NAME="${PLUGIN_SLUG}-${{ steps.ver.outputs.version }}.zip"
           zip -r "$ZIP_NAME" . -x "*.git*" "*.github*" "dist/*" "node_modules/*" "*.log"
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          ls -la
 
       - name: Create update JSON
         run: |
@@ -62,6 +63,7 @@ jobs:
             }
           }
           JSON
+          ls -la *.json *.zip
 
       - name: Create remote directory
         uses: appleboy/ssh-action@v1.1.0
