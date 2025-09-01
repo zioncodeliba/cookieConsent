@@ -69,6 +69,6 @@ jobs:
           host: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
           port: ${{ secrets.SFTP_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SFTP_PASSWORD }}
           source: "${{ steps.zip.outputs.zip_name }},wpccm.json"
           target: "${{ env.REMOTE_DIR }}/"
