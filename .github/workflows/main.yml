@@ -59,7 +59,16 @@ jobs:
             }
           }
           JSON
-          ls -la *.json *.zip
+          echo "=== Files in current directory ==="
+          ls -la
+          echo "=== ZIP and JSON files ==="
+          ls -la *.zip *.json 2>/dev/null || echo "No zip or json files found"
+
+      - name: Debug files
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "All files:"
+          find . -name "*.zip" -o -name "*.json" | head -10
 
       - name: Create remote directory
         uses: appleboy/ssh-action@v1.1.0
