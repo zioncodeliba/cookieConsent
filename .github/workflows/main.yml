@@ -13,8 +13,7 @@ env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
-  # REMOTE_DIR: /tmp/ck_updates
-  REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
+  REMOTE_DIR: ~/public_html/ck_updates
 
 jobs:
   build:
@@ -81,12 +80,11 @@ jobs:
           script: mkdir -p "${{ env.REMOTE_DIR }}"
 
       - name: Upload to server
-        uses: appleboy/scp-action@v0.1.7
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          host: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
+          server: ${{ secrets.SFTP_SERVER }}
           port: ${{ secrets.SFTP_PORT }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          source: "wp-cookie-consent-manager-*.zip,wpccm.json"
-          target: "${{ env.REMOTE_DIR }}/"
-          strip_components: 0
+          local_path: './*.zip,./*.json'
+          remote_path: '${{ env.REMOTE_DIR }}/'
