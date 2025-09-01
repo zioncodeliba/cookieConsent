@@ -20,6 +20,11 @@ if (!defined('ABSPATH')) {
  * @return string|null Category suggestion or null if no match
  */
 function cc_detect_guess_category($src_or_domain, $handle = null) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return null;
+    }
+    
     if (empty($src_or_domain)) {
         return null;
     }
@@ -305,6 +310,11 @@ function cc_detect_matches_patterns($text, $patterns) {
  * @return array Array of category names
  */
 function cc_detect_get_categories() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return [];
+    }
+    
     return [
         'necessary' => 'Necessary',
         'functional' => 'Functional',
@@ -322,6 +332,11 @@ function cc_detect_get_categories() {
  * @return string Display name
  */
 function cc_detect_get_category_name($category) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return ucfirst($category);
+    }
+    
     $categories = cc_detect_get_categories();
     return isset($categories[$category]) ? $categories[$category] : ucfirst($category);
 }

@@ -26,6 +26,11 @@ if (!function_exists('get_option')) {
  * @return string Modified script tag
  */
 function wpccm_filter_script_tag($tag, $handle, $src) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return $tag;
+    }
+    
     // Don't block probe.js - it needs to run for detection
     if (strpos($src, 'probe.js') !== false) {
         return $tag;
@@ -76,6 +81,11 @@ function wpccm_filter_script_tag($tag, $handle, $src) {
  * @return string Modified script tag
  */
 function wpccm_filter_enqueued_script_tag($tag, $handle, $src) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return $tag;
+    }
+    
     // Get script handle mapping from options
     $script_handle_map = get_option('cc_script_handle_map', []);
     

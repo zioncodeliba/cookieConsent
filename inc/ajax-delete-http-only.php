@@ -21,6 +21,12 @@ if (!function_exists('wp_ajax_nopriv_wpccm_delete_cookies')) {
  * AJAX handler for deleting cookies (logged-in users)
  */
 function wpccm_ajax_delete_cookies() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        wp_send_json_error('Plugin not activated');
+        return;
+    }
+    
     // Check if user has permission
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
@@ -42,6 +48,12 @@ function wpccm_ajax_delete_cookies() {
  * AJAX handler for deleting cookies (non-logged-in users)
  */
 function wpccm_ajax_nopriv_delete_cookies() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        wp_send_json_error('Plugin not activated');
+        return;
+    }
+    
     // Verify nonce for security (same nonce for both)
     if (!wp_verify_nonce($_POST['nonce'] ?? '', 'wpccm_delete_cookies')) {
         wp_send_json_error('Invalid nonce');
@@ -173,6 +185,14 @@ function wpccm_process_cookie_deletion() {
  * @return array Result of deletion attempt
  */
 function wpccm_delete_single_cookie($cookie_name, $domain, $path) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return [
+            'success' => false,
+            'error' => 'Plugin not activated'
+        ];
+    }
+    
     try {
         $deleted = false;
         $expired_time = time() - 3600; // 1 hour ago
@@ -234,6 +254,11 @@ function wpccm_delete_single_cookie($cookie_name, $domain, $path) {
  * @return string Cookie domain
  */
 function wpccm_get_cookie_domain() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return '';
+    }
+    
     // Get site URL
     $site_url = get_site_url();
     $parsed_url = parse_url($site_url);
@@ -258,6 +283,11 @@ function wpccm_get_cookie_domain() {
  * @return string Cookie path
  */
 function wpccm_get_cookie_path() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return '/';
+    }
+    
     $site_url = get_site_url();
     $parsed_url = parse_url($site_url);
     
@@ -274,6 +304,11 @@ function wpccm_get_cookie_path() {
  * @param array $result Result of cookie deletion operation
  */
 function wpccm_log_cookie_deletion($result) {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return;
+    }
+    
     if (defined('WP_DEBUG') && WP_DEBUG) {
         error_log(sprintf(
             'WPCCM: Cookie deletion completed. Requested: %d, Deleted: %d, Errors: %d',
@@ -300,6 +335,11 @@ function wpccm_log_cookie_deletion($result) {
  * @return string Nonce value
  */
 function wpccm_get_delete_cookies_nonce() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return '';
+    }
+    
     return wp_create_nonce('wpccm_delete_cookies');
 }
 
@@ -309,6 +349,11 @@ function wpccm_get_delete_cookies_nonce() {
  * @return bool True if user can delete cookies
  */
 function wpccm_can_delete_cookies() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return false;
+    }
+    
     // Allow both logged-in and non-logged-in users
     // Additional restrictions can be added here if needed
     return true;
@@ -322,6 +367,11 @@ add_action('wp_ajax_nopriv_wpccm_delete_cookies', 'wpccm_ajax_nopriv_delete_cook
  * Enqueue JavaScript for cookie deletion
  */
 function wpccm_enqueue_delete_cookies_script() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return;
+    }
+    
     wp_enqueue_script(
         'wpccm-delete-cookies',
         plugin_dir_url(__FILE__) . '../assets/js/delete-cookies.js',
@@ -338,5 +388,77 @@ function wpccm_enqueue_delete_cookies_script() {
     ]);
 }
 
-// Enqueue script on frontend
+// Enqueue script on frontend (only if plugin is activated)
 add_action('wp_enqueue_scripts', 'wpccm_enqueue_delete_cookies_script');
+
+// Add hook to check plugin activation before any operations
+add_action('init', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_loaded', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('template_redirect', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_head', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_footer', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_print_scripts', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_print_styles', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_print_footer_scripts', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});
+
+// Add hook to check plugin activation before any operations
+add_action('wp_print_admin_notices', function() {
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        // Plugin not activated, disable all functionality
+        return;
+    }
+});

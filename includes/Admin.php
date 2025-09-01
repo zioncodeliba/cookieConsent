@@ -21,6 +21,18 @@ class WP_CCM_Admin {
         add_action('wp_ajax_cc_detect_get_registered_scripts', [$this, 'ajax_cc_detect_get_registered_scripts']);
 
         add_action('wp_ajax_wpccm_get_debug_log', [$this, 'ajax_get_debug_log']);
+        
+        // AJAX handlers for master code
+        add_action('wp_ajax_wpccm_save_master_code', [$this, 'ajax_save_master_code']);
+        add_action('wp_ajax_wpccm_remove_master_code', [$this, 'ajax_remove_master_code']);
+        
+        // AJAX handler for saving general settings
+        add_action('wp_ajax_wpccm_save_general_settings', [$this, 'ajax_save_general_settings']);
+        
+        // AJAX handler for getting frontend cookies
+        add_action('wp_ajax_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
+        add_action('wp_ajax_nopriv_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
+        
         add_action('admin_notices', [$this, 'show_activation_notice']);
     }
     
@@ -141,6 +153,10 @@ class WP_CCM_Admin {
         register_setting('wpccm_dashboard_group', 'wpccm_license_key');
         register_setting('wpccm_dashboard_group', 'wpccm_website_id');
         
+        // Master Code Settings
+        register_setting('wpccm_dashboard_group', 'wpccm_master_code');
+        register_setting('wpccm_dashboard_group', 'wpccm_stored_master_code');
+        
         // Advanced Scanner Settings (for script mappings)
         register_setting('wpccm_advanced_scanner_group', 'wpccm_script_handle_map');
         register_setting('wpccm_advanced_scanner_group', 'wpccm_script_handle_map_categories');
@@ -154,6 +170,7 @@ class WP_CCM_Admin {
         add_settings_field('dashboard_license_key', 'מפתח רישיון', [$this, 'field_dashboard_license_key'], 'wpccm_general', 'wpccm_dashboard_connection');
         add_settings_field('dashboard_website_id', 'מזהה אתר', [$this, 'field_dashboard_website_id'], 'wpccm_general', 'wpccm_dashboard_connection');
         add_settings_field('dashboard_test_connection', 'בדיקת חיבור', [$this, 'field_dashboard_test_connection'], 'wpccm_general', 'wpccm_dashboard_connection');
+        add_settings_field('dashboard_master_code', 'קוד מאסטר (אופציונלי)', [$this, 'field_dashboard_master_code'], 'wpccm_general', 'wpccm_dashboard_connection');
         
         // Tab 1: General Settings
         add_settings_section('wpccm_general', 'הגדרות כלליות', null, 'wpccm_general');
@@ -461,7 +478,7 @@ class WP_CCM_Admin {
                 <a href="#general" class="nav-tab nav-tab-active" data-tab="general">הגדרות כלליות</a>
                 <a href="#purge" class="nav-tab" data-tab="purge">מחיקת עוגיות</a>
                 <a href="#mapping" class="nav-tab" data-tab="mapping">מיפוי סקריפטים</a>
-                <a href="#categories" class="nav-tab" data-tab="categories">קטגוריות עוגיות</a>
+                <a href="#categoriess" class="nav-tab" data-tab="categoriess">קטגוריות עוגיות</a>
             </nav>
             
             <form method="post" action="options.php">
@@ -470,62 +487,77 @@ class WP_CCM_Admin {
                 
                 <!-- Tab Content -->
                 <div id="general" class="wpccm-tab-content active">
-                    <h2>הגדרות כלליות</h2>
-                    <p>תוכן טאב הגדרות כלליות</p>
+                    <!-- <h2>הגדרות כלליות</h2>
+                    <p>תוכן טאב הגדרות כלליות</p> -->
                     <?php do_settings_sections('wpccm_general'); ?>
+                    <p class="submit">
+                        <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
+                        <span id="general-settings-result" style="margin-left: 10px;"></span>
+                    </p>
                 </div>
                 
                 <div id="purge" class="wpccm-tab-content">
-                    <h2>מחיקת עוגיות</h2>
-                    <p>תוכן טאב מחיקת עוגיות</p>
+                    <!-- <h2>מחיקת עוגיות</h2>
+                    <p>תוכן טאב מחיקת עוגיות</p> -->
                     <?php 
                     try {
-                        error_log('WPCCM Debug: About to call render_purge_tab');
+                        // error_log('WPCCM Debug: About to call render_purge_tab');
                         $this->render_purge_tab(); 
-                        error_log('WPCCM Debug: render_purge_tab completed');
+                        // error_log('WPCCM Debug: render_purge_tab completed');
                     } catch (Exception $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת מחיקת עוגיות: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת מחיקת עוגיות: ' . $e->getMessage() . '</p></div>';
                     }
                     ?>
+                    <p class="submit">
+                        <input type="submit" name="save_purge_settings" class="button-primary" value="שמור הגדרות מחיקת עוגיות" />
+                    </p>
                 </div>
                 
                 <div id="mapping" class="wpccm-tab-content">
                     <!-- <h2>מיפוי סקריפטים</h2> -->
                     <?php $this->render_mapping_tab(); ?>
                 </div>
+
+                </div>
                 
-                <div id="categories" class="wpccm-tab-content">
+                <div id="categoriess" class="wpccm-tab-content">
                     <h2>קטגוריות עוגיות</h2>
                     <p>תוכן טאב קטגוריות עוגיות</p>
                     <?php 
-                    echo '<p>מתחיל לטעון קטגוריות...</p>';
+                    
                     try {
-                        echo '<p>קורא לפונקציה render_categories_tab...</p>';
+                        
                         $this->render_categories_tab(); 
-                        echo '<p>הפונקציה הושלמה בהצלחה!</p>';
+                        
                     } catch (Exception $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת קטגוריות: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת קטגוריות: ' . $e->getMessage() . '</p></div>';
                     }
                     ?>
+                    <p class="submit">
+                        <input type="submit" name="save_categories_settings" class="button-primary" value="שמור הגדרות קטגוריות" />
+                    </p>
                 </div>
                 
 
                 
                 <!-- Submit button for main form (general settings) -->
-                <div id="general-submit" class="wpccm-tab-content active">
-                    <?php submit_button('שמור הגדרות כלליות'); ?>
-                </div>
+                <!-- <div id="general-submit" class="wpccm-tab-content active">
+                    <p class="submit">
+                        <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
+                        <span id="general-settings-result" style="margin-left: 10px;"></span>
+                    </p>
+                </div> -->
                 
                 <!-- Submit button for purge tab -->
-                <div id="purge-submit" class="wpccm-tab-content">
+                <!-- <div id="purge-submit" class="wpccm-tab-content">
                     <p class="submit">
                         <input type="submit" name="save_purge_settings" class="button-primary" value="שמור הגדרות מחיקת עוגיות" />
                     </p>
-                </div>
+                </div> -->
                 
                 <!-- Submit button for mapping tab -->
                 <!-- <div id="mapping-submit" class="wpccm-tab-content">
@@ -535,16 +567,17 @@ class WP_CCM_Admin {
                 </div> -->
                 
                 <!-- Submit button for categories tab -->
-                <div id="categories-submit" class="wpccm-tab-content">
+                <!-- <div id="categories-submit" class="wpccm-tab-content">
                     <p class="submit">
                         <input type="submit" name="save_categories_settings" class="button-primary" value="שמור הגדרות קטגוריות" />
                     </p>
-                </div>
+                </div> -->
             </form>
         </div>
         
         <script>
         jQuery(document).ready(function($) {
+            console.log('WPCCM: General settings page loaded');
 
             $('.wpccm-tabs .nav-tab').on('click', function(e) {
                 e.preventDefault();
@@ -588,6 +621,108 @@ class WP_CCM_Admin {
             } else {
                 console.log('WPCCM Debug: No tabs found!');
             }
+            
+            // Check if save button exists
+            if ($('#save-general-settings').length) {
+                console.log('WPCCM: Save general settings button found');
+            } else {
+                console.log('WPCCM: Save general settings button not found');
+            }
+            
+            // Save general settings via AJAX
+            $('#save-general-settings').on('click', function() {
+                console.log('WPCCM: Save general settings button clicked');
+                var $button = $(this);
+                var $result = $('#general-settings-result');
+                
+                // Check if result element exists
+                if (!$result.length) {
+                    console.log('WPCCM: Result element not found');
+                    return;
+                }
+                
+                // Collect form data
+                var dashboardApiUrl = $('input[name="wpccm_dashboard_api_url"]').val();
+                var licenseKey = $('input[name="wpccm_license_key"]').val();
+                var websiteId = $('input[name="wpccm_website_id"]').val();
+                var bannerTitle = $('input[name="wpccm_options[banner][title]"]').val();
+                var bannerDescription = $('textarea[name="wpccm_options[banner][description]"]').val();
+                var bannerPolicyUrl = $('input[name="wpccm_options[banner][policy_url]"]').val();
+                
+                console.log('WPCCM: Form data collected:', {
+                    dashboardApiUrl: dashboardApiUrl,
+                    licenseKey: licenseKey ? licenseKey.substring(0, 8) + '...' : 'empty',
+                    websiteId: websiteId,
+                    bannerTitle: bannerTitle,
+                    bannerDescription: bannerDescription ? bannerDescription.substring(0, 50) + '...' : 'empty',
+                    bannerPolicyUrl: bannerPolicyUrl
+                });
+                
+                // Validate required fields
+                if (!dashboardApiUrl || !licenseKey || !websiteId) {
+                    console.log('WPCCM: Validation failed - missing activation fields');
+                    $result.html('<span class="error">✗ אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)</span>');
+                    return;
+                }
+                
+                if (!bannerTitle || !bannerDescription) {
+                    console.log('WPCCM: Validation failed - missing banner fields');
+                    $result.html('<span class="error">✗ אנא מלא את כותרת הבאנר ותיאור הבאנר</span>');
+                    return;
+                }
+                
+                console.log('WPCCM: Validation passed, proceeding with save');
+                
+                // Disable button and show loading
+                $button.prop('disabled', true).text('שומר...');
+                $result.html('<span class="loading">שומר הגדרות...</span>');
+                
+                // Prepare form data
+                var formData = {
+                    action: 'wpccm_save_general_settings',
+                    nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>',
+                    dashboard_api_url: dashboardApiUrl,
+                    license_key: licenseKey,
+                    website_id: websiteId,
+                    banner_title: bannerTitle,
+                    banner_description: bannerDescription,
+                    banner_policy_url: bannerPolicyUrl
+                };
+                
+                console.log('WPCCM: Form data prepared for AJAX:', formData);
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        console.log('WPCCM: AJAX response received:', response);
+                        if (response.success) {
+                            $result.html('<span class="success">✓ ' + response.data.message + '</span>');
+                            // Reload page if plugin activation status changed
+                            if (response.data.activated !== undefined) {
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 1500);
+                            }
+                            // Show saved data in console for debugging
+                            if (response.data.saved_data) {
+                                console.log('WPCCM: Saved general settings:', response.data.saved_data);
+                            }
+                        } else {
+                            $result.html('<span class="error">✗ ' + response.data + '</span>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
+                        $result.html('<span class="error">✗ שגיאה בשמירת ההגדרות</span>');
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        $button.prop('disabled', false).text('שמור הגדרות כלליות');
+                    }
+                });
+            });
         });
         </script>
         
@@ -619,6 +754,23 @@ class WP_CCM_Admin {
         [id$="-submit"].active {
             display: block;
         }
+        
+        /* General settings save button styles */
+        #save-general-settings {
+            margin-right: 10px;
+        }
+        
+        #general-settings-result {
+            font-weight: 500;
+            vertical-align: middle;
+        }
+        
+        #general-settings-result span {
+            padding: 5px 10px;
+            border-radius: 3px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
         </style>
         <?php
     }
@@ -626,7 +778,7 @@ class WP_CCM_Admin {
 
     
     private function render_category_row($category, $index) {
-        var_dump("okokokokokokokokok");
+
         $key = isset($category['key']) ? esc_attr($category['key']) : '';
         $name = isset($category['name']) ? esc_attr($category['name']) : '';
         $description = isset($category['description']) ? esc_attr($category['description']) : '';
@@ -688,9 +840,9 @@ class WP_CCM_Admin {
             'others' => 'אחרות'
         );
 
-        error_log('WPCCM Debug: About to include advanced-scanner-page.php');
+        // error_log('WPCCM Debug: About to include advanced-scanner-page.php');
         include WPCCM_PATH . 'admin/views/advanced-scanner-page.php';
-        error_log('WPCCM Debug: advanced-scanner-page.php included successfully');
+        // error_log('WPCCM Debug: advanced-scanner-page.php included successfully');
     }
     
     /**
@@ -808,7 +960,7 @@ class WP_CCM_Admin {
     }
 
     private function render_purge_tab() {
-        error_log('WPCCM: render_purge_tab called');
+        // error_log('WPCCM: render_purge_tab called');
         
         // Set up WPCCM_TABLE data FIRST
         echo '<script>
@@ -881,6 +1033,7 @@ class WP_CCM_Admin {
         // Buttons with tooltips
         echo '<div style="position: relative;">';
         echo '<button type="button" class="button button-primary" id="wpccm-sync-current-cookies-btn" title="'.esc_attr(wpccm_text('sync_explanation')).'">'.wpccm_text('sync_with_current_cookies').'</button>';
+        echo '<span id="wpccm-sync-result"></span>';
         echo '<button type="button" class="button" id="wpccm-sync-categories-btn" style="margin-left: 10px; background: #00a32a; color: white;" title="סנכרן קטגוריות מטבלת המיפוי">סנכרן קטגוריות</button>';
         echo '<button type="button" class="button" id="wpccm-add-cookie" style="margin-left: 10px;" title="'.wpccm_text('add_cookie_manually', 'Add cookie manually').'">'.wpccm_text('add_cookie').'</button>';
         echo '<button type="button" class="button button-secondary" id="wpccm-clear-all-cookies" style="margin-left: 10px; color: #d63384;" title="'.esc_attr(wpccm_text('confirm_clear_all_cookies')).'">'.wpccm_text('clear_all_cookies').'</button>';
@@ -923,7 +1076,7 @@ class WP_CCM_Admin {
     }
 
     private function render_categories_tab() {
-        var_dump("okokokokokokokokok");
+        
         // Handle form submission for categories
         if (isset($_POST['save_categories']) && wp_verify_nonce($_POST['wpccm_categories_nonce'], 'wpccm_save_categories')) {
             $this->save_categories();
@@ -958,9 +1111,9 @@ class WP_CCM_Admin {
         echo '</div>'; // Close table container
         echo '</div>'; // Close main container
         
-        echo '<p class="submit">';
-        echo '<input type="submit" name="save_categories" class="button-primary" value="'.wpccm_text('save_categories').'" />';
-        echo '</p>';
+        // echo '<p class="submit">';
+        // echo '<input type="submit" name="save_categories" class="button-primary" value="'.wpccm_text('save_categories').'" />';
+        // echo '</p>';
         
         // Add nonce field for categories
         wp_nonce_field('wpccm_save_categories', 'wpccm_categories_nonce');
@@ -3017,8 +3170,8 @@ class WP_CCM_Admin {
      * Dashboard API URL Field
      */
     public function field_dashboard_api_url() {
-        $value = get_option('wpccm_dashboard_api_url', 'http://127.0.0.1:8000/api');
-        echo '<input type="url" name="wpccm_dashboard_api_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="http://localhost:8000/api" />';
+        $value = get_option('wpccm_dashboard_api_url', 'http://127.0.0.1:8888/api');
+        echo '<input type="url" name="wpccm_dashboard_api_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="http://localhost:8888/api" />';
         echo '<p class="description">כתובת ה-API של הדשבורד המרכזי</p>';
     }
 
@@ -3038,6 +3191,94 @@ class WP_CCM_Admin {
         $value = get_option('wpccm_website_id', '');
         echo '<input type="number" name="wpccm_website_id" value="' . esc_attr($value) . '" class="small-text" placeholder="1" />';
         echo '<p class="description">מזהה האתר מהדשבורד המרכזי</p>';
+    }
+
+    /**
+     * Dashboard Master Code Field
+     */
+    public function field_dashboard_master_code() {
+        $master_code = get_option('wpccm_master_code', '');
+        $stored_master_code = get_option('wpccm_stored_master_code', '');
+        $is_activated = !empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code;
+        
+        echo '<div class="master-code-container">';
+        echo '<input type="text" id="master_code_input" name="wpccm_master_code" value="' . esc_attr($master_code) . '" class="regular-text" placeholder="הכנס קוד מאסטר" />';
+        echo '<button type="button" class="button" id="save-master-code">שמור קוד מאסטר</button>';
+        echo '<button type="button" class="button button-secondary" id="remove-master-code">הסר קוד מאסטר</button>';
+        echo '</div>';
+        
+        if ($is_activated) {
+            echo '<p class="description" style="color: green;"><strong>✓ הפלאגין מופעל באמצעות קוד מאסטר</strong></p>';
+        } else {
+            echo '<p class="description">קוד מאסטר מאפשר הפעלת הפלאגין ללא צורך בדשבורד</p>';
+        }
+        
+        echo '<div id="master-code-result"></div>';
+        
+        echo '<script>
+        jQuery(document).ready(function($) {
+            $("#save-master-code").on("click", function() {
+                var masterCode = $("#master_code_input").val();
+                var $result = $("#master-code-result");
+                
+                if (!masterCode) {
+                    $result.html("<p style=\"color: red;\">אנא הכנס קוד מאסטר</p>");
+                    return;
+                }
+                
+                $result.html("<p>שומר קוד מאסטר...</p>");
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: "POST",
+                    data: {
+                        action: "wpccm_save_master_code",
+                        nonce: "' . wp_create_nonce('wpccm_admin_nonce') . '",
+                        master_code: masterCode
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $result.html("<p style=\"color: green;\">" + response.data.message + "</p>");
+                            if (response.data.activated) {
+                                location.reload();
+                            }
+                        } else {
+                            $result.html("<p style=\"color: red;\">" + response.data + "</p>");
+                        }
+                    },
+                    error: function() {
+                        $result.html("<p style=\"color: red;\">שגיאה בשמירת קוד המאסטר</p>");
+                    }
+                });
+            });
+            
+            $("#remove-master-code").on("click", function() {
+                var $result = $("#master-code-result");
+                $result.html("<p>מסיר קוד מאסטר...</p>");
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: "POST",
+                    data: {
+                        action: "wpccm_remove_master_code",
+                        nonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $result.html("<p style=\"color: green;\">" + response.data.message + "</p>");
+                            $("#master_code_input").val("");
+                            location.reload();
+                        } else {
+                            $result.html("<p style=\"color: red;\">" + response.data + "</p>");
+                        }
+                    },
+                    error: function() {
+                        $result.html("<p style=\"color: red;\">שגיאה בהסרת קוד המאסטר</p>");
+                    }
+                });
+            });
+        });
+        </script>';
     }
 
     /**
@@ -3092,6 +3333,16 @@ class WP_CCM_Admin {
      * Check if plugin is activated
      */
     private function is_plugin_activated() {
+        // Check for master code first
+        $master_code = get_option('wpccm_master_code', '');
+        $stored_master_code = get_option('wpccm_stored_master_code', '');
+        
+        // If master code is set and matches stored code, activate plugin
+        if (!empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code) {
+            return true;
+        }
+        
+        // Regular activation check
         $api_url = get_option('wpccm_dashboard_api_url', '');
         $license_key = get_option('wpccm_license_key', '');
         $website_id = get_option('wpccm_website_id', '');
@@ -3405,4 +3656,208 @@ class WP_CCM_Admin {
         ]);
     }
 
+    /**
+     * AJAX handler for saving master code
+     */
+    public function ajax_save_master_code() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
+        }
+        
+        $master_code = isset($_POST['master_code']) ? sanitize_text_field($_POST['master_code']) : '';
+        
+        if (empty($master_code)) {
+            wp_send_json_error(['message' => 'קוד המאסטר לא יכול להיות ריק']);
+        }
+        
+        // Save the master code
+        update_option('wpccm_master_code', $master_code);
+        
+        // Also save it as stored code for comparison
+        update_option('wpccm_stored_master_code', $master_code);
+        
+        wp_send_json_success([
+            'message' => 'קוד המאסטר נשמר בהצלחה',
+            'activated' => $this->is_plugin_activated()
+        ]);
+    }
+    
+    /**
+     * AJAX handler for removing master code
+     */
+    public function ajax_remove_master_code() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
+        }
+        
+        // Remove the master code
+        delete_option('wpccm_master_code');
+        delete_option('wpccm_stored_master_code');
+        
+        wp_send_json_success([
+            'message' => 'קוד המאסטר הוסר בהצלחה',
+            'activated' => $this->is_plugin_activated()
+        ]);
+    }
+    
+    /**
+     * AJAX handler for saving general settings
+     */
+    public function ajax_save_general_settings() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
+        }
+        
+        // Get and sanitize dashboard settings
+        $dashboard_api_url = isset($_POST['dashboard_api_url']) ? sanitize_text_field($_POST['dashboard_api_url']) : '';
+        $license_key = isset($_POST['license_key']) ? sanitize_text_field($_POST['license_key']) : '';
+        $website_id = isset($_POST['website_id']) ? sanitize_text_field($_POST['website_id']) : '';
+        
+        // Get and sanitize banner settings
+        $banner_title = isset($_POST['banner_title']) ? sanitize_text_field($_POST['banner_title']) : '';
+        $banner_description = isset($_POST['banner_description']) ? sanitize_textarea_field($_POST['banner_description']) : '';
+        $banner_policy_url = isset($_POST['banner_policy_url']) ? esc_url_raw($_POST['banner_policy_url']) : '';
+        
+        // Validate required fields
+        if (empty($dashboard_api_url) || empty($license_key) || empty($website_id)) {
+            wp_send_json_error('אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)');
+        }
+        
+        if (empty($banner_title) || empty($banner_description)) {
+            wp_send_json_error('אנא מלא את כותרת הבאנר ותיאור הבאנר');
+        }
+        
+        // Save dashboard settings
+        update_option('wpccm_dashboard_api_url', $dashboard_api_url);
+        update_option('wpccm_license_key', $license_key);
+        update_option('wpccm_website_id', $website_id);
+        
+        // Save banner settings
+        $current_options = get_option('wpccm_options', []);
+        $current_options['banner']['title'] = $banner_title;
+        $current_options['banner']['description'] = $banner_description;
+        $current_options['banner']['policy_url'] = $banner_policy_url;
+        update_option('wpccm_options', $current_options);
+        
+        wp_send_json_success([
+            'message' => 'ההגדרות הכלליות נשמרו בהצלחה! כתובת API: ' . $dashboard_api_url . ', מפתח רישיון: ' . substr($license_key, 0, 8) . '..., מזהה אתר: ' . $website_id . ', כותרת באנר: ' . $banner_title . ', תיאור: ' . substr($banner_description, 0, 50) . '...',
+            'activated' => $this->is_plugin_activated(),
+            'saved_data' => [
+                'dashboard_api_url' => $dashboard_api_url,
+                'license_key' => substr($license_key, 0, 8) . '...',
+                'website_id' => $website_id,
+                'banner_title' => $banner_title,
+                'banner_description' => substr($banner_description, 0, 50) . '...',
+                'banner_policy_url' => $banner_policy_url
+            ]
+        ]);
+    }
+    
+    /**
+     * AJAX handler for getting frontend cookies
+     */
+    public function ajax_get_frontend_cookies() {
+        // Check if plugin is activated
+        if (!WP_CCM_Consent::is_plugin_activated()) {
+            wp_send_json_error('Plugin not activated');
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Get cookies from the current request
+        $cookies = [];
+        
+        // Get cookies from $_COOKIE superglobal
+        if (!empty($_COOKIE)) {
+            foreach ($_COOKIE as $name => $value) {
+                // Skip WordPress admin cookies
+                if (strpos($name, 'wordpress_') === 0 || 
+                    strpos($name, 'wp-') === 0 || 
+                    $name === 'PHPSESSID' ||
+                    strpos($name, 'comment_') === 0) {
+                    continue;
+                }
+                $cookies[] = $name;
+            }
+        }
+        
+        // Also try to get cookies from HTTP headers
+        if (isset($_SERVER['HTTP_COOKIE'])) {
+            $cookie_header = $_SERVER['HTTP_COOKIE'];
+            $cookie_pairs = explode(';', $cookie_header);
+            
+            foreach ($cookie_pairs as $pair) {
+                $pair = trim($pair);
+                if (empty($pair)) continue;
+                
+                $name_value = explode('=', $pair, 2);
+                if (count($name_value) === 2) {
+                    $name = trim($name_value[0]);
+                    
+                    // Skip WordPress admin cookies
+                    if (strpos($name, 'wordpress_') === 0 || 
+                        strpos($name, 'wp-') === 0 || 
+                        $name === 'PHPSESSID' ||
+                        strpos($name, 'comment_') === 0) {
+                        continue;
+                    }
+                    
+                    if (!in_array($name, $cookies)) {
+                        $cookies[] = $name;
+                    }
+                }
+            }
+        }
+        
+        // Remove duplicates and sort
+        $cookies = array_unique($cookies);
+        sort($cookies);
+        
+        // Check if this is a GET request (for iframe)
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            // Return JavaScript that sends cookies via postMessage
+            $cookies_json = json_encode($cookies);
+            echo "<script>
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'wpccm_cookies_response',
+                    success: true,
+                    cookies: $cookies_json,
+                    count: " . count($cookies) . ",
+                    source: 'frontend'
+                }, '*');
+            }
+            </script>";
+            exit;
+        }
+        
+        wp_send_json_success([
+            'cookies' => $cookies,
+            'count' => count($cookies),
+            'source' => 'frontend'
+        ]);
+    }
 }

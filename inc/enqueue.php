@@ -265,9 +265,18 @@ function wpccm_conditional_enqueue() {
  * @return bool True if consent banner should be shown
  */
 function wpccm_should_show_consent() {
-    // Always show on frontend for now
-    // This can be customized based on specific requirements
-    return !is_admin();
+    // Don't show on admin pages
+    if (is_admin()) {
+        return false;
+    }
+    
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return false;
+    }
+    
+    // Show on frontend if plugin is activated
+    return true;
 }
 
 // Hook into WordPress

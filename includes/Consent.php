@@ -136,4 +136,31 @@ unset($map[$handle]);
 }
 return $map;
 }
+
+/**
+ * Check if plugin is activated (via master code or dashboard)
+ */
+public static function is_plugin_activated() {
+    // Check for master code first
+    $master_code = get_option('wpccm_master_code', '');
+    $stored_master_code = get_option('wpccm_stored_master_code', '');
+    
+    // If master code is set and matches stored code, activate plugin
+    if (!empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code) {
+        return true;
+    }
+    
+    // Regular activation check
+    $api_url = get_option('wpccm_dashboard_api_url', '');
+    $license_key = get_option('wpccm_license_key', '');
+    $website_id = get_option('wpccm_website_id', '');
+    
+    if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        return false;
+    }
+    
+    // Check if license is valid
+    $dashboard = WP_CCM_Dashboard::get_instance();
+    return $dashboard->test_connection_silent();
+}
 }

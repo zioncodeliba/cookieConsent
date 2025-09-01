@@ -170,3 +170,125 @@
         padding: 15px;
     }
 }
+
+/* Master Code Styles */
+.master-code-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.master-code-container input[type="text"] {
+    flex: 1;
+    max-width: 300px;
+}
+
+.master-code-container button {
+    white-space: nowrap;
+}
+
+#master-code-result {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#master-code-result p {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Activation Status Styles */
+.activation-status {
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-weight: 500;
+}
+
+.activation-status.activated {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.activation-status.not-activated {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* General Settings Save Button Styles */
+#save-general-settings {
+    margin-right: 10px;
+    min-width: 150px;
+}
+
+#general-settings-result {
+    font-weight: 500;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+#general-settings-result span {
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+#general-settings-result span.success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+#general-settings-result span.error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+#general-settings-result span.loading {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* Cookie sync result styles */
+#wpccm-sync-current-cookies-btn {
+    margin-right: 10px;
+}
+
+#wpccm-sync-result {
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+#wpccm-sync-result span {
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+#wpccm-sync-result span.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+#wpccm-sync-result span.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+#wpccm-sync-result span.loading {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}

@@ -1,19 +1,24 @@
-name: Build & Publish WPCCM (FTP)
+name: Build & Publish WPCCM (SFTP to Cloudways)
 
 on:
   push:
     tags:
-      - "v*.*.*"   # הפעלה אוטומטית על תגיות גרסה, למשל v1.0.1
+      - "v*.*.*"     # e.g. v1.0.1
   workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
+  # ===== Plugin config =====
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
-  PUBLIC_BASE_URL: https://digitalpay.co.il/ck_updates     # ככה ייבנה ה-download_url
-  REMOTE_DIR: /public_html/ck_updates                      # יעד ב-FTP (התאם אם צריך)
+
+  # כתובת ציבורית לקבצים (עדכן אם הדומיין שונה)
+  PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
+
+  # ===== Cloudways target paths =====
+  REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
 
 jobs:
   build:
@@ -24,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # קובע גרסה: קודם מה-tag (v1.2.3), ואם אין – מהכותרת בקובץ הפלאגין
+      # 1) קובעים גרסה מה-tag (v1.2.3). אם אין, ננסה מהקובץ הראשי של הפלאגין.
       - name: Determine version
         id: ver
         run: |
@@ -32,23 +37,22 @@ jobs:
           if [[ -n "$TAG" ]]; then
             VERSION="${TAG#v}"
           else
-            # נסה לקרוא מהכותרת בקובץ הראשי
             VERSION=$(awk -F': ' '/^\* Version:/ {print $2; exit}' ${PLUGIN_SLUG}/${MAIN_FILE})
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version is: $VERSION"
 
-      # נכין תיקיית dist ונארוז כך שה-ROOT של ה-ZIP הוא תיקיית הפלאגין (קריטי לעדכון)
+      # 2) מכינים תיקיית dist ושומרים ש-root ה-ZIP יהיה תיקיית הפלאגין (חשוב לעדכונים)
       - name: Prepare dist
         run: |
           mkdir -p dist/${PLUGIN_SLUG}
           if [ -d "${PLUGIN_SLUG}" ]; then
             rsync -a ${PLUGIN_SLUG}/ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
           else
-            # אם הריפו עצמו הוא הפלאגין, נעטוף לתיקייה בשם ה-slug
             rsync -a ./ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
           fi
 
+      # 3) יוצרים ZIP
       - name: Create ZIP
         id: zip
         run: |
@@ -58,6 +62,7 @@ jobs:
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           ls -lah
 
+      # 4) בונים wpccm.json עם download_url לגרסה החדשה
       - name: Build update JSON
         id: json
         run: |
@@ -65,7 +70,6 @@ jobs:
           ZIP_NAME="${{ steps.zip.outputs.zip_name }}"
           DOWNLOAD_URL="${PUBLIC_BASE_URL}/${ZIP_NAME}"
 
-          # שינוי לוג/צ'יינג'לוג: ברירת מחדל מתגית, אחרת טקסט סטנדרטי
           CHANGELOG=$(git for-each-ref refs/tags/v${VERSION} --format='%(contents)' | head -c 2000)
           [ -z "$CHANGELOG" ] && CHANGELOG="Release ${VERSION}"
 
@@ -75,32 +79,45 @@ jobs:
             "slug": "${PLUGIN_SLUG}/${MAIN_FILE}",
             "version": "${VERSION}",
             "author": "Your Name",
-            "author_homepage": "https://digitalpay.co.il",
+            "author_homepage": "https://wordpress-1142719-5821343.cloudwaysapps.com",
             "download_url": "${DOWNLOAD_URL}",
             "requires": "5.8",
             "tested": "6.6",
             "requires_php": "7.4",
-            "homepage": "https://digitalpay.co.il",
+            "homepage": "https://wordpress-1142719-5821343.cloudwaysapps.com",
             "sections": {
               "description": "Auto-built release ${VERSION}",
               "changelog": "${CHANGELOG//\"/\\\"}"
             }
           }
           JSON
-
           echo "json_name=wpccm.json" >> $GITHUB_OUTPUT
           cat dist/wpccm.json
 
-      # פריסה ב-FTP: נעלה את קבצי dist/ (רק ה-ZIP וה-JSON) לתיקייה REMOTE_DIR
-      - name: FTP Deploy (ZIP)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      # 5) העלאת ה-ZIP ב-SFTP (SCP)
+      - name: Upload ZIP via SCP (SFTP)
+        uses: appleboy/scp-action@v0.1.7
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: ${{ secrets.FTP_PORT || 21 }}
-          local-dir: dist/
-          server-dir: ${{ env.REMOTE_DIR }}/
-          # שומרים רק על שתי הקבצים, לא מוחקים קבצים אחרים שם
-          # ה-action הזה מסנכרן directory; נשאיר ברירת מחדל (לא delete)
+          host: ${{ secrets.SFTP_HOST }}      # 139.59.157.193
+          username: ${{ secrets.SFTP_USER }}  # zion_cookie
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # private key (ed25519 / rsa)
+          source: "dist/${{ steps.zip.outputs.zip_name }}"
+          target: "${{ env.REMOTE_DIR }}/"
+
+      # 6) העלאת ה-JSON בצורה אטומית (write -> mv)
+      - name: Upload JSON via SSH (atomic)
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            TMP_JSON="${REMOTE_DIR}/wpccm.json.tmp"
+            cat > "$TMP_JSON" <<'JSON'
+$(cat dist/wpccm.json)
+JSON
+            mv -f "$TMP_JSON" "${REMOTE_DIR}/wpccm.json"
+            ls -lah "${REMOTE_DIR}"

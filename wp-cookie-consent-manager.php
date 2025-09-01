@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: WP Cookie Consent Manager
- * Plugin URI: https://digitalpay.co.il/wp-cookie-consent-manager
+ * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -34,14 +34,14 @@ define('WPCCM_PLUGIN_BASENAME', plugin_basename(__FILE__));
 define('WPCCM_PLUGIN_SLUG', dirname(WPCCM_PLUGIN_BASENAME)); // "wp-cookie-consent-manager"
 
 // The URL to your JSON metadata (see step 3)
-define('WPCCM_UPDATE_JSON_URL', 'https://digitalpay.co.il/ck_updates/wpccm.json');
+define('WPCCM_UPDATE_JSON_URL', 'https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates/wpccm.json');
 
 add_action('plugins_loaded', function () {
     if (!class_exists(\YahnisElsts\PluginUpdateChecker\v5\PucFactory::class)) {
         // PUC not loaded, skip.
         return;
     }
-
+    
     // Build the update checker
     $updateChecker = PucFactory::buildUpdateChecker(
         WPCCM_UPDATE_JSON_URL,   // JSON metadata URL
@@ -66,12 +66,12 @@ add_filter('plugin_action_links_' . WPCCM_PLUGIN_BASENAME, function ($links) {
 
 
 // Define plugin constants
-define('WPCCM_VERSION', '1.0.0');
+define('WPCCM_VERSION', '1.0.5');
 define('WPCCM_URL', plugin_dir_url(__FILE__));
 define('WPCCM_PATH', plugin_dir_path(__FILE__));
 
 // Dashboard API Configuration
-define('WPCCM_DASHBOARD_API_URL', 'http://127.0.0.1:8000/api');
+define('WPCCM_DASHBOARD_API_URL', 'https://wordpress-1142719-5821343.cloudwaysapps.com/api');
 define('WPCCM_DASHBOARD_VERSION', '1.0.0');
 
 // Include required files
@@ -433,7 +433,7 @@ class WP_CCM {
     }
 
     public function render_banner_container() {
-
+    
         // Don't render on admin pages
         if (is_admin()) {
 
@@ -451,9 +451,9 @@ class WP_CCM {
         $website_id = get_option('wpccm_website_id', '');
         
         // לוג לדיבוג
-        error_log('WPCCM Debug - API URL: ' . $api_url);
-        error_log('WPCCM Debug - License Key: ' . substr($license_key, 0, 10) . '...');
-        error_log('WPCCM Debug - Website ID: ' . $website_id);
+        // error_log('WPCCM Debug - API URL: ' . $api_url);
+        // error_log('WPCCM Debug - License Key: ' . substr($license_key, 0, 10) . '...');
+        // error_log('WPCCM Debug - Website ID: ' . $website_id);
         
         if (empty($api_url) || empty($license_key) || empty($website_id)) {
             error_log('WPCCM Debug - Connection check failed, not rendering banner');
@@ -1290,20 +1290,25 @@ add_action('init', function() {
 // Initialize main plugin for frontend and AJAX
 add_action('wp_loaded', function() {
     if (!is_admin() || wp_doing_ajax()) {
+        
         if (!isset($GLOBALS['wpccm_instance'])) {
             // בדיקה שהפלאגין מחובר לדשבורד לפני טעינה
             $api_url = get_option('wpccm_dashboard_api_url', '');
             $license_key = get_option('wpccm_license_key', '');
             $website_id = get_option('wpccm_website_id', '');
-            
+
             if (!empty($api_url) && !empty($license_key) && !empty($website_id)) {
                 // בדיקה שהרישיון באמת תקין
                 $dashboard = WP_CCM_Dashboard::get_instance();
+               
                 if ($dashboard->test_connection_silent()) {
+                    
                     $GLOBALS['wpccm_instance'] = new WP_CCM();
+                    
                     error_log('WPCCM Debug - Plugin loaded successfully');
                 } else {
                     error_log('WPCCM Debug - Plugin not loaded - license validation failed');
+                    
                 }
             } else {
                 error_log('WPCCM Debug - Plugin not loaded - missing connection details');

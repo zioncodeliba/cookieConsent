@@ -27,6 +27,11 @@ function wpccm_filter_set_cookie_headers() {
         return;
     }
     
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return;
+    }
+    
     // Check if headers have already been sent
     if (headers_sent()) {
         if (defined('WP_DEBUG') && WP_DEBUG) {

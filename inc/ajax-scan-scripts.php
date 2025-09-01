@@ -16,6 +16,12 @@ if (!defined('ABSPATH')) {
  * AJAX handler for scanning registered scripts
  */
 function wpccm_ajax_scan_scripts() {
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        wp_send_json_error('Plugin not activated');
+        return;
+    }
+    
     // Check nonce
     if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
         wp_send_json_error('Invalid nonce');

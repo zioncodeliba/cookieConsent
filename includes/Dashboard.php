@@ -19,7 +19,7 @@ class WP_CCM_Dashboard {
         return self::$instance;
     }
     
-    private function __construct() {
+    private function __construct() {    
         $this->api_url = get_option('wpccm_dashboard_api_url', WPCCM_DASHBOARD_API_URL);
         $this->license_key = get_option('wpccm_license_key', '');
         $this->website_id = get_option('wpccm_website_id', '');
@@ -68,6 +68,14 @@ class WP_CCM_Dashboard {
      * בדיקת חיבור שקטה (ללא AJAX response)
      */
     public function test_connection_silent() {
+        $master_code = get_option('wpccm_master_code', '');
+        $stored_master_code = get_option('wpccm_stored_master_code', '');
+        
+        // If master code is set and matches stored code, activate plugin
+        if (!empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code) {
+            return true;
+        }
+
         if (empty($this->website_id) || empty($this->license_key)) {
             return false;
         }
@@ -79,8 +87,11 @@ class WP_CCM_Dashboard {
             'timeout' => 5
         ));
         
+        // if (is_wp_error($response)) {
+        //     return false;
+        // }
         if (is_wp_error($response)) {
-            return false;
+            wp_send_json_error('שגיאה בחיבור: ' . $response->get_error_message());
         }
         
         $code = wp_remote_retrieve_response_code($response);
@@ -113,6 +124,7 @@ class WP_CCM_Dashboard {
         }
         
         $code = wp_remote_retrieve_response_code($response);
+        
         if ($code === 200) {
             wp_send_json_success('חיבור מוצלח לדשבורד');
         } else {
