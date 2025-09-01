@@ -479,7 +479,7 @@
 
     
     $(document).on('click', '#wpccm-sync-current-cookies-btn', function() {
-
+        console.log('WPCCM: Syncing cookies from frontend URL:########################');
         const button = $(this);
         const originalText = button.text();
         
