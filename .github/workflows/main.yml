@@ -10,14 +10,9 @@ permissions:
   contents: read
 
 env:
-  # ===== Plugin config =====
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
-
-  # ===== Public URL (Cloudways domain) =====
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
-
-  # ===== Cloudways target path (absolute) =====
   REMOTE_DIR: /home/1142719.cloudwaysapps.com/gzqxdmbtuu/public_html/ck_updates
 
 jobs:
@@ -26,94 +21,54 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Determine version
+      - name: Get version
         id: ver
         run: |
           TAG="${GITHUB_REF_NAME:-}"
           if [[ -n "$TAG" ]]; then
             VERSION="${TAG#v}"
           else
-            VERSION=$(awk -F': ' '/^\* Version:/ {print $2; exit}' ${PLUGIN_SLUG}/${MAIN_FILE})
+            VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" ${PLUGIN_SLUG}/${MAIN_FILE})
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version is: $VERSION"
-
-      - name: Prepare dist
-        run: |
-          mkdir -p dist/${PLUGIN_SLUG}
-          if [ -d "${PLUGIN_SLUG}" ]; then
-            rsync -a ${PLUGIN_SLUG}/ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
-          else
-            rsync -a ./ dist/${PLUGIN_SLUG}/ --exclude ".git" --exclude ".github" --exclude "dist"
-          fi
 
       - name: Create ZIP
         id: zip
         run: |
-          cd dist
           ZIP_NAME="${PLUGIN_SLUG}-${{ steps.ver.outputs.version }}.zip"
-          zip -r "$ZIP_NAME" "${PLUGIN_SLUG}" -x "*.DS_Store"
+          zip -r "$ZIP_NAME" . -x "*.git*" "*.github*" "dist/*" "node_modules/*" "*.log"
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
-          ls -lah
 
-      - name: Build update JSON
-        id: json
+      - name: Create update JSON
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
           ZIP_NAME="${{ steps.zip.outputs.zip_name }}"
           DOWNLOAD_URL="${PUBLIC_BASE_URL}/${ZIP_NAME}"
 
-          CHANGELOG=$(git for-each-ref refs/tags/v${VERSION} --format='%(contents)' | head -c 2000)
-          [ -z "$CHANGELOG" ] && CHANGELOG="Release ${VERSION}"
-
-          cat > dist/wpccm.json <<JSON
+          cat > wpccm.json <<JSON
           {
             "name": "WP Cookie Consent Manager",
             "slug": "${PLUGIN_SLUG}/${MAIN_FILE}",
             "version": "${VERSION}",
-            "author": "Your Name",
-            "author_homepage": "https://wordpress-1142719-5821343.cloudwaysapps.com",
+            "author": "code&core",
             "download_url": "${DOWNLOAD_URL}",
             "requires": "5.8",
             "tested": "6.6",
             "requires_php": "7.4",
-            "homepage": "https://wordpress-1142719-5821343.cloudwaysapps.com",
             "sections": {
-              "description": "Auto-built release ${VERSION}",
-              "changelog": "${CHANGELOG//\"/\\\"}"
+              "description": "Release ${VERSION}",
+              "changelog": "Release ${VERSION}"
             }
           }
           JSON
-          ls -lah dist
 
-      # ודואגים שהתיקייה קיימת בצד השרת (חד-פעמי/בכל ריצה)
-      - name: Ensure remote dir exists
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SFTP_SERVER }}     # <-- משתמש ב-SFTP_SERVER
-          username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            mkdir -p "${REMOTE_DIR}"
-            ls -lah "${REMOTE_DIR%/*}"
-
-      # מעלים את ה-ZIP וה-JSON ישירות (אין צורך בשלב mv אטומי)
-      - name: Upload artifacts via SCP (SFTP)
+      - name: Upload to server
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SFTP_SERVER }}     # <-- משתמש ב-SFTP_SERVER
+          host: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
           port: ${{ secrets.SFTP_PORT }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/${{ steps.zip.outputs.zip_name }},dist/wpccm.json"
+          source: "${{ steps.zip.outputs.zip_name }},wpccm.json"
           target: "${{ env.REMOTE_DIR }}/"
-
-      # בדיקת פריסה: URL אמור להחזיר 200
-      - name: Verify JSON is reachable
-        run: |
-          curl -I --fail "${PUBLIC_BASE_URL}/wpccm.json"
