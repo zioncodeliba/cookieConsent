@@ -29,6 +29,11 @@
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             echo "Using version: $VERSION"
 
+        - name: Fix permissions on build folder
+          run: |
+            chmod -R 777 .
+            ls -lah
+
         - name: Create ZIP
           id: zip
           run: |
@@ -101,3 +106,6 @@
             target: "${{ env.REMOTE_DIR }}/"
             overwrite: true
             debug: true
+            strip_components: 0
+            timeout: 60s
+            command_timeout: 10m
