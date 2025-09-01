@@ -87,6 +87,18 @@
               ls -ld public_html/ck_updates
 
 
+        - name: Check if file exists before upload
+          run: |
+            echo "Current directory: $(pwd)"
+            echo "Listing files:"
+            ls -la
+            echo "Matching ZIP:"
+            ls -la wp-cookie-consent-manager-*.zip || echo "❌ ZIP NOT FOUND"
+            echo "Matching JSON:"
+            ls -la wpccm.json || echo "❌ JSON NOT FOUND"
+
+
+
         - name: Upload to server
           uses: appleboy/scp-action@v0.1.7
           with:
