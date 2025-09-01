@@ -22,20 +22,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Get plugin version
-      #   id: ver
-      #   run: |
-      #     VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" ${MAIN_FILE})
-      #     echo "version=$VERSION" >> $GITHUB_OUTPUT
-      #     echo "📦 Plugin version detected: $VERSION"
-
-      - name: Get plugin version from Git tag (without "v")
+      - name: Get plugin version
         id: ver
         run: |
-          RAW_TAG=${GITHUB_REF#refs/tags/}
-          VERSION=${RAW_TAG#v}
+          VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" ${MAIN_FILE})
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Plugin version: $VERSION"
+          echo "📦 Plugin version detected: $VERSION"
+
+      # - name: Get plugin version from Git tag (without "v")
+      #   id: ver
+      #   run: |
+      #     RAW_TAG=${GITHUB_REF#refs/tags/}
+      #     VERSION=${RAW_TAG#v}
+      #     echo "version=$VERSION" >> $GITHUB_OUTPUT
+      #     echo "📦 Plugin version: $VERSION"
 
       - name: Fix permissions on workspace
         run: chmod -R 777 .
