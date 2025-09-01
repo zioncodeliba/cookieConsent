@@ -89,6 +89,8 @@
 
         - name: Check if file exists before upload
           run: |
+            chmod 777 ${{env.PLUGIN_SLUG}}-${{ steps.ver.outputs.version }}.zip
+            ls -lah
             echo "Current directory: $(pwd)"
             echo "Listing files:"
             ls -la
