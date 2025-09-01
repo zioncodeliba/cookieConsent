@@ -13,7 +13,7 @@ env:
   PLUGIN_SLUG: wp-cookie-consent-manager
   MAIN_FILE: wp-cookie-consent-manager.php
   PUBLIC_BASE_URL: https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates
-  REMOTE_DIR: ~/public_html/ck_updates
+  REMOTE_DIR: public_html/ck_updates
 
 jobs:
   build:
@@ -69,6 +69,16 @@ jobs:
           echo "Current directory: $(pwd)"
           echo "All files:"
           find . -name "*.zip" -o -name "*.json" | head -10
+          
+      - name: Ensure target dir exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 139.59.157.193
+          username: zion_cookie
+          key: ${{ secrets.COOKIE_CI_KEY }}
+          script: |
+            mkdir -p public_html/ck_updates
+            ls -ld public_html/ck_updates
 
       # - name: Create remote directory
       #   uses: appleboy/ssh-action@v1.1.0
