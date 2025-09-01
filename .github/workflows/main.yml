@@ -88,17 +88,32 @@ jobs:
             chmod 777 ${{ env.REMOTE_DIR }}
             ls -ld ${{ env.REMOTE_DIR }}
 
-      - name: Upload files to server (ZIP + JSON)
-        uses: appleboy/scp-action@v0.1.7
+      # - name: Upload files to server (ZIP + JSON)
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.SFTP_SERVER }}
+      #     username: ${{ secrets.SFTP_USERNAME }}
+      #     port: ${{ secrets.SFTP_PORT }}
+      #     password: ${{ secrets.SFTP_PASSWORD }}
+      #     source: "./wp-cookie-consent-manager-*.zip,./wpccm.json"
+      #     target: "${{ env.REMOTE_DIR }}/"
+      #     overwrite: true
+      #     debug: true
+      #     strip_components: 0
+      #     timeout: 60s
+      #     command_timeout: 10m
+
+      - name: Upload files to server using rsync
+        uses: appleboy/rsync-action@v0.1.5
         with:
           host: ${{ secrets.SFTP_SERVER }}
           username: ${{ secrets.SFTP_USERNAME }}
-          port: ${{ secrets.SFTP_PORT }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          source: "./wp-cookie-consent-manager-*.zip,./wpccm.json"
+          port: ${{ secrets.SFTP_PORT }}
+          source: "./wp-cookie-consent-manager-*.zip ./wpccm.json"
           target: "${{ env.REMOTE_DIR }}/"
-          overwrite: true
+          delete: false
+          recursive: true
+          compress: true
           debug: true
-          strip_components: 0
-          timeout: 60s
-          command_timeout: 10m
+
