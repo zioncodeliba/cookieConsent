@@ -4136,17 +4136,18 @@ class WP_CCM_Admin {
      * AJAX handler for getting frontend cookies
      */
     public function ajax_get_frontend_cookies() {
+        
         // Check if plugin is activated
         if (!WP_CCM_Consent::is_plugin_activated()) {
             wp_send_json_error('Plugin not activated');
             return;
         }
-        
+        // var_dump($_POST);
         // Verify nonce
-        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
-            wp_send_json_error('Security check failed');
-            return;
-        }
+        // if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+        //     wp_send_json_error('Security check failed');
+        //     return;
+        // }
         
         // Get cookies from the current request
         $cookies = [];
@@ -4155,12 +4156,12 @@ class WP_CCM_Admin {
         if (!empty($_COOKIE)) {
             foreach ($_COOKIE as $name => $value) {
                 // Skip WordPress admin cookies
-                if (strpos($name, 'wordpress_') === 0 || 
-                    strpos($name, 'wp-') === 0 || 
-                    $name === 'PHPSESSID' ||
-                    strpos($name, 'comment_') === 0) {
-                    continue;
-                }
+                // if (strpos($name, 'wordpress_') === 0 || 
+                //     strpos($name, 'wp-') === 0 || 
+                //     $name === 'PHPSESSID' ||
+                //     strpos($name, 'comment_') === 0) {
+                //     continue;
+                // }
                 $cookies[] = $name;
             }
         }
@@ -4178,13 +4179,13 @@ class WP_CCM_Admin {
                 if (count($name_value) === 2) {
                     $name = trim($name_value[0]);
                     
-                    // Skip WordPress admin cookies
-                    if (strpos($name, 'wordpress_') === 0 || 
-                        strpos($name, 'wp-') === 0 || 
-                        $name === 'PHPSESSID' ||
-                        strpos($name, 'comment_') === 0) {
-                        continue;
-                    }
+                    // // Skip WordPress admin cookies
+                    // if (strpos($name, 'wordpress_') === 0 || 
+                    //     strpos($name, 'wp-') === 0 || 
+                    //     $name === 'PHPSESSID' ||
+                    //     strpos($name, 'comment_') === 0) {
+                    //     continue;
+                    // }
                     
                     if (!in_array($name, $cookies)) {
                         $cookies[] = $name;

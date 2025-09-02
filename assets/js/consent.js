@@ -112,10 +112,12 @@ function purgeOnReject() {
     if (typeof WPCCM !== 'undefined' && WPCCM && WPCCM.options) {
         options = WPCCM.options;
     }
-    var cookiesToPurge = (options.purge && options.purge.cookies) || ['_ga', '_ga_*', '_gid', '_fbp', '_hjSessionUser'];
+    var cookiesToPurge = (options.purge && options.purge.cookies) || [{name:'_ga'}, {name:'_ga_*'}, {name:'_gid'}, {name:'_fbp'}, {name:'_hjSessionUser'}];
+    // console.log(cookiesToPurge);
     
     cookiesToPurge.forEach(function(cookieName) {
-        if (cookieName.includes('*')) {
+        // console.log(cookieName.name);
+        if (cookieName.name.includes('*')) {
             // Handle wildcard cookies
             var prefix = cookieName.replace('*', '');
             var cookies = document.cookie.split(';');
@@ -126,7 +128,7 @@ function purgeOnReject() {
                 }
             });
         } else {
-            deleteCookie(cookieName);
+            deleteCookie(cookieName.name);
         }
     });
     

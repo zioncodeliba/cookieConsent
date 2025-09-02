@@ -492,7 +492,7 @@
         //console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
         
         // Show loading message
-        $('#wpccm-sync-result').html('<span class="loading">מסרוק עוגיות מהאתר...</span>');
+        $('#wpccm-sync-result').html('<span class="loading">סורק עוגיות מהאתר...</span>');
         
         // First, try to get cookies from frontend site via iframe method
         const iframe = document.createElement('iframe');
