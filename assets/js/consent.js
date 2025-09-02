@@ -245,20 +245,42 @@ function renderBanner(){
     var b = o.banner || {};
     var texts = (WPCCM && WPCCM.texts) ? WPCCM.texts : {};
 
+    // Get design settings from data attributes
+    var designSettings = {
+        bannerPosition: root.getAttribute('data-banner-position') || 'top',
+        floatingPosition: root.getAttribute('data-floating-position') || 'bottom-right',
+        backgroundColor: root.getAttribute('data-background-color') || '#ffffff',
+        textColor: root.getAttribute('data-text-color') || '#000000',
+        acceptButtonColor: root.getAttribute('data-accept-button-color') || '#0073aa',
+        rejectButtonColor: root.getAttribute('data-reject-button-color') || '#6c757d',
+        settingsButtonColor: root.getAttribute('data-settings-button-color') || '#28a745',
+        size: root.getAttribute('data-size') || 'medium',
+        padding: root.getAttribute('data-padding') || '15px',
+        fontSize: root.getAttribute('data-font-size') || '14px',
+        buttonPadding: root.getAttribute('data-button-padding') || '8px 16px'
+    };
+    
+
+
     // Detect language for RTL support
     var isHebrew = (WPCCM && WPCCM.texts && WPCCM.texts.functional_required && WPCCM.texts.functional_required.indexOf('נדרש') > -1);
     var langAttr = isHebrew ? ' data-lang="he"' : '';
 
-    // Create the small top banner first
+    // Create the small top banner first with dynamic styles
+    var bannerStyle = (designSettings.bannerPosition === 'bottom' ? 'top: auto !important; bottom: 0 !important; border-top: 1px solid #dee2e6 !important; border-bottom: none !important;' : 'top: 0 !important;') +
+    'background-color: ' + designSettings.backgroundColor + ' !important; color: ' + designSettings.textColor + ' !important; padding: ' + designSettings.padding + ' !important; font-size: ' + designSettings.fontSize + ' !important;';
+    
+
+    
     var topBannerHtml = ''+
-    '<div class="wpccm-top-banner"' + langAttr + ' role="dialog" aria-live="polite">\n' +
+    '<div class="wpccm-top-banner"' + langAttr + ' role="dialog" aria-live="polite" style="' + bannerStyle + '">\n' +
     ' <div class="wpccm-top-content">\n' +
-    ' <span class="wpccm-top-text">' + (b.description || texts.cookie_description || 'We use cookies on our website to give you the most relevant experience by remembering your preferences and repeat visits. By clicking "Accept All", you consent to the use of ALL the cookies.') + (b.policy_url ? ' <a href="' + b.policy_url + '" target="_blank" style="color: #0073aa; text-decoration: underline;">' + (texts.learn_more || 'Learn more') + '</a>' : '') + '</span>\n' +
+    ' <span class="wpccm-top-text" style="color: ' + designSettings.textColor + ' !important;">' + (b.description || texts.cookie_description || 'We use cookies on our website to give you the most relevant experience by remembering your preferences and repeat visits. By clicking "Accept All", you consent to the use of ALL the cookies.') + (b.policy_url ? ' <a href="' + b.policy_url + '" target="_blank" style="color: ' + designSettings.acceptButtonColor + ' !important; text-decoration: underline !important;">' + (texts.learn_more || 'Learn more') + '</a>' : '') + '</span>\n' +
     ' <div class="wpccm-top-actions">\n' +
-    ' <button class="wpccm-btn-settings" id="wpccm-settings-btn">' + (texts.cookie_settings || 'Cookie Settings') + '</button>\n' +
-    ' <button class="wpccm-btn-data-deletion" id="wpccm-data-deletion-btn">' + (texts.data_deletion || 'מחיקת היסטוריית נתונים') + '</button>\n' +
-    ' <button class="wpccm-btn-reject" id="wpccm-reject-all-btn">' + (texts.reject_all || 'Reject All') + '</button>\n' +
-    ' <button class="wpccm-btn-accept" id="wpccm-accept-all-btn">' + (texts.accept_all || 'Accept All') + '</button>\n' +
+    ' <button class="wpccm-btn-settings" id="wpccm-settings-btn" style="background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; border: none !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.cookie_settings || 'Cookie Settings') + '</button>\n' +
+    ' <button class="wpccm-btn-data-deletion" id="wpccm-data-deletion-btn" style="background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; border: none !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.data_deletion || 'מחיקת היסטוריית נתונים') + '</button>\n' +
+    ' <button class="wpccm-btn-reject" id="wpccm-reject-all-btn" style="background-color: transparent !important; color: ' + designSettings.textColor + ' !important; border: 1px solid ' + designSettings.textColor + ' !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.reject_all || 'Reject All') + '</button>\n' +
+    ' <button class="wpccm-btn-accept" id="wpccm-accept-all-btn" style="background-color: ' + designSettings.acceptButtonColor + ' !important; color: white !important; border: none !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.accept_all || 'Accept All') + '</button>\n' +
     ' </div>\n' +
     ' </div>\n' +
     '</div>';
@@ -306,6 +328,25 @@ function renderBanner(){
         ' </div>\n' +
         '</div>';
 
+        // Add floating button based on design settings
+        var floatingButtonHtml = '';
+        if (designSettings.floatingPosition) {
+            var floatingButtonStyle = 'position: fixed !important; z-index: 999998 !important; cursor: pointer !important; border: none !important; border-radius: 50% !important; width: 50px !important; height: 50px !important; background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; font-size: 20px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important; transition: all 0.3s ease !important;';
+            
+            // Position the floating button
+            if (designSettings.floatingPosition === 'top-right') {
+                floatingButtonStyle += 'top: 20px !important; right: 20px !important;';
+            } else if (designSettings.floatingPosition === 'top-left') {
+                floatingButtonStyle += 'top: 20px !important; left: 20px !important;';
+            } else if (designSettings.floatingPosition === 'bottom-right') {
+                floatingButtonStyle += 'bottom: 20px !important; right: 20px !important;';
+            } else if (designSettings.floatingPosition === 'bottom-left') {
+                floatingButtonStyle += 'bottom: 20px !important; left: 20px !important;';
+            }
+            
+            floatingButtonHtml = '<button id="wpccm-floating-btn" style="' + floatingButtonStyle + '" title="' + (texts.cookie_settings || 'Cookie Settings') + '">⚙️</button>';
+        }
+        
         // Add data deletion modal
         var dataDeletionModalHtml = ''+
         '<div class="wpccm-modal" id="wpccm-data-deletion-modal" style="display: none;" role="dialog" aria-modal="true">\n' +
@@ -346,7 +387,7 @@ function renderBanner(){
         ' </div>\n' +
         '</div>';
 
-        root.innerHTML = topBannerHtml + modalHtml + dataDeletionModalHtml;
+        root.innerHTML = topBannerHtml + floatingButtonHtml + modalHtml + dataDeletionModalHtml;
         //console.log('WPCCM: Banner HTML inserted into DOM');
         //console.log('WPCCM: Banner root visibility:', window.getComputedStyle(root).display);
         //console.log('WPCCM: Banner root position:', window.getComputedStyle(root).position);
@@ -375,12 +416,18 @@ function renderBanner(){
         var acceptAllBtn = document.getElementById('wpccm-accept-all-btn');
         var rejectAllBtn = document.getElementById('wpccm-reject-all-btn');
         var saveAcceptBtn = document.getElementById('wpccm-save-accept-btn');
+        var floatingBtn = document.getElementById('wpccm-floating-btn');
         var modalCloseBtn = root.querySelector('.wpccm-modal-close');
         var modalOverlay = root.querySelector('.wpccm-modal-overlay');
         var modal = document.getElementById('wpccm-modal');
         var dataDeletionModal = document.getElementById('wpccm-data-deletion-modal');
         
         if(settingsBtn) settingsBtn.addEventListener('click', function(){ 
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+        
+        if(floatingBtn) floatingBtn.addEventListener('click', function(){ 
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
         });

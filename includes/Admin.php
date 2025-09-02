@@ -313,15 +313,15 @@ class WP_CCM_Admin {
             }
             
             // Sanitize colors
-            $design['background_color'] = isset($design['background_color']) ? sanitize_hex_color($design['background_color']) : '#ffffff';
-            $design['text_color'] = isset($design['text_color']) ? sanitize_hex_color($design['text_color']) : '#000000';
+            $design['background_color'] = isset($design['background_color']) ? sanitize_text_field($design['background_color']) : '#ffffff';
+            $design['text_color'] = isset($design['text_color']) ? sanitize_text_field($design['text_color']) : '#000000';
             // Only allow black or white for text color
             if (!in_array($design['text_color'], ['#000000', '#ffffff'])) {
                 $design['text_color'] = '#000000';
             }
-            $design['accept_button_color'] = isset($design['accept_button_color']) ? sanitize_hex_color($design['accept_button_color']) : '#0073aa';
-            $design['reject_button_color'] = isset($design['reject_button_color']) ? sanitize_hex_color($design['reject_button_color']) : '#6c757d';
-            $design['settings_button_color'] = isset($design['settings_button_color']) ? sanitize_hex_color($design['settings_button_color']) : '#28a745';
+            $design['accept_button_color'] = isset($design['accept_button_color']) ? sanitize_text_field($design['accept_button_color']) : '#0073aa';
+            $design['reject_button_color'] = isset($design['reject_button_color']) ? sanitize_text_field($design['reject_button_color']) : '#6c757d';
+            $design['settings_button_color'] = isset($design['settings_button_color']) ? sanitize_text_field($design['settings_button_color']) : '#28a745';
             
             // Sanitize size
             $design['size'] = isset($design['size']) ? sanitize_text_field($design['size']) : 'medium';
@@ -561,6 +561,7 @@ class WP_CCM_Admin {
                     ?>
                     <p class="submit">
                         <button type="button" class="button-primary" id="save-design-settings">שמור הגדרות עיצוב</button>
+                        <button type="button" class="button" id="reset-design-settings" style="margin-right: 10px;">הגדרות ברירת מחדל</button>
                         <span id="design-settings-result" style="margin-left: 10px;"></span>
                     </p>
                 </div>
@@ -769,6 +770,32 @@ class WP_CCM_Admin {
                 });
             });
             
+            // Reset design settings to defaults
+            $('#reset-design-settings').on('click', function() {
+                if (confirm('האם אתה בטוח שברצונך לאפס את כל הגדרות העיצוב לברירת המחדל?')) {
+                    // Reset all form fields to default values
+                    $('#banner_position').val('top');
+                    $('#floating_button_position').val('bottom-right');
+                    $('#background_color').val('#ffffff');
+                    $('#text_color').val('#000000');
+                    $('#accept_button_color').val('#0073aa');
+                    $('#reject_button_color').val('#6c757d');
+                    $('#settings_button_color').val('#28a745');
+                    $('#size').val('medium');
+                    
+                    // Update preview immediately
+                    updatePreviewDefault();
+                    
+                    // Show success message
+                    $('#design-settings-result').html('<span class="success">✓ הוחזרו הגדרות ברירת המחדל</span>');
+                    
+                    // Clear message after 3 seconds
+                    setTimeout(function() {
+                        $('#design-settings-result').html('');
+                    }, 3000);
+                }
+            });
+            
             // Save design settings via AJAX
             $('#save-design-settings').on('click', function() {
                 var $button = $(this);
@@ -802,6 +829,8 @@ class WP_CCM_Admin {
                     size: size
                 };
                 
+
+                
                 $.ajax({
                     url: ajaxurl,
                     type: 'POST',
@@ -822,6 +851,78 @@ class WP_CCM_Admin {
                     }
                 });
             });
+
+            function updatePreviewDefault() {
+                // console.log("WPCCM: updatePreview555555");
+                var bgColor = $("#background_color").val();
+                var textColor = $("#text_color").val();
+                var acceptButtonColor = $("#accept_button_color").val();
+                var rejectButtonColor = $("#reject_button_color").val();
+                var settingsButtonColor = $("#settings_button_color").val();
+                var bannerPosition = $("#banner_position").val();
+                var floatingButtonPosition = $("#floating_button_position").val();
+                var size = $("#size").val();
+                
+                // Update colors
+                $("#wpccm-banner-preview").css({
+                    "background-color": bgColor,
+                    "color": textColor
+                });
+                
+                // Update button colors
+                $("#wpccm-banner-preview button:first").css("background-color", acceptButtonColor); // Accept button
+                $("#wpccm-banner-preview button:nth-child(2)").css("color", textColor).css("border-color", textColor); // Reject button
+                $("#wpccm-banner-preview button:last").css("background-color", settingsButtonColor); // Settings button
+                
+                // Update size with actual visual changes
+                var padding, fontSize, buttonPadding;
+                if (size === "small") {
+                    padding = "8px";
+                    fontSize = "12px";
+                    buttonPadding = "6px 12px";
+                } else if (size === "large") {
+                    padding = "25px";
+                    fontSize = "18px";
+                    buttonPadding = "12px 24px";
+                } else {
+                    // medium
+                    padding = "15px";
+                    fontSize = "14px";
+                    buttonPadding = "8px 16px";
+                }
+                
+                $("#wpccm-banner-preview").css({
+                    "padding": padding
+                });
+                
+                $("#wpccm-banner-preview h4").css({
+                    "font-size": fontSize
+                });
+                
+                $("#wpccm-banner-preview p").css({
+                    "font-size": fontSize
+                });
+                
+                $("#wpccm-banner-preview button").css({
+                    "padding": buttonPadding,
+                    "font-size": fontSize
+                });
+                
+                // Update banner position indicator
+                $("#wpccm-banner-preview").attr("data-position", bannerPosition);
+                
+                // Update floating button position indicator
+                $("#wpccm-banner-preview").attr("data-floating-position", floatingButtonPosition);
+                
+                // Update info text
+                var positionText = bannerPosition === "top" ? "בראש הדף" : "בתחתית הדף";
+                $("#preview-position").text(positionText);
+                $("#preview-floating-position").text(floatingButtonPosition);
+                $("#preview-size").text(size);
+                
+                console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
+            }
+            
         });
         </script>
         
@@ -874,6 +975,18 @@ class WP_CCM_Admin {
         /* Design settings save button styles */
         #save-design-settings {
             margin-right: 10px;
+        }
+        
+        #reset-design-settings {
+            background-color: #f8f9fa;
+            border-color: #6c757d;
+            color: #6c757d;
+        }
+        
+        #reset-design-settings:hover {
+            background-color: #e9ecef;
+            border-color: #5a6268;
+            color: #5a6268;
         }
         
         #design-settings-result {
@@ -1145,30 +1258,35 @@ class WP_CCM_Admin {
         echo '</td>';
         echo '</tr>';
         
-        // Accept Button Color
+        // Button Colors (Horizontal Layout)
         echo '<tr>';
-        echo '<th scope="row"><label for="accept_button_color">צבע כפתור "קבל הכל"</label></th>';
+        echo '<th scope="row">צבעי כפתורים</th>';
         echo '<td>';
-        echo '<input type="color" name="wpccm_options[design][accept_button_color]" id="accept_button_color" value="' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '" />';
-        echo '<p class="description">בחר צבע לכפתור "קבל הכל"</p>';
-        echo '</td>';
-        echo '</tr>';
+        echo '<div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">';
+        
+        // Accept Button Color
+        echo '<div style="display: flex; flex-direction: column; align-items: center; min-width: 120px;">';
+        echo '<label for="accept_button_color" style="margin-bottom: 5px; font-weight: 500; text-align: center;">קבל הכל</label>';
+        echo '<input type="color" name="wpccm_options[design][accept_button_color]" id="accept_button_color" value="' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '" style="width: 60px; height: 40px; border: 2px solid #ddd; border-radius: 4px; cursor: pointer;" />';
+        echo '<small style="margin-top: 3px; color: #666; text-align: center;">כחול</small>';
+        echo '</div>';
         
         // Reject Button Color
-        echo '<tr>';
-        echo '<th scope="row"><label for="reject_button_color">צבע כפתור "דחה"</label></th>';
-        echo '<td>';
-        echo '<input type="color" name="wpccm_options[design][reject_button_color]" id="reject_button_color" value="' . esc_attr(isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d') . '" />';
-        echo '<p class="description">בחר צבע לכפתור "דחה"</p>';
-        echo '</td>';
-        echo '</tr>';
+        echo '<div style="display: flex; flex-direction: column; align-items: center; min-width: 120px;">';
+        echo '<label for="reject_button_color" style="margin-bottom: 5px; font-weight: 500; text-align: center;">דחה</label>';
+        echo '<input type="color" name="wpccm_options[design][reject_button_color]" id="reject_button_color" value="' . esc_attr(isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d') . '" style="width: 60px; height: 40px; border: 2px solid #ddd; border-radius: 4px; cursor: pointer;" />';
+        echo '<small style="margin-top: 3px; color: #666; text-align: center;">אפור</small>';
+        echo '</div>';
         
         // Settings Button Color
-        echo '<tr>';
-        echo '<th scope="row"><label for="settings_button_color">צבע כפתור "הגדרת עוגיות"</label></th>';
-        echo '<td>';
-        echo '<input type="color" name="wpccm_options[design][settings_button_color]" id="settings_button_color" value="' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '" />';
-        echo '<p class="description">בחר צבע לכפתור "הגדרת עוגיות"</p>';
+        echo '<div style="display: flex; flex-direction: column; align-items: center; min-width: 120px;">';
+        echo '<label for="settings_button_color" style="margin-bottom: 5px; font-weight: 500; text-align: center;">הגדרת עוגיות</label>';
+        echo '<input type="color" name="wpccm_options[design][settings_button_color]" id="settings_button_color" value="' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '" style="width: 60px; height: 40px; border: 2px solid #ddd; border-radius: 4px; cursor: pointer;" />';
+        echo '<small style="margin-top: 3px; color: #666; text-align: center;">ירוק</small>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '<p class="description">בחר צבע לכל כפתור בנפרד</p>';
         echo '</td>';
         echo '</tr>';
         
@@ -1227,9 +1345,9 @@ class WP_CCM_Admin {
         // JavaScript for live preview
         echo '<script>
         jQuery(document).ready(function($) {
-            console.log("WPCCM: jQuery(document).ready555555");
+            // console.log("WPCCM: jQuery(document).ready555555");
             function updatePreview() {
-                console.log("WPCCM: updatePreview555555");
+                // console.log("WPCCM: updatePreview555555");
                 var bgColor = $("#background_color").val();
                 var textColor = $("#text_color").val();
                 var acceptButtonColor = $("#accept_button_color").val();
@@ -4065,11 +4183,11 @@ class WP_CCM_Admin {
         // Get and sanitize design settings
         $banner_position = isset($_POST['banner_position']) ? sanitize_text_field($_POST['banner_position']) : 'top';
         $floating_button_position = isset($_POST['floating_button_position']) ? sanitize_text_field($_POST['floating_button_position']) : 'bottom-right';
-        $background_color = isset($_POST['background_color']) ? sanitize_hex_color($_POST['background_color']) : '#ffffff';
-        $text_color = isset($_POST['text_color']) ? sanitize_hex_color($_POST['text_color']) : '#000000';
-        $accept_button_color = isset($_POST['accept_button_color']) ? sanitize_hex_color($_POST['accept_button_color']) : '#0073aa';
-        $reject_button_color = isset($_POST['reject_button_color']) ? sanitize_hex_color($_POST['reject_button_color']) : '#6c757d';
-        $settings_button_color = isset($_POST['settings_button_color']) ? sanitize_hex_color($_POST['settings_button_color']) : '#28a745';
+        $background_color = isset($_POST['background_color']) ? sanitize_text_field($_POST['background_color']) : '#ffffff';
+        $text_color = isset($_POST['text_color']) ? sanitize_text_field($_POST['text_color']) : '#000000';
+        $accept_button_color = isset($_POST['accept_button_color']) ? sanitize_text_field($_POST['accept_button_color']) : '#0073aa';
+        $reject_button_color = isset($_POST['reject_button_color']) ? sanitize_text_field($_POST['reject_button_color']) : '#6c757d';
+        $settings_button_color = isset($_POST['settings_button_color']) ? sanitize_text_field($_POST['settings_button_color']) : '#28a745';
         $size = isset($_POST['size']) ? sanitize_text_field($_POST['size']) : 'medium';
         
         // Validate values
@@ -4102,6 +4220,10 @@ class WP_CCM_Admin {
             'settings_button_color' => $settings_button_color,
             'size' => $size
         ];
+        
+        // Debug logging
+        error_log('WPCCM Debug: About to save options: ' . print_r($current_options, true));
+        
         update_option('wpccm_options', $current_options);
         
         wp_send_json_success([

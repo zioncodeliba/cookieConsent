@@ -292,7 +292,6 @@ class WP_CCM {
     public function __construct() {
         // בדיקה שהפלאגין מחובר לדשבורד לפני הפעלת פונקציונליות
         if (!$this->is_dashboard_connected()) {
-            var_dump("is_dashboard_connected");
             // אם לא מחובר לדשבורד, רק מציג הודעה למנהל
             add_action('admin_notices', [$this, 'show_dashboard_connection_notice']);
             add_action('wp_footer', [$this, 'show_dashboard_connection_warning']);
@@ -330,7 +329,7 @@ class WP_CCM {
     }
 
     public function enqueue_front_assets() {
-        var_dump("enqueue_front_assetsenqueue_front_assetsenqueue_front_assets");
+        // var_dump("enqueue_front_assetsenqueue_front_assetsenqueue_front_assets");
         // Don't load on admin pages to avoid conflicts
         if (is_admin()) {
             return;
@@ -403,6 +402,7 @@ class WP_CCM {
             $config_array['nonce'] = wp_create_nonce('wpccm_ajax');
             $config_array['nonceAction'] = 'wpccm_ajax';
             $wpccm_config = json_encode($config_array);
+            $this->render_banner_container();
             
             echo '<script>
             // Set WPCCM config first
@@ -410,19 +410,19 @@ class WP_CCM {
             
             // Create banner container immediately
             (function() {
-                function createBannerContainer() {
-                    if (!document.getElementById("wpccm-banner-root")) {
-                        var div = document.createElement("div");
-                        div.id = "wpccm-banner-root";
-                        div.setAttribute("aria-live", "polite");
-                        document.body.appendChild(div);
-                    }
-                }
-                if (document.body) {
-                    createBannerContainer();
-                } else {
-                    document.addEventListener("DOMContentLoaded", createBannerContainer);
-                }
+                // function createBannerContainer() {
+                //     if (!document.getElementById("wpccm-banner-root")) {
+                //         var div = document.createElement("div");
+                //         div.id = "wpccm-banner-root";
+                //         div.setAttribute("aria-live", "polite");
+                //         document.body.appendChild(div);
+                //     }
+                // }
+                // if (document.body) {
+                //     createBannerContainer();
+                // } else {
+                //     document.addEventListener("DOMContentLoaded", createBannerContainer);
+                // }
             })();
             </script>';
             
@@ -434,10 +434,10 @@ class WP_CCM {
     }
 
     public function render_banner_container() {
+
     
         // Don't render on admin pages
         if (is_admin()) {
-
             return;
         }
         
@@ -465,9 +465,50 @@ class WP_CCM {
         
         error_log('WPCCM Debug - Connection check passed, rendering banner');
         
-        // Container for the banner. The JS will render markup here.
+        // Get design settings
+        $options = get_option('wpccm_options', []);
+        $design_settings = isset($options['design']) ? $options['design'] : [];
+        
+        // Default design values
+        $banner_position = isset($design_settings['banner_position']) ? $design_settings['banner_position'] : 'top';
+        $floating_button_position = isset($design_settings['floating_button_position']) ? $design_settings['floating_button_position'] : 'bottom-right';
+        $background_color = isset($design_settings['background_color']) ? $design_settings['background_color'] : '#ffffff';
+        $text_color = isset($design_settings['text_color']) ? $design_settings['text_color'] : '#000000';
+        $accept_button_color = isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa';
+        $reject_button_color = isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d';
+        $settings_button_color = isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745';
+        $size = isset($design_settings['size']) ? $design_settings['size'] : 'medium';
+        
+        // Calculate size values
+        $padding = '15px';
+        $font_size = '14px';
+        $button_padding = '8px 16px';
+        
+        if ($size === 'small') {
+            $padding = '8px';
+            $font_size = '12px';
+            $button_padding = '6px 12px';
+        } elseif ($size === 'large') {
+            $padding = '25px';
+            $font_size = '18px';
+            $button_padding = '12px 24px';
+        }
+    
+        // Container for the banner with design settings
         echo '<!-- WPCCM Banner Container - Connection Validated -->';
-        echo '<div id="wpccm-banner-root" aria-live="polite"></div>';
+        echo '<div id="wpccm-banner-root" aria-live="polite" 
+                data-banner-position="' . esc_attr($banner_position) . '"
+                data-floating-position="' . esc_attr($floating_button_position) . '"
+                data-background-color="' . esc_attr($background_color) . '"
+                data-text-color="' . esc_attr($text_color) . '"
+                data-accept-button-color="' . esc_attr($accept_button_color) . '"
+                data-reject-button-color="' . esc_attr($reject_button_color) . '"
+                data-settings-button-color="' . esc_attr($settings_button_color) . '"
+                data-size="' . esc_attr($size) . '"
+                data-padding="' . esc_attr($padding) . '"
+                data-font-size="' . esc_attr($font_size) . '"
+                data-button-padding="' . esc_attr($button_padding) . '">
+             </div>';
 
     }
 
@@ -1276,18 +1317,15 @@ add_action('wp_loaded', function() {
     if (!is_admin() || wp_doing_ajax()) {
         
         if (!isset($GLOBALS['wpccm_instance'])) {
-            var_dump("is_dashboard_connected");
+
             // בדיקה שהפלאגין מחובר לדשבורד לפני טעינה
             $license_key = get_option('wpccm_license_key', '');
-            var_dump($license_key);
-            var_dump(empty($license_key));
+
             if (!empty($license_key)) {
-                var_dump("is_dashboard_connecteddddddddddddddddddd");
                 // בדיקה שהרישיון באמת תקין
                 $dashboard = WP_CCM_Dashboard::get_instance();
                
                 if ($dashboard->test_connection_silent()) {
-                    var_dump("is_dashboard_connectedddddddd");
                     $GLOBALS['wpccm_instance'] = new WP_CCM();
                     
                     error_log('WPCCM Debug - Plugin loaded successfully');
