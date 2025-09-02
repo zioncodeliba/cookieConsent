@@ -618,6 +618,13 @@ class WP_CCM_Admin {
         <script>
         jQuery(document).ready(function($) {
             //console.log('WPCCM: General settings page loaded');
+            
+            // // Update design preview from general settings on page load
+            // setTimeout(function() {
+            //     if (typeof updatePreviewFromGeneralSettings === 'function') {
+            //         updatePreviewFromGeneralSettings();
+            //     }
+            // }, 500);
 
             $('.wpccm-tabs .nav-tab').on('click', function(e) {
                 e.preventDefault();
@@ -636,6 +643,16 @@ class WP_CCM_Admin {
                 // Show corresponding submit button
                 $('[id$="-submit"]').removeClass('active');
                 $('#' + targetTab + '-submit').addClass('active');
+                
+                // // Update design preview if switching to design tab
+                // if (targetTab === 'design') {
+                //     // Wait a bit for the tab content to be visible
+                //     setTimeout(function() {
+                //         if (typeof updatePreviewFromGeneralSettings === 'function') {
+                //             updatePreviewFromGeneralSettings();
+                //         }
+                //     }, 100);
+                // }
             });
             
             // Initialize first tab as active on page load
@@ -751,6 +768,10 @@ class WP_CCM_Admin {
                                     location.reload();
                                 }, 1500);
                             }
+                            // // Update design preview if we're on design tab
+                            // if ($('#design').hasClass('active') && typeof updatePreviewFromGeneralSettings === 'function') {
+                            //     updatePreviewFromGeneralSettings();
+                            // }
                             // Show saved data in console for debugging
                             if (response.data.saved_data) {
                                 //console.log('WPCCM: Saved general settings:', response.data.saved_data);
@@ -785,6 +806,11 @@ class WP_CCM_Admin {
                     
                     // Update preview immediately
                     updatePreviewDefault();
+                    
+                    // // Update preview from general settings as well
+                    // if (typeof updatePreviewFromGeneralSettings === 'function') {
+                    //     updatePreviewFromGeneralSettings();
+                    // }
                     
                     // Show success message
                     $('#design-settings-result').html('<span class="success">✓ הוחזרו הגדרות ברירת המחדל</span>');
@@ -838,6 +864,10 @@ class WP_CCM_Admin {
                     success: function(response) {
                         if (response.success) {
                             $result.html('<span class="success">✓ ' + response.data.message + '</span>');
+                            // // Update preview from general settings after saving design settings
+                            // if (typeof updatePreviewFromGeneralSettings === 'function') {
+                            //     updatePreviewFromGeneralSettings();
+                            // }
                         } else {
                             $result.html('<span class="error">✗ ' + response.data + '</span>');
                         }
@@ -1192,6 +1222,10 @@ class WP_CCM_Admin {
         $opts = WP_CCM_Consent::get_options();
         $design_settings = isset($opts['design']) ? $opts['design'] : [];
         
+        // Get banner content from general settings
+        $banner_title = isset($opts['banner']['title']) ? $opts['banner']['title'] : 'באנר הסכמה לעוגיות';
+        $banner_description = isset($opts['banner']['description']) ? $opts['banner']['description'] : 'אנו משתמשים בעוגיות כדי לשפר את החוויה שלך באתר. המשך הגלישה מהווה הסכמה לשימוש בעוגיות.';
+        
         // Default values
         $banner_position = isset($design_settings['banner_position']) ? $design_settings['banner_position'] : 'top';
         $floating_button_position = isset($design_settings['floating_button_position']) ? $design_settings['floating_button_position'] : 'bottom-right';
@@ -1324,8 +1358,8 @@ class WP_CCM_Admin {
         }
         
         echo '<div id="wpccm-banner-preview" style="padding: ' . $initial_padding . '; border: 2px solid #ddd; border-radius: 4px; margin: 10px 0; background: ' . esc_attr($background_color) . '; color: ' . esc_attr($text_color) . '; transition: all 0.3s ease;" data-position="' . esc_attr($banner_position) . '" data-floating-position="' . esc_attr($floating_button_position) . '">';
-        echo '<h4 style="margin: 0 0 10px 0; font-size: ' . $initial_font_size . ';">באנר הסכמה לעוגיות</h4>';
-        echo '<p style="margin: 0 0 15px 0; font-size: ' . $initial_font_size . '; line-height: 1.4;">אנו משתמשים בעוגיות כדי לשפר את החוויה שלך באתר. המשך הגלישה מהווה הסכמה לשימוש בעוגיות.</p>';
+        echo '<h4 style="margin: 0 0 10px 0; font-size: ' . $initial_font_size . ';">' . esc_html($banner_title) . '</h4>';
+        echo '<p style="margin: 0 0 15px 0; font-size: ' . $initial_font_size . '; line-height: 1.4;">' . esc_html($banner_description) . '</p>';
         echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
         echo '<button style="background: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">קבל הכל</button>';
         echo '<button style="background: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">דחה</button>';
@@ -1338,6 +1372,7 @@ class WP_CCM_Admin {
         echo '<strong>גודל:</strong> <span id="preview-size">' . $size . '</span>';
         echo '</div>';
         echo '<p class="description">התצוגה המקדימה מתעדכנת בזמן אמת כשאתה משנה את ההגדרות</p>';
+        echo '<p class="description" style="margin-top: 10px; font-style: italic; color: #666;">💡 <strong>טיפ:</strong> הכותרת והתיאור בתצוגה המקדימה מגיעים מההגדרות הכלליות. שנה אותם בטאב "הגדרות כלליות" כדי לראות את השינויים כאן.</p>';
         echo '</div>';
         
         echo '</div>'; // Close main container
@@ -1420,8 +1455,29 @@ class WP_CCM_Admin {
             // Update preview on any change
             $("#background_color, #text_color, #accept_button_color, #reject_button_color, #settings_button_color, #banner_position, #floating_button_position, #size").on("change input", updatePreview);
             
+            // // Update preview when general settings change (if we\'re on design tab)
+            // function updatePreviewFromGeneralSettings() {
+            //     // Get values from general settings fields
+            //     var generalTitle = $("input[name=\'wpccm_options[banner][title]\']").val();
+            //     var generalDescription = $("textarea[name=\'wpccm_options[banner][description]\']").val();
+                
+            //     // Update preview content if we have values
+            //     if (generalTitle) {
+            //         $("#wpccm-banner-preview h4").text(generalTitle);
+            //     }
+            //     if (generalDescription) {
+            //         $("#wpccm-banner-preview p").text(generalDescription);
+            //     }
+            // }
+            
+            // // Listen for changes in general settings
+            // $("input[name=\'wpccm_options[banner][title]\'], textarea[name=\'wpccm_options[banner][description]\']").on("input", function() {
+            //     updatePreviewFromGeneralSettings();
+            // });
+            
             // Initial preview
             updatePreview();
+            // updatePreviewFromGeneralSettings();
         });
         </script>';
     }
