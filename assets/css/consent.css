@@ -710,8 +710,6 @@ body.rtl .wpccm-top-actions {
 /* Floating Button Popup */
 .wpccm-floating-popup {
     position: fixed;
-    bottom: 90px;
-    left: 20px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -733,13 +731,23 @@ body.rtl .wpccm-top-actions {
 .wpccm-floating-popup::before {
     content: '';
     position: absolute;
-    bottom: -8px;
-    left: 30px;
+    left: var(--arrow-left, 30px);
     width: 0;
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
+}
+
+/* Arrow pointing down (popup above button) */
+.wpccm-floating-popup.arrow-down::before {
+    bottom: -8px;
     border-top: 8px solid white;
+}
+
+/* Arrow pointing up (popup below button) */
+.wpccm-floating-popup.arrow-up::before {
+    top: -8px;
+    border-bottom: 8px solid white;
 }
 
 .wpccm-floating-popup-content {

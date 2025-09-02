@@ -328,24 +328,24 @@ function renderBanner(){
         ' </div>\n' +
         '</div>';
 
-        // Add floating button based on design settings
-        var floatingButtonHtml = '';
-        if (designSettings.floatingPosition) {
-            var floatingButtonStyle = 'position: fixed !important; z-index: 999998 !important; cursor: pointer !important; border: none !important; border-radius: 50% !important; width: 50px !important; height: 50px !important; background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; font-size: 20px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important; transition: all 0.3s ease !important;';
+        // // Add floating button based on design settings
+        // var floatingButtonHtml = '';
+        // if (designSettings.floatingPosition) {
+        //     var floatingButtonStyle = 'position: fixed !important; z-index: 999998 !important; cursor: pointer !important; border: none !important; border-radius: 50% !important; width: 50px !important; height: 50px !important; background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; font-size: 20px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important; transition: all 0.3s ease !important;';
             
-            // Position the floating button
-            if (designSettings.floatingPosition === 'top-right') {
-                floatingButtonStyle += 'top: 20px !important; right: 20px !important;';
-            } else if (designSettings.floatingPosition === 'top-left') {
-                floatingButtonStyle += 'top: 20px !important; left: 20px !important;';
-            } else if (designSettings.floatingPosition === 'bottom-right') {
-                floatingButtonStyle += 'bottom: 20px !important; right: 20px !important;';
-            } else if (designSettings.floatingPosition === 'bottom-left') {
-                floatingButtonStyle += 'bottom: 20px !important; left: 20px !important;';
-            }
+        //     // Position the floating button
+        //     if (designSettings.floatingPosition === 'top-right') {
+        //         floatingButtonStyle += 'top: 20px !important; right: 20px !important;';
+        //     } else if (designSettings.floatingPosition === 'top-left') {
+        //         floatingButtonStyle += 'top: 20px !important; left: 20px !important;';
+        //     } else if (designSettings.floatingPosition === 'bottom-right') {
+        //         floatingButtonStyle += 'bottom: 20px !important; right: 20px !important;';
+        //     } else if (designSettings.floatingPosition === 'bottom-left') {
+        //         floatingButtonStyle += 'bottom: 20px !important; left: 20px !important;';
+        //     }
             
-            floatingButtonHtml = '<button id="wpccm-floating-btn" style="' + floatingButtonStyle + '" title="' + (texts.cookie_settings || 'Cookie Settings') + '">⚙️</button>';
-        }
+        //     floatingButtonHtml = '<button id="wpccm-floating-btn" style="' + floatingButtonStyle + '" title="' + (texts.cookie_settings || 'Cookie Settings') + '">⚙️</button>';
+        // }
         
         // Add data deletion modal
         var dataDeletionModalHtml = ''+
@@ -387,7 +387,7 @@ function renderBanner(){
         ' </div>\n' +
         '</div>';
 
-        root.innerHTML = topBannerHtml + floatingButtonHtml + modalHtml + dataDeletionModalHtml;
+        root.innerHTML = topBannerHtml  + modalHtml + dataDeletionModalHtml;
         //console.log('WPCCM: Banner HTML inserted into DOM');
         //console.log('WPCCM: Banner root visibility:', window.getComputedStyle(root).display);
         //console.log('WPCCM: Banner root position:', window.getComputedStyle(root).position);
@@ -416,7 +416,7 @@ function renderBanner(){
         var acceptAllBtn = document.getElementById('wpccm-accept-all-btn');
         var rejectAllBtn = document.getElementById('wpccm-reject-all-btn');
         var saveAcceptBtn = document.getElementById('wpccm-save-accept-btn');
-        var floatingBtn = document.getElementById('wpccm-floating-btn');
+        // var floatingBtn = document.getElementById('wpccm-floating-btn');
         var modalCloseBtn = root.querySelector('.wpccm-modal-close');
         var modalOverlay = root.querySelector('.wpccm-modal-overlay');
         var modal = document.getElementById('wpccm-modal');
@@ -427,10 +427,10 @@ function renderBanner(){
             document.body.style.overflow = 'hidden';
         });
         
-        if(floatingBtn) floatingBtn.addEventListener('click', function(){ 
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        });
+        // if(floatingBtn) floatingBtn.addEventListener('click', function(){ 
+        //     modal.style.display = 'flex';
+        //     document.body.style.overflow = 'hidden';
+        // });
         
         if(dataDeletionBtn) dataDeletionBtn.addEventListener('click', function(){ 
             showDataDeletionModal();
@@ -1076,17 +1076,54 @@ function initFloatingButton() {
 
 function createFloatingButton() {
     // Remove existing button if any
-    var existing = document.getElementById('wpccm-floating-button');
+    var existing = document.getElementById('wpccm-floating-btn');
     if (existing) {
         existing.remove();
     }
+
+    var root = document.getElementById('wpccm-banner-root');
+    var texts = (WPCCM && WPCCM.texts) ? WPCCM.texts : {};
+
+    var designSettings = {
+        bannerPosition: root.getAttribute('data-banner-position') || 'top',
+        floatingPosition: root.getAttribute('data-floating-position') || 'bottom-right',
+        backgroundColor: root.getAttribute('data-background-color') || '#ffffff',
+        textColor: root.getAttribute('data-text-color') || '#000000',
+        acceptButtonColor: root.getAttribute('data-accept-button-color') || '#0073aa',
+        rejectButtonColor: root.getAttribute('data-reject-button-color') || '#6c757d',
+        settingsButtonColor: root.getAttribute('data-settings-button-color') || '#28a745',
+        size: root.getAttribute('data-size') || 'medium',
+        padding: root.getAttribute('data-padding') || '15px',
+        fontSize: root.getAttribute('data-font-size') || '14px',
+        buttonPadding: root.getAttribute('data-button-padding') || '8px 16px'
+    };
+
+    var floatingButtonHtml = '';
+        if (designSettings.floatingPosition) {
+            var floatingButtonStyle = 'position: fixed !important; z-index: 999998 !important; cursor: pointer !important; border: none !important; border-radius: 50% !important; width: 50px !important; height: 50px !important; background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; font-size: 20px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important; transition: all 0.3s ease !important;';
+            
+            // Position the floating button
+            if (designSettings.floatingPosition === 'top-right') {
+                floatingButtonStyle += 'top: 20px !important; right: 20px !important;';
+            } else if (designSettings.floatingPosition === 'top-left') {
+                floatingButtonStyle += 'top: 20px !important; left: 20px !important;';
+            } else if (designSettings.floatingPosition === 'bottom-right') {
+                floatingButtonStyle += 'bottom: 20px !important; right: 20px !important;';
+            } else if (designSettings.floatingPosition === 'bottom-left') {
+                floatingButtonStyle += 'bottom: 20px !important; left: 20px !important;';
+            }
+            
+            floatingButtonHtml = '<button id="wpccm-floating-btn" style="' + floatingButtonStyle + '" title="' + (texts.cookie_settings || 'Cookie Settings') + '">🍪</button>';
+        }
     
     // Create floating button
     var button = document.createElement('button');
-    button.id = 'wpccm-floating-button';
-    button.className = 'wpccm-floating-button';
-    button.innerHTML = '🍪'; // Cookie emoji
-    button.title = 'הגדרות עוגיות';
+    // var button = floatingButtonHtml;
+    button.innerHTML = floatingButtonHtml;
+    // button.id = 'wpccm-floating-button';
+    // button.className = 'wpccm-floating-button';
+    // button.innerHTML = '🍪'; // Cookie emoji
+    button.title = 'תתתתתתתתהגדרות עוגיות';
     
     // Create popup
     var popup = document.createElement('div');
@@ -1111,14 +1148,66 @@ function createFloatingButton() {
         }
     });
     
+    // Update popup position on window resize
+    window.addEventListener('resize', function() {
+        var popup = document.getElementById('wpccm-floating-popup');
+        if (popup && popup.classList.contains('show')) {
+            toggleFloatingPopup(); // This will reposition the popup
+        }
+    });
+    
     // Add to body
     document.body.appendChild(button);
     document.body.appendChild(popup);
 }
 
 function toggleFloatingPopup() {
+    console.log("toggleFloatingPopup"); 
     var popup = document.getElementById('wpccm-floating-popup');
-    if (popup) {
+    var button = document.getElementById('wpccm-floating-btn');
+    
+    if (popup && button) {
+        console.log("toggleFloatingPopup55555"); 
+        // Get button position
+        var buttonRect = button.getBoundingClientRect();
+        var popupRect = popup.getBoundingClientRect();
+        
+        // Check if button is in top position
+        var isTopPosition = buttonRect.top < window.innerHeight / 2;
+        
+        // Calculate popup position based on button position
+        var popupTop, popupLeft;
+        
+        if (isTopPosition) {
+            // Button is in top half - show popup below button
+            popupTop = buttonRect.bottom + 10; // 10px gap below
+            popup.classList.add('arrow-up');
+            popup.classList.remove('arrow-down');
+        } else {
+            // Button is in bottom half - show popup above button
+            popupTop = buttonRect.top - popupRect.height - 10; // 10px gap above
+            popup.classList.add('arrow-down');
+            popup.classList.remove('arrow-up');
+        }
+        
+        popupLeft = buttonRect.left + (buttonRect.width / 2) - (popupRect.width / 2);
+        
+        // Ensure popup doesn't go off screen
+        if (popupLeft < 20) popupLeft = 20;
+        if (popupLeft + popupRect.width > window.innerWidth - 20) {
+            popupLeft = window.innerWidth - popupRect.width - 20;
+        }
+        
+        console.log(popupTop);
+        console.log(popupLeft);
+        // Position the popup
+        popup.style.top = popupTop + 'px';
+        popup.style.left = popupLeft + 'px';
+        
+        // Position the arrow to point to the button
+        var arrowLeft = buttonRect.left + (buttonRect.width / 2) - popupLeft - 8; // 8px is half arrow width
+        popup.style.setProperty('--arrow-left', arrowLeft + 'px');
+        
         popup.classList.toggle('show');
     }
 }
