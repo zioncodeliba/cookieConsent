@@ -149,7 +149,7 @@ function wpccm_get_consent_init_script() {
     return "
         // Initialize consent system when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // console.log('WPCCM: Initializing consent system...');
+            // //console.log('WPCCM: Initializing consent system...');
             
             // Check if all required modules are loaded
             if (typeof window.wpccmConsentData === 'undefined') {
@@ -159,15 +159,15 @@ function wpccm_get_consent_init_script() {
             
             // Initialize consent loader if available
             if (typeof window.ccLoader !== 'undefined') {
-                // console.log('WPCCM: Consent loader initialized');
+                // //console.log('WPCCM: Consent loader initialized');
             }
             
             // Initialize cookie janitor if available
             if (typeof window.cookieJanitor !== 'undefined') {
-                // console.log('WPCCM: Cookie janitor initialized');
+                // //console.log('WPCCM: Cookie janitor initialized');
             }
             
-            // console.log('WPCCM: Consent system initialization complete');
+            // //console.log('WPCCM: Consent system initialization complete');
         });
     ";
 }

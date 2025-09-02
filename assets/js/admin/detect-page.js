@@ -6,9 +6,9 @@
 (function($) {
     'use strict';
     
-    // console.log('=== DETECT PAGE JS LOADED ===');
-    // console.log('jQuery available:', typeof $ !== 'undefined');
-    // console.log('jQuery version:', $ ? $.fn.jquery : 'NOT AVAILABLE');
+    // //console.log('=== DETECT PAGE JS LOADED ===');
+    // //console.log('jQuery available:', typeof $ !== 'undefined');
+    // //console.log('jQuery version:', $ ? $.fn.jquery : 'NOT AVAILABLE');
 
     // Configuration
     const CONFIG = {
@@ -36,8 +36,8 @@
      * Initialize the detection page
      */
     function init() {
-        console.log('=== INIT FUNCTION CALLED ===');
-        console.log('Initializing detection page...');
+        //console.log('=== INIT FUNCTION CALLED ===');
+        //console.log('Initializing detection page...');
         
         try {
             // Check if localized data is available
@@ -47,17 +47,17 @@
                 return;
             }
             
-            console.log('wpccmDetectData:', wpccmDetectData);
-            console.log('typeof wpccmDetectData:', typeof wpccmDetectData);
-            console.log('AJAX URL:', wpccmDetectData.ajaxUrl);
-            console.log('Nonce:', wpccmDetectData.nonce);
+            //console.log('wpccmDetectData:', wpccmDetectData);
+            //console.log('typeof wpccmDetectData:', typeof wpccmDetectData);
+            //console.log('AJAX URL:', wpccmDetectData.ajaxUrl);
+            //console.log('Nonce:', wpccmDetectData.nonce);
             
             // Update debug status
             updateDebugStatus('JavaScript loaded, initializing...');
             
             bindEvents();
             setupMessageListener();
-            console.log('WPCCM Detection Page initialized');
+            //console.log('WPCCM Detection Page initialized');
             
             // Update debug status
             updateDebugStatus('Initialization complete');
@@ -71,20 +71,20 @@
      * Update debug status
      */
     function updateDebugStatus(message) {
-        console.log('=== UPDATE DEBUG STATUS ===');
-        console.log('Message:', message);
+        //console.log('=== UPDATE DEBUG STATUS ===');
+        //console.log('Message:', message);
         
         const debugStatus = document.getElementById('wpccm-debug-status');
-        console.log('Debug status element found:', !!debugStatus);
+        //console.log('Debug status element found:', !!debugStatus);
         
         if (debugStatus) {
             debugStatus.textContent = message;
-            console.log('Debug status updated successfully');
+            //console.log('Debug status updated successfully');
         } else {
             console.warn('Debug status element not found');
         }
         
-        console.log('Debug Status:', message);
+        //console.log('Debug Status:', message);
     }
     
     /**
@@ -141,45 +141,45 @@
      * Bind event handlers
      */
     function bindEvents() {
-        console.log('=== BINDING EVENTS ===');
-        console.log('Binding events...');
+        //console.log('=== BINDING EVENTS ===');
+        //console.log('Binding events...');
         
         // Scan button
         const scanButton = $(CONFIG.selectors.scanButton);
-        console.log('Scan button found:', scanButton.length);
-        console.log('Scan button element:', scanButton[0]);
-        console.log('Scan button HTML:', scanButton.prop('outerHTML'));
+        //console.log('Scan button found:', scanButton.length);
+        //console.log('Scan button element:', scanButton[0]);
+        //console.log('Scan button HTML:', scanButton.prop('outerHTML'));
         
         if (scanButton.length > 0) {
             scanButton.on('click', function(e) {
-                console.log('=== SCAN BUTTON CLICK EVENT ===');
-                console.log('Event:', e);
-                console.log('This:', this);
+                //console.log('=== SCAN BUTTON CLICK EVENT ===');
+                //console.log('Event:', e);
+                //console.log('This:', this);
                 handleScan();
             });
-            console.log('Scan button click event bound successfully');
+            //console.log('Scan button click event bound successfully');
         } else {
             console.error('Scan button not found!');
         }
         
         // Select all checkbox
         const selectAllCheckbox = $(CONFIG.selectors.selectAllCheckbox);
-        console.log('Select all checkbox found:', selectAllCheckbox.length);
+        //console.log('Select all checkbox found:', selectAllCheckbox.length);
         selectAllCheckbox.on('change', handleSelectAll);
         
         // Select all button
         const selectAllButton = $(CONFIG.selectors.selectAllButton);
-        console.log('Select all button found:', selectAllButton.length);
+        //console.log('Select all button found:', selectAllButton.length);
         selectAllButton.on('click', selectAllItems);
         
         // Deselect all button
         const deselectAllButton = $(CONFIG.selectors.deselectAllButton);
-        console.log('Deselect all button found:', deselectAllButton.length);
+        //console.log('Deselect all button found:', deselectAllButton.length);
         deselectAllButton.on('click', deselectAllItems);
         
         // Save selected button
         const saveSelectedButton = $(CONFIG.selectors.saveSelectedButton);
-        console.log('Save selected button found:', saveSelectedButton.length);
+        //console.log('Save selected button found:', saveSelectedButton.length);
         saveSelectedButton.on('click', saveSelectedItems);
         
         // Individual item checkboxes
@@ -197,79 +197,79 @@
         // Remove mapping button
         $(document).on('click', '.wpccm-remove-mapping', handleRemoveMappingRow);
         
-        console.log('Events binding complete');
+        //console.log('Events binding complete');
     }
 
     /**
      * Setup message listener for iframe communication
      */
     function setupMessageListener() {
-        console.log('Setting up message listener...');
-        console.log('Listening for message type:', CONFIG.messageType);
+        //console.log('Setting up message listener...');
+        //console.log('Listening for message type:', CONFIG.messageType);
         
         window.addEventListener('message', function(event) {
-            console.log('=== MESSAGE RECEIVED ===');
-            console.log('Event:', event);
-            console.log('Origin:', event.origin);
-            console.log('Data:', event.data);
-            console.log('Data type:', typeof event.data);
-            console.log('=======================');
+            //console.log('=== MESSAGE RECEIVED ===');
+            //console.log('Event:', event);
+            //console.log('Origin:', event.origin);
+            //console.log('Data:', event.data);
+            //console.log('Data type:', typeof event.data);
+            //console.log('=======================');
             
             // Since iframe now has allow-same-origin, we can check origin
             if (event.origin !== window.location.origin) {
-                console.log('Origin mismatch, ignoring message from:', event.origin);
+                //console.log('Origin mismatch, ignoring message from:', event.origin);
                 return;
             }
             
             // Verify the message structure
             if (!event.data || typeof event.data !== 'object') {
-                console.log('Invalid message format, ignoring');
+                //console.log('Invalid message format, ignoring');
                 return;
             }
             
             // Check message type
             if (event.data.type === CONFIG.messageType) {
-                console.log('Valid detection message received:', event.data);
+                //console.log('Valid detection message received:', event.data);
                 handleDetectionResults(event.data.items);
             } else {
-                console.log('Message type mismatch, ignoring:', event.data.type);
+                //console.log('Message type mismatch, ignoring:', event.data.type);
             }
         });
         
-        console.log('Message listener setup complete');
+        //console.log('Message listener setup complete');
     }
 
     /**
      * Handle scan button click
      */
     function handleScan() {
-        console.log('=== SCAN BUTTON CLICKED ===');
-        console.log('Scan button clicked!');
+        //console.log('=== SCAN BUTTON CLICKED ===');
+        //console.log('Scan button clicked!');
         
         if (isScanning) {
-            console.log('Already scanning, ignoring click');
+            //console.log('Already scanning, ignoring click');
             return;
         }
 
         const url = $(CONFIG.selectors.scanUrl).val().trim();
-        console.log('URL to scan:', url);
-        console.log('URL length:', url.length);
+        //console.log('URL to scan:', url);
+        //console.log('URL length:', url.length);
         
         if (!url) {
-            console.log('No URL entered, showing alert');
+            //console.log('No URL entered, showing alert');
             alert('Please enter a URL path to scan.');
             return;
         }
 
         // Validate URL is same-origin
-        console.log('Validating URL is same-origin...');
+        //console.log('Validating URL is same-origin...');
         if (!isSameOrigin(url)) {
-            console.log('URL is not same-origin, showing alert');
+            //console.log('URL is not same-origin, showing alert');
             alert('Please enter a URL path on the same site (e.g., /blog/, /).');
             return;
         }
 
-        console.log('URL validation passed, starting scan...');
+        //console.log('URL validation passed, starting scan...');
         startScan(url);
     }
 
@@ -277,25 +277,25 @@
      * Check if URL is same-origin
      */
     function isSameOrigin(url) {
-        console.log('Checking if URL is same-origin:', url);
-        console.log('Current origin:', window.location.origin);
+        //console.log('Checking if URL is same-origin:', url);
+        //console.log('Current origin:', window.location.origin);
         
         // Remove leading slash if present
         const cleanUrl = url.replace(/^\/+/, '');
-        console.log('Clean URL:', cleanUrl);
+        //console.log('Clean URL:', cleanUrl);
         
         // Check if it's a relative path
         if (!cleanUrl.includes('://') && !cleanUrl.includes('//')) {
-            console.log('URL is relative path - allowing');
+            //console.log('URL is relative path - allowing');
             return true;
         }
         
         // Check if it's the same domain
         try {
             const urlObj = new URL(url, window.location.origin);
-            console.log('URL object origin:', urlObj.origin);
+            //console.log('URL object origin:', urlObj.origin);
             const isSame = urlObj.origin === window.location.origin;
-            console.log('Is same origin:', isSame);
+            //console.log('Is same origin:', isSame);
             return isSame;
         } catch (e) {
             console.error('Error parsing URL:', e);
@@ -307,9 +307,9 @@
      * Start the scanning process
      */
     function startScan(url) {
-        console.log('startScan called with URL:', url);
-        console.log('wpccmDetectData:', wpccmDetectData);
-        console.log('Site URL:', wpccmDetectData.siteUrl);
+        //console.log('startScan called with URL:', url);
+        //console.log('wpccmDetectData:', wpccmDetectData);
+        //console.log('Site URL:', wpccmDetectData.siteUrl);
         
         isScanning = true;
         
@@ -319,18 +319,18 @@
         
         // Build full URL with detection flag
         const fullUrl = wpccmDetectData.siteUrl + url + (url.includes('?') ? '&' : '?') + 'cc_detect=1';
-        console.log('Full URL to load:', fullUrl);
+        //console.log('Full URL to load:', fullUrl);
         
         // Show iframe and load URL
         $(CONFIG.selectors.scanIframeContainer).show();
         $(CONFIG.selectors.scanIframe).attr('src', fullUrl);
-        console.log('Iframe src set to:', fullUrl);
-        console.log('Iframe element:', $(CONFIG.selectors.scanIframe)[0]);
+        //console.log('Iframe src set to:', fullUrl);
+        //console.log('Iframe element:', $(CONFIG.selectors.scanIframe)[0]);
         
         // Add iframe load event listener
         $(CONFIG.selectors.scanIframe).on('load', function() {
-            console.log('Iframe loaded successfully');
-            console.log('Iframe contentWindow:', this.contentWindow);
+            //console.log('Iframe loaded successfully');
+            //console.log('Iframe contentWindow:', this.contentWindow);
         });
         
         // Add iframe error event listener
@@ -341,7 +341,7 @@
         // Set timeout to handle scan completion
         setTimeout(function() {
             if (isScanning) {
-                console.log('Timeout reached, completing scan');
+                //console.log('Timeout reached, completing scan');
                 completeScan();
             }
         }, 10000); // 10 second timeout - increased for debugging
@@ -424,16 +424,16 @@
      * Store detected items via AJAX
      */
     function storeDetectedItems() {
-        console.log('=== STORING DETECTED ITEMS ===');
-        console.log('Items to store:', detectedItems);
-        console.log('AJAX URL:', wpccmDetectData.ajaxUrl);
-        console.log('Nonce:', wpccmDetectData.nonce);
+        //console.log('=== STORING DETECTED ITEMS ===');
+        //console.log('Items to store:', detectedItems);
+        //console.log('AJAX URL:', wpccmDetectData.ajaxUrl);
+        //console.log('Nonce:', wpccmDetectData.nonce);
         
-        console.log('=== SENDING AJAX REQUEST ===');
-        console.log('URL:', wpccmDetectData.ajaxUrl);
-        console.log('Action:', 'cc_detect_store');
-        console.log('Nonce:', wpccmDetectData.nonce);
-        console.log('Items count:', Object.keys(detectedItems).length);
+        //console.log('=== SENDING AJAX REQUEST ===');
+        //console.log('URL:', wpccmDetectData.ajaxUrl);
+        //console.log('Action:', 'cc_detect_store');
+        //console.log('Nonce:', wpccmDetectData.nonce);
+        //console.log('Items count:', Object.keys(detectedItems).length);
         
         $.ajax({
             url: wpccmDetectData.ajaxUrl,
@@ -444,11 +444,11 @@
                 items: JSON.stringify(detectedItems)
             },
             success: function(response) {
-                console.log('=== AJAX SUCCESS ===');
-                console.log('Response:', response);
+                //console.log('=== AJAX SUCCESS ===');
+                //console.log('Response:', response);
                 
                 if (response.success) {
-                    console.log('Items stored successfully:', response.data.count);
+                    //console.log('Items stored successfully:', response.data.count);
                     showMessage('Items stored successfully!', 'success');
                 } else {
                     console.error('Error storing items:', response.data);
@@ -473,8 +473,8 @@
      * Update the results table
      */
     function updateResultsTable() {
-        console.log('=== UPDATING RESULTS TABLE ===');
-        console.log('Detected items:', detectedItems);
+        //console.log('=== UPDATING RESULTS TABLE ===');
+        //console.log('Detected items:', detectedItems);
         
         const tbody = $(CONFIG.selectors.resultsTbody);
         
@@ -486,7 +486,7 @@
         
         // Only show results if we have detected items
         if (Object.keys(detectedItems).length === 0) {
-            console.log('No detected items, showing no results message');
+            //console.log('No detected items, showing no results message');
             tbody.html(`
                 <tr id="wpccm-no-results">
                     <td colspan="8" style="text-align: center; padding: 40px;">
@@ -506,7 +506,7 @@
         // Update select all checkbox
         updateSelectAllCheckbox();
         
-        console.log('Results table updated with', Object.keys(detectedItems).length, 'items');
+        //console.log('Results table updated with', Object.keys(detectedItems).length, 'items');
     }
 
     /**
@@ -643,9 +643,9 @@
         // Show loading state
         button.prop('disabled', true).text('Deleting...');
         
-        console.log('=== DELETING MAPPING ===');
-        console.log('Type:', type);
-        console.log('Identifier:', identifier);
+        //console.log('=== DELETING MAPPING ===');
+        //console.log('Type:', type);
+        //console.log('Identifier:', identifier);
         
         // Send AJAX request
         $.ajax({
@@ -658,11 +658,11 @@
                 identifier: identifier
             },
             success: function(response) {
-                console.log('=== DELETE MAPPING RESPONSE ===');
-                console.log('Response:', response);
+                //console.log('=== DELETE MAPPING RESPONSE ===');
+                //console.log('Response:', response);
                 
                 if (response && response.success === true) {
-                    console.log('Mapping deleted successfully');
+                    //console.log('Mapping deleted successfully');
                     showMessage('Mapping deleted successfully!', 'success');
                     
                     // Remove the row from the table
@@ -724,11 +724,11 @@
         // Show loading state
         $(CONFIG.selectors.saveSelectedButton).prop('disabled', true).text('Saving...');
         
-        console.log('=== SENDING SAVE MAPPINGS AJAX REQUEST ===');
-        console.log('URL:', wpccmDetectData.ajaxUrl);
-        console.log('Action:', 'cc_detect_save_map');
-        console.log('Nonce:', wpccmDetectData.nonce);
-        console.log('Selected items count:', selectedItems.length);
+        //console.log('=== SENDING SAVE MAPPINGS AJAX REQUEST ===');
+        //console.log('URL:', wpccmDetectData.ajaxUrl);
+        //console.log('Action:', 'cc_detect_save_map');
+        //console.log('Nonce:', wpccmDetectData.nonce);
+        //console.log('Selected items count:', selectedItems.length);
         
         // Send AJAX request
         $.ajax({
@@ -740,17 +740,17 @@
                 selected_items: JSON.stringify(selectedItems)
             },
             success: function(response) {
-                console.log('=== SAVE MAPPINGS RESPONSE ===');
-                console.log('Response:', response);
-                console.log('Response type:', typeof response);
-                console.log('Response success property:', response.success);
+                //console.log('=== SAVE MAPPINGS RESPONSE ===');
+                //console.log('Response:', response);
+                //console.log('Response type:', typeof response);
+                //console.log('Response success property:', response.success);
                 
                 // Log response for debugging (removed alert)
                 // alert('Response received: ' + JSON.stringify(response, null, 2));
                 
                 // Check if response is successful
                 if (response && response.success === true) {
-                    console.log('Mappings saved successfully');
+                    //console.log('Mappings saved successfully');
                     showMessage('Mappings saved successfully! Saved ' + (response.data.saved_count || 0) + ' mappings.', 'success');
                     
                     // Add saved items to the mappings table
@@ -986,9 +986,9 @@
 
     // Initialize when DOM is ready
     $(document).ready(function() {
-        console.log('=== DOM READY ===');
-        console.log('jQuery version:', $.fn.jquery);
-        console.log('Document ready, calling init...');
+        //console.log('=== DOM READY ===');
+        //console.log('jQuery version:', $.fn.jquery);
+        //console.log('Document ready, calling init...');
         init();
         
         // Initialize results table with no results
@@ -996,11 +996,11 @@
     });
     
     // Also try to initialize immediately
-    console.log('=== IMMEDIATE INIT ATTEMPT ===');
+    //console.log('=== IMMEDIATE INIT ATTEMPT ===');
     if (document.readyState === 'loading') {
-        console.log('Document still loading, will wait for DOM ready');
+        //console.log('Document still loading, will wait for DOM ready');
     } else {
-        console.log('Document already ready, calling init immediately');
+        //console.log('Document already ready, calling init immediately');
         init();
     }
 

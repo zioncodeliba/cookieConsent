@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.18
+ * Version: 1.0.20
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -13,6 +13,11 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+define('WPCCM_VERSION', '1.0.20');
+
+// Dashboard API Configuration
+define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
+define('WPCCM_DASHBOARD_VERSION', '1.0.20');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
@@ -66,13 +71,10 @@ add_filter('plugin_action_links_' . WPCCM_PLUGIN_BASENAME, function ($links) {
 
 
 // Define plugin constants
-define('WPCCM_VERSION', '1.0.5');
+
 define('WPCCM_URL', plugin_dir_url(__FILE__));
 define('WPCCM_PATH', plugin_dir_path(__FILE__));
 
-// Dashboard API Configuration
-define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.0');
 
 // Include required files
 require_once WPCCM_PATH . 'includes/Consent.php';
@@ -288,9 +290,9 @@ function wpccm_text($key, $default = '') {
 class WP_CCM {
     
     public function __construct() {
-        var_dump('WPCCM: Constructing plugin');
         // בדיקה שהפלאגין מחובר לדשבורד לפני הפעלת פונקציונליות
         if (!$this->is_dashboard_connected()) {
+            var_dump("is_dashboard_connected");
             // אם לא מחובר לדשבורד, רק מציג הודעה למנהל
             add_action('admin_notices', [$this, 'show_dashboard_connection_notice']);
             add_action('wp_footer', [$this, 'show_dashboard_connection_warning']);
@@ -328,6 +330,7 @@ class WP_CCM {
     }
 
     public function enqueue_front_assets() {
+        var_dump("enqueue_front_assetsenqueue_front_assetsenqueue_front_assets");
         // Don't load on admin pages to avoid conflicts
         if (is_admin()) {
             return;
@@ -339,11 +342,8 @@ class WP_CCM {
         }
         
         // בדיקה דינמית שהפלאגין מחובר לדשבורד
-        $api_url = get_option('wpccm_dashboard_api_url', '');
         $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        if (empty($license_key)) {
             return;
         }
         
@@ -447,16 +447,8 @@ class WP_CCM {
         }
         
         // בדיקה דינמית שהפלאגין מחובר לדשבורד
-        $api_url = get_option('wpccm_dashboard_api_url', '');
         $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        // לוג לדיבוג
-        // error_log('WPCCM Debug - API URL: ' . $api_url);
-        // error_log('WPCCM Debug - License Key: ' . substr($license_key, 0, 10) . '...');
-        // error_log('WPCCM Debug - Website ID: ' . $website_id);
-        
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        if (empty($license_key)) {
             error_log('WPCCM Debug - Connection check failed, not rendering banner');
             return;
         }
@@ -495,11 +487,8 @@ class WP_CCM {
         }
         
         // בדיקה דינמית שהפלאגין מחובר לדשבורד
-        $api_url = get_option('wpccm_dashboard_api_url', '');
         $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        if (empty($license_key)) {
             return $tag;
         }
         
@@ -1140,15 +1129,12 @@ class WP_CCM {
         error_log('WPCCM: ajax_log_consent called');
         error_log('WPCCM: POST data: ' . print_r($_POST, true));
         
-        // בדיקה דינמית שהפלאגין מחובר לדשבורד
-        $api_url = get_option('wpccm_dashboard_api_url', '');
-        $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+         // בדיקה דינמית שהפלאגין מחובר לדשבורד
+         $license_key = get_option('wpccm_license_key', '');
+         if (empty($license_key)) {
             wp_send_json_error('הפלאגין לא מחובר לדשבורד מרכזי');
-            return;
-        }
+             return;
+         }
         
         // For now, let's skip nonce verification to test if the rest works
         // TODO: Fix nonce issue later
@@ -1216,14 +1202,11 @@ class WP_CCM {
      * בדיקה שהפלאגין מחובר לדשבורד
      */
     private function is_dashboard_connected() {
-        $api_url = get_option('wpccm_dashboard_api_url', '');
-        $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        // בדיקה בסיסית שיש את כל הפרטים
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
-            return false;
-        }
+        // בדיקה דינמית שהפלאגין מחובר לדשבורד
+         $license_key = get_option('wpccm_license_key', '');
+         if (empty($license_key)) {
+             return false;
+         }
         
         // בדיקה שהרישיון תקין (בדיקה מהירה)
         $dashboard = WP_CCM_Dashboard::get_instance();
@@ -1268,7 +1251,7 @@ if (is_admin()) {
 
 // Initialize new modular components
 add_action('init', function() {
-    error_log('WPCCM: Initializing modular components');
+    // error_log('WPCCM: Initializing modular components');
     
     // Initialize header filtering
     add_action('shutdown', 'wpccm_filter_set_cookie_headers');
@@ -1285,7 +1268,7 @@ add_action('init', function() {
     // Initialize script enqueuing
     add_action('wp_enqueue_scripts', 'wpccm_conditional_enqueue');
     
-    error_log('WPCCM: Modular components initialized');
+    // error_log('WPCCM: Modular components initialized');
 });
 
 // Initialize main plugin for frontend and AJAX
@@ -1293,17 +1276,18 @@ add_action('wp_loaded', function() {
     if (!is_admin() || wp_doing_ajax()) {
         
         if (!isset($GLOBALS['wpccm_instance'])) {
+            var_dump("is_dashboard_connected");
             // בדיקה שהפלאגין מחובר לדשבורד לפני טעינה
-            $api_url = get_option('wpccm_dashboard_api_url', '');
             $license_key = get_option('wpccm_license_key', '');
-            $website_id = get_option('wpccm_website_id', '');
-
-            if (!empty($api_url) && !empty($license_key) && !empty($website_id)) {
+            var_dump($license_key);
+            var_dump(empty($license_key));
+            if (!empty($license_key)) {
+                var_dump("is_dashboard_connecteddddddddddddddddddd");
                 // בדיקה שהרישיון באמת תקין
                 $dashboard = WP_CCM_Dashboard::get_instance();
                
                 if ($dashboard->test_connection_silent()) {
-                    
+                    var_dump("is_dashboard_connectedddddddd");
                     $GLOBALS['wpccm_instance'] = new WP_CCM();
                     
                     error_log('WPCCM Debug - Plugin loaded successfully');

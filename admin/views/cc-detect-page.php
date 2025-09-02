@@ -34,12 +34,12 @@ function wpccm_render_detect_page($detected_items) {
             <div class="wpccm-debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
                 <strong>Debug Info:</strong><br>
                 <span id="wpccm-debug-status">Loading...</span><br>
-                <button type="button" onclick="console.log('wpccmDetectData:', window.wpccmDetectData)">Check Data</button>
-                <button type="button" onclick="console.log('jQuery loaded:', typeof jQuery)">Check jQuery</button>
-                <button type="button" onclick="console.log('Current page hook:', 'settings_page_cc-detect')">Check Hook</button>
-                <button type="button" onclick="console.log('Current URL:', window.location.href)">Check URL</button>
-                <button type="button" onclick="console.log('Page title:', document.title)">Check Title</button>
-                <button type="button" onclick="console.log('Scripts loaded:', document.querySelectorAll('script[src*=&quot;detect-page&quot;]').length)">Check Scripts</button>
+                <button type="button" onclick="//console.log('wpccmDetectData:', window.wpccmDetectData)">Check Data</button>
+                <button type="button" onclick="//console.log('jQuery loaded:', typeof jQuery)">Check jQuery</button>
+                <button type="button" onclick="//console.log('Current page hook:', 'settings_page_cc-detect')">Check Hook</button>
+                <button type="button" onclick="//console.log('Current URL:', window.location.href)">Check URL</button>
+                <button type="button" onclick="//console.log('Page title:', document.title)">Check Title</button>
+                <button type="button" onclick="//console.log('Scripts loaded:', document.querySelectorAll('script[src*=&quot;detect-page&quot;]').length)">Check Scripts</button>
                 <button type="button" onclick="testAjaxSave()">Test AJAX Save</button>
             </div>
             
@@ -134,7 +134,7 @@ function wpccm_render_detect_page($detected_items) {
                     },
                     success: function(response) {
                         alert('Test AJAX Success: ' + JSON.stringify(response, null, 2));
-                        console.log('Test AJAX Success:', response);
+                        //console.log('Test AJAX Success:', response);
                     },
                     error: function(xhr, status, error) {
                         alert('Test AJAX Error: ' + error + '\nStatus: ' + status + '\nResponse: ' + xhr.responseText);
@@ -468,8 +468,8 @@ wpccm_render_detect_page($detected_items);
 // Manual script inclusion for debugging
 ?>
 <script type="text/javascript">
-    console.log('=== MANUAL SCRIPT INCLUSION ===');
-    console.log('Adding script manually...');
+    //console.log('=== MANUAL SCRIPT INCLUSION ===');
+    //console.log('Adding script manually...');
     
     // Create script element
     const script = document.createElement('script');
@@ -478,7 +478,7 @@ wpccm_render_detect_page($detected_items);
     
     // Add load event
     script.onload = function() {
-        console.log('Manual script loaded successfully!');
+        //console.log('Manual script loaded successfully!');
     };
     
     // Add error event
@@ -488,6 +488,6 @@ wpccm_render_detect_page($detected_items);
     
     // Append to head
     document.head.appendChild(script);
-    console.log('Script element added to head');
+    //console.log('Script element added to head');
 </script>
 <?php

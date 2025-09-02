@@ -1,5 +1,5 @@
 (function(){
-    console.log("okokokokinitScanner");
+    //console.log("okokokokinitScanner");
 // Check if required globals exist
 if (typeof WPCCM_SUGGEST === 'undefined') {
     console.warn('WPCCM_SUGGEST global not found');

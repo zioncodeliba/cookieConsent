@@ -433,7 +433,7 @@ function escapeHtml(text) {
 
 function init(){
     var s = currentState();
-    console.log('WPCCM Banner Debug:', {
+    //console.log('WPCCM Banner Debug:', {
         state: s,
         isResolved: isResolved(s),
         consent_necessary: getCookie('consent_necessary'),
@@ -441,10 +441,10 @@ function init(){
     });
     
     if (!isResolved(s)) {
-        console.log('Rendering banner...');
+        //console.log('Rendering banner...');
         renderBanner();
     } else {
-        console.log('Banner already resolved, activating scripts...');
+        //console.log('Banner already resolved, activating scripts...');
         activateDeferredScripts();
     }
 }
@@ -488,16 +488,16 @@ window.WPCCM_API = {
         categories.forEach(function(cat) {
             deleteCookie('consent_' + cat);
         });
-        console.log('Consent reset - banner should appear on next page load');
+        //console.log('Consent reset - banner should appear on next page load');
         location.reload();
     },
     showBanner: function() {
-        console.log('Force showing banner...');
+        //console.log('Force showing banner...');
         renderBanner();
     },
     debugState: function() {
         var s = currentState();
-        console.log('Current banner state debug:', {
+        //console.log('Current banner state debug:', {
             state: s,
             isResolved: isResolved(s),
             allCookies: document.cookie,

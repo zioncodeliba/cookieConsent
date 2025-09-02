@@ -11,7 +11,7 @@
 (function(){
 
     // Add immediate console log to see if script loads at all
-    console.log('WPCCM consent.js script loaded successfully!');
+    //console.log('WPCCM consent.js script loaded successfully!');
 
 // Helper functions
 function getCookie(name) {

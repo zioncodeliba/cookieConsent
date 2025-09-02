@@ -107,7 +107,7 @@ function deleteCookieEverywhere(name, force = false) {
         
         // Check if cookie is protected
         if (!force && isProtectedCookie(name)) {
-            // console.log(`Cookie ${name} is protected, skipping deletion`);
+            // //console.log(`Cookie ${name} is protected, skipping deletion`);
             return false;
         }
         
@@ -130,7 +130,7 @@ function deleteCookieEverywhere(name, force = false) {
             // sessionStorage might be blocked
         }
         
-        // console.log(`Cookie ${name} deleted from everywhere`);
+        // //console.log(`Cookie ${name} deleted from everywhere`);
         return true;
     } catch (error) {
         console.error(`Error deleting cookie ${name}:`, error);
@@ -180,7 +180,7 @@ function sweepCookies(allowedCookieMap) {
             }
         });
         
-        // console.log('Cookie sweep completed:', results);
+        // //console.log('Cookie sweep completed:', results);
         return results;
     } catch (error) {
         console.error('Error during cookie sweep:', error);
@@ -224,7 +224,7 @@ function bootCookieJanitor(allowedCookieMap, options = {}) {
          */
         start() {
             if (this.isRunning) {
-                // console.log('Cookie janitor is already running');
+                // //console.log('Cookie janitor is already running');
                 return;
             }
             
@@ -233,7 +233,7 @@ function bootCookieJanitor(allowedCookieMap, options = {}) {
                 this.performSweep();
             }, this.config.sweepInterval);
             
-            // console.log('Cookie janitor started');
+            // //console.log('Cookie janitor started');
         },
         
         /**
@@ -246,7 +246,7 @@ function bootCookieJanitor(allowedCookieMap, options = {}) {
             }
             
             this.isRunning = false;
-            // console.log('Cookie janitor stopped');
+            // //console.log('Cookie janitor stopped');
         },
         
         /**
@@ -266,7 +266,7 @@ function bootCookieJanitor(allowedCookieMap, options = {}) {
          */
         updateAllowedMap(newMap) {
             this.allowedCookieMap = { ...newMap };
-            // console.log('Cookie janitor map updated:', this.allowedCookieMap);
+            // //console.log('Cookie janitor map updated:', this.allowedCookieMap);
         },
         
         /**
@@ -301,7 +301,7 @@ function stopCookieJanitor() {
     if (cookieJanitor) {
         cookieJanitor.stop();
         cookieJanitor = null;
-        // console.log('Cookie janitor stopped');
+        // //console.log('Cookie janitor stopped');
     }
 }
 
@@ -333,7 +333,7 @@ function getProtectedCookies() {
 function protectCookie(cookieName) {
     if (!JANITOR_CONFIG.protectedCookies.includes(cookieName)) {
         JANITOR_CONFIG.protectedCookies.push(cookieName);
-        // console.log(`Cookie ${cookieName} added to protected list`);
+        // //console.log(`Cookie ${cookieName} added to protected list`);
     }
 }
 
@@ -345,7 +345,7 @@ function unprotectCookie(cookieName) {
     const index = JANITOR_CONFIG.protectedCookies.indexOf(cookieName);
     if (index > -1) {
         JANITOR_CONFIG.protectedCookies.splice(index, 1);
-        // console.log(`Cookie ${cookieName} removed from protected list`);
+        // //console.log(`Cookie ${cookieName} removed from protected list`);
     }
 }
 

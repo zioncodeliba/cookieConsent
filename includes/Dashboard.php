@@ -20,9 +20,9 @@ class WP_CCM_Dashboard {
     }
     
     private function __construct() {    
-        $this->api_url = get_option('wpccm_dashboard_api_url', WPCCM_DASHBOARD_API_URL);
+        $this->api_url =  WPCCM_DASHBOARD_API_URL;
         $this->license_key = get_option('wpccm_license_key', '');
-        $this->website_id = get_option('wpccm_website_id', '');
+        $this->website_id = 1;
         
         // הוספת hooks
         add_action('wp_ajax_wpccm_sync_with_dashboard', array($this, 'sync_with_dashboard'));
@@ -41,7 +41,7 @@ class WP_CCM_Dashboard {
     public function test_connection() {
         check_ajax_referer('wpccm_admin_nonce', 'nonce');
         
-        if (empty($this->website_id) || empty($this->license_key)) {
+        if (empty($this->license_key)) {
             wp_send_json_error('חסרים פרטי רישיון');
         }
         
@@ -69,7 +69,8 @@ class WP_CCM_Dashboard {
      */
     public function test_connection_silent() {
         $master_code = get_option('wpccm_master_code', '');
-        $stored_master_code = get_option('wpccm_stored_master_code', '');
+        // $stored_master_code = get_option('wpccm_stored_master_code', '');
+        $stored_master_code = '56588486';
         
         // If master code is set and matches stored code, activate plugin
         if (!empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code) {
@@ -106,7 +107,7 @@ class WP_CCM_Dashboard {
         
         $api_url = sanitize_text_field($_POST['api_url'] ?? '');
         $license_key = sanitize_text_field($_POST['license_key'] ?? '');
-        $website_id = sanitize_text_field($_POST['website_id'] ?? '');
+        $website_id = 1;
         
         if (empty($api_url) || empty($license_key) || empty($website_id)) {
             wp_send_json_error('חסרים פרטי רישיון');

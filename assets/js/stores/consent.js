@@ -136,7 +136,7 @@ function setConsent(prefs) {
             });
         }
         
-        // console.log('Consent preferences updated:', prefs);
+        // //console.log('Consent preferences updated:', prefs);
     } catch (error) {
         console.error('Error setting consent preferences:', error);
     }
@@ -209,7 +209,7 @@ function clearConsent() {
             });
         }
         
-        // console.log('Consent preferences cleared');
+        // //console.log('Consent preferences cleared');
     } catch (error) {
         console.error('Error clearing consent preferences:', error);
     }

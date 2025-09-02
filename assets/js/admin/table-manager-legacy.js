@@ -9,7 +9,7 @@
  */
 
 (function() {
-    console.log("okokokokinitTableManager");
+    //console.log("okokokokinitTableManager");
     function initTableManager() {
         if (typeof jQuery === 'undefined') {
             console.warn('jQuery not loaded yet, retrying...');
@@ -42,7 +42,7 @@
         // Ensure hidden field reflects current table state
         updateCookieData();
         const cookiesJson = $('#wpccm-cookies-data').val() || '[]';
-        console.log('WPCCM Debug: Saving purge cookies JSON:', cookiesJson);
+        //console.log('WPCCM Debug: Saving purge cookies JSON:', cookiesJson);
         
         $.post(WPCCM_TABLE.ajaxUrl, {
             action: 'wpccm_save_purge_cookies',
@@ -83,9 +83,9 @@
     });
 
     $(document).on('click', '.remove-cookie', function() {
-        console.log('WPCCM Debug: remove-cookie clicked');
+        //console.log('WPCCM Debug: remove-cookie clicked');
         $(this).closest('tr').remove();
-        console.log('WPCCM Debug: Row removed, calling updateCookieData');
+        //console.log('WPCCM Debug: Row removed, calling updateCookieData');
         updateCookieData();
     });
 

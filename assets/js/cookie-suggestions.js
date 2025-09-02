@@ -1,5 +1,5 @@
 (function() {
-    console.log("okokokokinitCookieSuggestions");
+    //console.log("okokokokinitCookieSuggestions");
     function initCookieSuggestions() {
         if (typeof jQuery === 'undefined') {
             console.warn('jQuery not loaded yet, retrying...');

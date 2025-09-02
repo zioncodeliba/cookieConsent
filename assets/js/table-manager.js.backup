@@ -106,31 +106,31 @@
 
     // Sync categories from mapping to purge table
     function syncCategoriesFromMapping() {
-        console.log('WPCCM Debug: syncCategoriesFromMapping called');
+        //console.log('WPCCM Debug: syncCategoriesFromMapping called');
         const tableRows = $('#wpccm-cookies-table tbody tr');
-        console.log('WPCCM Debug: Found cookie table rows:', tableRows.length);
+        //console.log('WPCCM Debug: Found cookie table rows:', tableRows.length);
         
         tableRows.each(function() {
             const cookieName = $(this).find('.cookie-input').val().trim();
             const currentCategory = $(this).find('.category-select').val();
             
-            console.log('WPCCM Debug: Processing cookie:', cookieName, 'current category:', currentCategory);
+            //console.log('WPCCM Debug: Processing cookie:', cookieName, 'current category:', currentCategory);
             
             if (cookieName) {
                 // Get category from handle mapping
                 const mappedCategory = getCategoryFromMapping(cookieName);
-                console.log('WPCCM Debug: Mapped category for', cookieName, ':', mappedCategory);
+                //console.log('WPCCM Debug: Mapped category for', cookieName, ':', mappedCategory);
                 
                 if (mappedCategory && mappedCategory !== currentCategory) {
                     // Update the category select
                     $(this).find('.category-select').val(mappedCategory);
-                    console.log('WPCCM Debug: Updated category for', cookieName, 'from', currentCategory, 'to', mappedCategory);
+                    //console.log('WPCCM Debug: Updated category for', cookieName, 'from', currentCategory, 'to', mappedCategory);
                 }
             }
         });
         
         // Update the data
-        console.log('WPCCM Debug: Calling updateCookieData from syncCategoriesFromMapping');
+        //console.log('WPCCM Debug: Calling updateCookieData from syncCategoriesFromMapping');
         updateCookieData();
     }
 
@@ -238,11 +238,11 @@
 
     // Clear all cookies functionality
     $('#wpccm-clear-all-cookies').on('click', function() {
-        console.log('WPCCM Debug: Clear all cookies button clicked');
+        //console.log('WPCCM Debug: Clear all cookies button clicked');
         if (confirm(texts.confirm_clear_all_cookies || 'Are you sure you want to remove all cookies from the purge list?')) {
-            console.log('WPCCM Debug: User confirmed clear all cookies');
+            //console.log('WPCCM Debug: User confirmed clear all cookies');
             $('#wpccm-cookies-table tbody').empty();
-            console.log('WPCCM Debug: Table body cleared');
+            //console.log('WPCCM Debug: Table body cleared');
             updateCookieData();
             
             // Show success message
@@ -250,17 +250,17 @@
             $('#wpccm-cookie-purge-table').prepend(successMsg);
             setTimeout(function() { successMsg.fadeOut(function() { $(this).remove(); }); }, 3000);
         } else {
-            console.log('WPCCM Debug: User cancelled clear all cookies');
+            //console.log('WPCCM Debug: User cancelled clear all cookies');
         }
     });
 
     // Scan Live Handles functionality
     $('#wpccm-scan-live-handles').on('click', function() {
-        console.log('WPCCM Debug: Scan live handles button clicked');
+        //console.log('WPCCM Debug: Scan live handles button clicked');
         const button = $(this);
         const originalText = button.text();
         
-        console.log('WPCCM Debug: Scan button text:', originalText);
+        //console.log('WPCCM Debug: Scan button text:', originalText);
         button.text(texts.loading || 'Loading...').prop('disabled', true);
         
         // Create iframe instead of popup window to avoid blocking
@@ -281,12 +281,12 @@
                     const scripts = [];
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
                     
-                    console.log('Scanning live site for scripts...');
-                    console.log('Iframe URL:', iframe.src);
-                    console.log('Iframe loaded successfully:', iframeDoc.location.href);
-                    console.log('Found scripts with IDs:', iframeDoc.querySelectorAll('script[id]').length);
-                    console.log('Found scripts with src:', iframeDoc.querySelectorAll('script[src]').length);
-                    console.log('All script IDs:', Array.from(iframeDoc.querySelectorAll('script[id]')).map(s => s.id));
+                    //console.log('Scanning live site for scripts...');
+                    //console.log('Iframe URL:', iframe.src);
+                    //console.log('Iframe loaded successfully:', iframeDoc.location.href);
+                    //console.log('Found scripts with IDs:', iframeDoc.querySelectorAll('script[id]').length);
+                    //console.log('Found scripts with src:', iframeDoc.querySelectorAll('script[src]').length);
+                    //console.log('All script IDs:', Array.from(iframeDoc.querySelectorAll('script[id]')).map(s => s.id));
                     
                     // Look for scripts with IDs (WordPress style)
                     iframeDoc.querySelectorAll('script[id]').forEach(function(script) {
@@ -332,7 +332,7 @@
                     // Remove iframe
                     document.body.removeChild(iframe);
                     
-                    console.log('Found relevant scripts:', scripts);
+                    //console.log('Found relevant scripts:', scripts);
                     
                     if (scripts.length > 0) {
                         showScanResults(scripts);
@@ -430,11 +430,11 @@
 
     // Sync categories functionality
     $('#wpccm-sync-categories-btn').on('click', function() {
-        console.log('WPCCM Debug: Sync categories button clicked');
+        //console.log('WPCCM Debug: Sync categories button clicked');
         const button = $(this);
         const originalText = button.text();
         
-        console.log('WPCCM Debug: Sync categories button text:', originalText);
+        //console.log('WPCCM Debug: Sync categories button text:', originalText);
         button.text('מסנכרן...').prop('disabled', true);
         
         // Run the sync
@@ -480,17 +480,17 @@
     });
 
     // Sync with current cookies functionality  
-    console.log('WPCCM Debug: Setting up sync button click handler');
-    console.log('WPCCM Debug: Button exists:', $('#wpccm-sync-current-cookies-btn').length > 0);
+    //console.log('WPCCM Debug: Setting up sync button click handler');
+    //console.log('WPCCM Debug: Button exists:', $('#wpccm-sync-current-cookies-btn').length > 0);
     
     $(document).on('click', '#wpccm-sync-current-cookies-btn', function() {
-        console.log('WPCCM Debug: Sync button clicked!');
+        //console.log('WPCCM Debug: Sync button clicked!');
         const button = $(this);
         const originalText = button.text();
         
-        console.log('WPCCM Debug: Button text:', originalText);
-        console.log('WPCCM Debug: WPCCM_TABLE available:', typeof WPCCM_TABLE !== 'undefined');
-        console.log('WPCCM Debug: AJAX URL:', WPCCM_TABLE ? WPCCM_TABLE.ajaxUrl : 'undefined');
+        //console.log('WPCCM Debug: Button text:', originalText);
+        //console.log('WPCCM Debug: WPCCM_TABLE available:', typeof WPCCM_TABLE !== 'undefined');
+        //console.log('WPCCM Debug: AJAX URL:', WPCCM_TABLE ? WPCCM_TABLE.ajaxUrl : 'undefined');
         
         button.text(texts.loading || 'Loading...').prop('disabled', true);
         
@@ -507,8 +507,8 @@
         }
         
         // Debug log
-        console.log('WPCCM Debug: Found cookies in browser:', currentCookies);
-        console.log('WPCCM Debug: document.cookie value:', document.cookie);
+        //console.log('WPCCM Debug: Found cookies in browser:', currentCookies);
+        //console.log('WPCCM Debug: document.cookie value:', document.cookie);
         
         // Prepare form data
         let formData = {
@@ -522,7 +522,7 @@
             type: 'POST',
             data: formData,
             success: function(response) {
-                console.log('WPCCM Debug: AJAX success response:', response);
+                //console.log('WPCCM Debug: AJAX success response:', response);
                 if (response.success) {
                     // Add cookies directly to the table instead of showing suggestions
                     addCookiesDirectlyToTable(response.data);
@@ -585,7 +585,7 @@
         
         // Update the manual input field with detected cookies after adding to DOM
         if (cookiesValue && cookiesValue !== 'לא נמצאו עוגיות קשורות') {
-            console.log('Setting cookies for handle:', handle, 'cookies:', cookiesValue);
+            //console.log('Setting cookies for handle:', handle, 'cookies:', cookiesValue);
             setTimeout(function() {
                 row.find('.cookies-input-manual').val(cookiesValue);
                 
@@ -597,19 +597,19 @@
                     dropdown.find('option[value="' + cookie + '"]').prop('selected', true);
                 });
                 
-                console.log('Cookies set for handle:', handle, 'actual value:', row.find('.cookies-input-manual').val());
+                //console.log('Cookies set for handle:', handle, 'actual value:', row.find('.cookies-input-manual').val());
             }, 100);
         } else {
-            console.log('No cookies found for handle:', handle);
+            //console.log('No cookies found for handle:', handle);
         }
         
         updateHandleMapping();
     }
 
     function addCookieRow(cookieName = '', category = '') {
-        console.log('WPCCM Debug: addCookieRow called with:', {cookieName, category});
+        //console.log('WPCCM Debug: addCookieRow called with:', {cookieName, category});
         const tbody = $('#wpccm-cookies-table tbody');
-        console.log('WPCCM Debug: Table body found:', tbody.length > 0);
+        //console.log('WPCCM Debug: Table body found:', tbody.length > 0);
         
         // Auto-detect category if not provided
         if (!category && cookieName) {
@@ -622,7 +622,7 @@
             }
         }
         
-        console.log('WPCCM Debug: Final category:', category);
+        //console.log('WPCCM Debug: Final category:', category);
         const categorySelect = createCategorySelect(category);
         
         const row = $('<tr>' +
@@ -631,11 +631,11 @@
             '<td><button type="button" class="button remove-cookie">' + (texts.remove || 'Remove') + '</button></td>' +
             '</tr>');
         
-        console.log('WPCCM Debug: Row created, appending to table');
+        //console.log('WPCCM Debug: Row created, appending to table');
         tbody.append(row);
-        console.log('WPCCM Debug: Row appended, calling updateCookieData');
+        //console.log('WPCCM Debug: Row appended, calling updateCookieData');
         updateCookieData();
-        console.log('WPCCM Debug: addCookieRow completed');
+        //console.log('WPCCM Debug: addCookieRow completed');
     }
 
     function createCookiesInputContainer(cookiesValue = '', handle = '') {
@@ -727,17 +727,17 @@
     }
 
     function updateCookiesFromDropdown() {
-        console.log('WPCCM Debug: updateCookiesFromDropdown called');
+        //console.log('WPCCM Debug: updateCookiesFromDropdown called');
         // Update manual input when dropdown selection changes
         $(document).on('change', '.cookies-dropdown', function() {
-            console.log('WPCCM Debug: Cookies dropdown changed');
+            //console.log('WPCCM Debug: Cookies dropdown changed');
             const selectedOptions = $(this).find('option:selected');
             const selectedValues = [];
             selectedOptions.each(function() {
                 selectedValues.push($(this).val());
             });
             
-            console.log('WPCCM Debug: Selected values:', selectedValues);
+            //console.log('WPCCM Debug: Selected values:', selectedValues);
             const manualInput = $(this).closest('.cookies-input-container').find('.cookies-input-manual');
             manualInput.val(selectedValues.join(', '));
             
@@ -747,7 +747,7 @@
         
         // Update dropdown when manual input changes and trigger mapping update
         $(document).on('input', '.cookies-input-manual', function() {
-            console.log('WPCCM Debug: Manual cookies input changed');
+            //console.log('WPCCM Debug: Manual cookies input changed');
             const manualValue = $(this).val();
             const dropdown = $(this).closest('.cookies-input-container').find('.cookies-dropdown');
             
@@ -768,14 +768,14 @@
             $(this).trigger('change');
         });
         
-        console.log('WPCCM Debug: updateCookiesFromDropdown completed');
+        //console.log('WPCCM Debug: updateCookiesFromDropdown completed');
     }
 
     function initializeSavedCookieSelections() {
-        console.log('WPCCM Debug: initializeSavedCookieSelections called');
+        //console.log('WPCCM Debug: initializeSavedCookieSelections called');
         // Initialize dropdown selections based on saved manual input values
         const handleTableRows = $('#wpccm-handles-table tbody tr');
-        console.log('WPCCM Debug: Found handle table rows for initialization:', handleTableRows.length);
+        //console.log('WPCCM Debug: Found handle table rows for initialization:', handleTableRows.length);
         
         handleTableRows.each(function() {
             const row = $(this);
@@ -783,7 +783,7 @@
             const manualInput = row.find('.cookies-input-manual');
             const savedCookies = manualInput.val().trim();
             
-            console.log('WPCCM Debug: Processing handle row - dropdown found:', dropdown.length > 0, 'saved cookies:', savedCookies);
+            //console.log('WPCCM Debug: Processing handle row - dropdown found:', dropdown.length > 0, 'saved cookies:', savedCookies);
             
             if (savedCookies && dropdown.length) {
                 // Parse saved cookies and select matching options in dropdown
@@ -794,10 +794,10 @@
                     dropdown.find('option[value="' + cookie + '"]').prop('selected', true);
                 });
                 
-                console.log('WPCCM Debug: Initialized dropdown for cookies:', savedCookies);
+                //console.log('WPCCM Debug: Initialized dropdown for cookies:', savedCookies);
             }
         });
-        console.log('WPCCM Debug: initializeSavedCookieSelections completed');
+        //console.log('WPCCM Debug: initializeSavedCookieSelections completed');
     }
 
     function updateHandleMapping() {
@@ -846,16 +846,16 @@
     }
 
     function updateCookieData() {
-        console.log('WPCCM Debug: updateCookieData called');
+        //console.log('WPCCM Debug: updateCookieData called');
         const cookies = [];
         const tableRows = $('#wpccm-cookies-table tbody tr');
-        console.log('WPCCM Debug: Found table rows:', tableRows.length);
+        //console.log('WPCCM Debug: Found table rows:', tableRows.length);
         
         tableRows.each(function() {
             const cookieName = $(this).find('.cookie-input').val().trim();
             const category = $(this).find('.category-select').val();
             
-            console.log('WPCCM Debug: Processing row - cookie:', cookieName, 'category:', category);
+            //console.log('WPCCM Debug: Processing row - cookie:', cookieName, 'category:', category);
             
             if (cookieName) {
                 cookies.push({
@@ -867,18 +867,18 @@
         
         const jsonData = JSON.stringify(cookies);
         const hiddenField = $('#wpccm-cookies-data');
-        console.log('WPCCM Debug: Hidden field found:', hiddenField.length > 0);
+        //console.log('WPCCM Debug: Hidden field found:', hiddenField.length > 0);
         
         if (hiddenField.length > 0) {
             hiddenField.val(jsonData);
-            console.log('WPCCM Debug: Hidden field value set');
+            //console.log('WPCCM Debug: Hidden field value set');
         } else {
             console.error('WPCCM Debug: Hidden field not found!');
         }
         
-        console.log('WPCCM Debug: updateCookieData - cookies:', cookies);
-        console.log('WPCCM Debug: updateCookieData - JSON data:', jsonData);
-        console.log('WPCCM Debug: updateCookieData - hidden field value:', hiddenField.val());
+        //console.log('WPCCM Debug: updateCookieData - cookies:', cookies);
+        //console.log('WPCCM Debug: updateCookieData - JSON data:', jsonData);
+        //console.log('WPCCM Debug: updateCookieData - hidden field value:', hiddenField.val());
     }
 
     function showScanResults(handles) {
@@ -1071,7 +1071,7 @@
     }
 
     function addCookiesDirectlyToTable(suggestions) {
-        console.log('WPCCM Debug: addCookiesDirectlyToTable called with:', suggestions);
+        //console.log('WPCCM Debug: addCookiesDirectlyToTable called with:', suggestions);
         
         if (!suggestions.length) {
             // Show message that no cookies were found
@@ -1090,17 +1090,17 @@
             }
         });
 
-        console.log('WPCCM Debug: Existing cookies:', existingCookies);
+        //console.log('WPCCM Debug: Existing cookies:', existingCookies);
 
         // Add only new cookies
         let addedCount = 0;
         suggestions.forEach(function(item) {
             if (!existingCookies.includes(item.name)) {
-                console.log('WPCCM Debug: Adding cookie:', item.name, 'with category:', item.category);
+                //console.log('WPCCM Debug: Adding cookie:', item.name, 'with category:', item.category);
                 addCookieRow(item.name, item.category || 'others'); // Use suggestion category or default to others
                 addedCount++;
             } else {
-                console.log('WPCCM Debug: Cookie already exists:', item.name);
+                //console.log('WPCCM Debug: Cookie already exists:', item.name);
             }
         });
 
@@ -1128,7 +1128,7 @@
             }
         }
         
-        console.log('WPCCM Debug: Final cookie data:', $('#wpccm-cookies-data').val());
+        //console.log('WPCCM Debug: Final cookie data:', $('#wpccm-cookies-data').val());
     }
 
     function detectCookieCategory(cookieName) {
@@ -1169,22 +1169,22 @@
     }
 
     function getCategoryFromMapping(cookieName) {
-        console.log('WPCCM Debug: getCategoryFromMapping called for cookie:', cookieName);
+        //console.log('WPCCM Debug: getCategoryFromMapping called for cookie:', cookieName);
         // Check if this cookie is mapped in the handle mapping table
         let foundCategory = '';
         
         const handleTableRows = $('#wpccm-handles-table tbody tr');
-        console.log('WPCCM Debug: Found handle table rows:', handleTableRows.length);
+        //console.log('WPCCM Debug: Found handle table rows:', handleTableRows.length);
         
         handleTableRows.each(function() {
             const cookiesStr = $(this).find('.cookies-input-manual').val().trim();
             const category = $(this).find('.category-select').val();
             
-            console.log('WPCCM Debug: Checking handle row - cookies:', cookiesStr, 'category:', category);
+            //console.log('WPCCM Debug: Checking handle row - cookies:', cookiesStr, 'category:', category);
             
             if (cookiesStr && category) {
                 const cookieList = cookiesStr.split(',').map(c => c.trim()).filter(c => c);
-                console.log('WPCCM Debug: Cookie list for this handle:', cookieList);
+                //console.log('WPCCM Debug: Cookie list for this handle:', cookieList);
                 
                 // Check for exact match or wildcard match
                 const isMatch = cookieList.some(function(mappedCookie) {
@@ -1193,25 +1193,25 @@
                         const pattern = mappedCookie.replace(/\*/g, '.*');
                         const regex = new RegExp('^' + pattern + '$', 'i');
                         const matches = regex.test(cookieName);
-                        console.log('WPCCM Debug: Wildcard match for', mappedCookie, 'with', cookieName, ':', matches);
+                        //console.log('WPCCM Debug: Wildcard match for', mappedCookie, 'with', cookieName, ':', matches);
                         return matches;
                     } else {
                         // Exact match
                         const matches = mappedCookie.toLowerCase() === cookieName.toLowerCase();
-                        console.log('WPCCM Debug: Exact match for', mappedCookie, 'with', cookieName, ':', matches);
+                        //console.log('WPCCM Debug: Exact match for', mappedCookie, 'with', cookieName, ':', matches);
                         return matches;
                     }
                 });
                 
                 if (isMatch) {
                     foundCategory = category;
-                    console.log('WPCCM Debug: Found matching category:', foundCategory);
+                    //console.log('WPCCM Debug: Found matching category:', foundCategory);
                     return false; // Break the loop
                 }
             }
         });
         
-        console.log('WPCCM Debug: getCategoryFromMapping returning:', foundCategory);
+        //console.log('WPCCM Debug: getCategoryFromMapping returning:', foundCategory);
         return foundCategory;
     }
 
@@ -1320,28 +1320,28 @@
     
     // Manual force scan option for debugging
     window.wpccmForceScan = function() {
-        console.log('Manual force scan triggered...');
+        //console.log('Manual force scan triggered...');
         $('#wpccm-scan-live-handles').trigger('click');
     };
-    console.log('Debug: Run wpccmForceScan() in console to manually trigger scan');
+    //console.log('Debug: Run wpccmForceScan() in console to manually trigger scan');
     
     // Make initTableManager available globally
     window.initTableManager = initTableManager;
-    console.log('WPCCM Debug: initTableManager function made available globally');
+    //console.log('WPCCM Debug: initTableManager function made available globally');
     
         }); // End jQuery document ready
-        console.log('WPCCM Debug: jQuery document ready completed');
+        //console.log('WPCCM Debug: jQuery document ready completed');
 
     } // End initTableManager function
     
     // Initialize when DOM is ready
-    console.log('WPCCM Debug: About to initialize table manager');
+    //console.log('WPCCM Debug: About to initialize table manager');
     if (document.readyState === 'loading') {
-        console.log('WPCCM Debug: DOM still loading, adding event listener');
+        //console.log('WPCCM Debug: DOM still loading, adding event listener');
         document.addEventListener('DOMContentLoaded', initTableManager);
     } else {
-        console.log('WPCCM Debug: DOM already ready, calling initTableManager directly');
+        //console.log('WPCCM Debug: DOM already ready, calling initTableManager directly');
         initTableManager();
     }
-    console.log('WPCCM Debug: table-manager.js initialization complete');
+    //console.log('WPCCM Debug: table-manager.js initialization complete');
 })(); // End IIFE

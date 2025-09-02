@@ -479,7 +479,7 @@
 
     
     $(document).on('click', '#wpccm-sync-current-cookies-btn', function() {
-        console.log('WPCCM: Syncing cookies from frontend URL:########################');
+        //console.log('WPCCM: Syncing cookies from frontend URL:########################');
         const button = $(this);
         const originalText = button.text();
         
@@ -489,7 +489,7 @@
         const currentUrl = window.location.href;
         const frontendUrl = currentUrl.replace(/\/wp-admin\/.*$/, '');
         
-        console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
+        //console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
         
         // Show loading message
         $('#wpccm-sync-result').html('<span class="loading">מסרוק עוגיות מהאתר...</span>');
@@ -509,12 +509,12 @@
                 window.removeEventListener('message', messageListener);
                 document.body.removeChild(iframe);
                 
-                console.log('WPCCM: Frontend cookies from iframe:', event.data);
+                //console.log('WPCCM: Frontend cookies from iframe:', event.data);
                 
                 if (event.data.success) {
                     const frontendCookies = event.data.cookies || [];
                     
-                    console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
+                    //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
                     
                     // Show success message
                     $('#wpccm-sync-result').html('<span class="success">נמצאו ' + frontendCookies.length + ' עוגיות מהאתר</span>');
@@ -561,7 +561,7 @@
             if (document.body.contains(iframe)) {
                 document.body.removeChild(iframe);
             }
-            console.log('WPCCM: Iframe method timeout, falling back to AJAX');
+            //console.log('WPCCM: Iframe method timeout, falling back to AJAX');
             fallbackToAjaxMethod();
         }, 5000);
         
@@ -577,12 +577,12 @@
                     _wpnonce: WPCCM_TABLE.nonce
                 },
                 success: function(frontendResponse) {
-                    console.log('WPCCM: Frontend cookies response:', frontendResponse);
+                    //console.log('WPCCM: Frontend cookies response:', frontendResponse);
                     
                     if (frontendResponse.success) {
                         const frontendCookies = frontendResponse.data.cookies || [];
                         
-                        console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
+                        //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
                         
                         // Show success message
                         $result.html('<span class="success">נמצאו ' + frontendCookies.length + ' עוגיות מהאתר</span>');
@@ -616,7 +616,7 @@
                         });
                     } else {
                         // Fallback to current method if frontend call fails
-                        console.log('WPCCM: Frontend call failed, falling back to current method');
+                        //console.log('WPCCM: Frontend call failed, falling back to current method');
                         $('#wpccm-sync-result').html('<span class="error">✗ לא ניתן לגשת לאתר, משתמש בעוגיות האדמין</span>');
                         
                         // Get current cookies from browser (admin cookies)
@@ -631,7 +631,7 @@
                             });
                         }
                         
-                        console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin');
+                        //console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin');
                         
                         // Prepare form data
                         let formData = {
@@ -663,7 +663,7 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.log('WPCCM: Frontend AJAX error:', {xhr: xhr, status: status, error: error});
+                    //console.log('WPCCM: Frontend AJAX error:', {xhr: xhr, status: status, error: error});
                     $('#wpccm-sync-result').html('<span class="error">✗ שגיאה בגישה לאתר, משתמש בעוגיות האדמין</span>');
                     
                     // Fallback to current method
@@ -678,7 +678,7 @@
                         });
                     }
                     
-                    console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin (fallback)');
+                    //console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin (fallback)');
                     
                     let formData = {
                         action: 'wpccm_get_current_non_essential_cookies',

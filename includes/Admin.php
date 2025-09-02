@@ -29,6 +29,9 @@ class WP_CCM_Admin {
         // AJAX handler for saving general settings
         add_action('wp_ajax_wpccm_save_general_settings', [$this, 'ajax_save_general_settings']);
         
+        // AJAX handler for saving design settings
+        add_action('wp_ajax_wpccm_save_design_settings', [$this, 'ajax_save_design_settings']);
+        
         // AJAX handler for getting frontend cookies
         add_action('wp_ajax_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
         add_action('wp_ajax_nopriv_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
@@ -151,7 +154,7 @@ class WP_CCM_Admin {
         // Dashboard Connection Settings (separate options)
         register_setting('wpccm_dashboard_group', 'wpccm_dashboard_api_url');
         register_setting('wpccm_dashboard_group', 'wpccm_license_key');
-        register_setting('wpccm_dashboard_group', 'wpccm_website_id');
+        // register_setting('wpccm_dashboard_group', 'wpccm_website_id');
         
         // Master Code Settings
         register_setting('wpccm_dashboard_group', 'wpccm_master_code');
@@ -168,7 +171,6 @@ class WP_CCM_Admin {
         add_settings_section('wpccm_dashboard_connection', 'אקטיבציה', [$this, 'dashboard_connection_section_callback'], 'wpccm_general');
         add_settings_field('dashboard_api_url', 'כתובת API של הדשבורד', [$this, 'field_dashboard_api_url'], 'wpccm_general', 'wpccm_dashboard_connection');
         add_settings_field('dashboard_license_key', 'מפתח רישיון', [$this, 'field_dashboard_license_key'], 'wpccm_general', 'wpccm_dashboard_connection');
-        add_settings_field('dashboard_website_id', 'מזהה אתר', [$this, 'field_dashboard_website_id'], 'wpccm_general', 'wpccm_dashboard_connection');
         add_settings_field('dashboard_test_connection', 'בדיקת חיבור', [$this, 'field_dashboard_test_connection'], 'wpccm_general', 'wpccm_dashboard_connection');
         add_settings_field('dashboard_master_code', 'קוד מאסטר (אופציונלי)', [$this, 'field_dashboard_master_code'], 'wpccm_general', 'wpccm_dashboard_connection');
         
@@ -294,8 +296,53 @@ class WP_CCM_Admin {
             $out['purge']['cookies'] = [];
         }
 
-        // cookie days
-
+        // Design settings
+        if (isset($out['design']) && is_array($out['design'])) {
+            $design = $out['design'];
+            
+            // Sanitize banner position
+            $design['banner_position'] = isset($design['banner_position']) ? sanitize_text_field($design['banner_position']) : 'top';
+            if (!in_array($design['banner_position'], ['top', 'bottom'])) {
+                $design['banner_position'] = 'top';
+            }
+            
+            // Sanitize floating button position
+            $design['floating_button_position'] = isset($design['floating_button_position']) ? sanitize_text_field($design['floating_button_position']) : 'bottom-right';
+            if (!in_array($design['floating_button_position'], ['top-right', 'top-left', 'bottom-right', 'bottom-left'])) {
+                $design['floating_button_position'] = 'bottom-right';
+            }
+            
+            // Sanitize colors
+            $design['background_color'] = isset($design['background_color']) ? sanitize_hex_color($design['background_color']) : '#ffffff';
+            $design['text_color'] = isset($design['text_color']) ? sanitize_hex_color($design['text_color']) : '#000000';
+            // Only allow black or white for text color
+            if (!in_array($design['text_color'], ['#000000', '#ffffff'])) {
+                $design['text_color'] = '#000000';
+            }
+            $design['accept_button_color'] = isset($design['accept_button_color']) ? sanitize_hex_color($design['accept_button_color']) : '#0073aa';
+            $design['reject_button_color'] = isset($design['reject_button_color']) ? sanitize_hex_color($design['reject_button_color']) : '#6c757d';
+            $design['settings_button_color'] = isset($design['settings_button_color']) ? sanitize_hex_color($design['settings_button_color']) : '#28a745';
+            
+            // Sanitize size
+            $design['size'] = isset($design['size']) ? sanitize_text_field($design['size']) : 'medium';
+            if (!in_array($design['size'], ['small', 'medium', 'large'])) {
+                $design['size'] = 'medium';
+            }
+            
+            $out['design'] = $design;
+        } else {
+            // Set default design settings if not present
+            $out['design'] = [
+                'banner_position' => 'top',
+                'floating_button_position' => 'bottom-right',
+                'background_color' => '#ffffff',
+                'text_color' => '#000000',
+                'accept_button_color' => '#0073aa',
+                'reject_button_color' => '#6c757d',
+                'settings_button_color' => '#28a745',
+                'size' => 'medium'
+            ];
+        }
 
         error_log('WPCCM Debug: sanitize_options returning: ' . print_r($out, true));
         return $out;
@@ -476,6 +523,7 @@ class WP_CCM_Admin {
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
                 <a href="#general" class="nav-tab nav-tab-active" data-tab="general">הגדרות כלליות</a>
+                <a href="#design" class="nav-tab" data-tab="design">הגדרות עיצוב</a>
                 <a href="#purge" class="nav-tab" data-tab="purge">מחיקת עוגיות</a>
                 <a href="#mapping" class="nav-tab" data-tab="mapping">מיפוי סקריפטים</a>
                 <a href="#categoriess" class="nav-tab" data-tab="categoriess">קטגוריות עוגיות</a>
@@ -493,6 +541,27 @@ class WP_CCM_Admin {
                     <p class="submit">
                         <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
                         <span id="general-settings-result" style="margin-left: 10px;"></span>
+                    </p>
+                </div>
+
+                <!-- Tab Content -->
+                <div id="design" class="wpccm-tab-content">
+                    <!-- <h2>הגדרות עיצוב</h2>
+                    <p>תוכן טאב הגדרות עיצוב</p> -->
+                    <?php 
+                    try {
+                        // error_log('WPCCM Debug: About to call render_design_tab');
+                        $this->render_design_tab(); 
+                        // error_log('WPCCM Debug: render_design_tab completed');
+                    } catch (Exception $e) {
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת הגדרות עיצוב: ' . $e->getMessage() . '</p></div>';
+                    } catch (Error $e) {
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת הגדרות עיצוב: ' . $e->getMessage() . '</p></div>';
+                    }
+                    ?>
+                    <p class="submit">
+                        <button type="button" class="button-primary" id="save-design-settings">שמור הגדרות עיצוב</button>
+                        <span id="design-settings-result" style="margin-left: 10px;"></span>
                     </p>
                 </div>
                 
@@ -542,48 +611,18 @@ class WP_CCM_Admin {
                     </p>
                 </div>
                 
-
-                
-                <!-- Submit button for main form (general settings) -->
-                <!-- <div id="general-submit" class="wpccm-tab-content active">
-                    <p class="submit">
-                        <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
-                        <span id="general-settings-result" style="margin-left: 10px;"></span>
-                    </p>
-                </div> -->
-                
-                <!-- Submit button for purge tab -->
-                <!-- <div id="purge-submit" class="wpccm-tab-content">
-                    <p class="submit">
-                        <input type="submit" name="save_purge_settings" class="button-primary" value="שמור הגדרות מחיקת עוגיות" />
-                    </p>
-                </div> -->
-                
-                <!-- Submit button for mapping tab -->
-                <!-- <div id="mapping-submit" class="wpccm-tab-content">
-                    <p class="submit">
-                        <input type="submit" name="save_mapping_settings" class="button-primary" value="שמור הגדרות מיפוי" />
-                    </p>
-                </div> -->
-                
-                <!-- Submit button for categories tab -->
-                <!-- <div id="categories-submit" class="wpccm-tab-content">
-                    <p class="submit">
-                        <input type="submit" name="save_categories_settings" class="button-primary" value="שמור הגדרות קטגוריות" />
-                    </p>
-                </div> -->
             </form>
         </div>
         
         <script>
         jQuery(document).ready(function($) {
-            console.log('WPCCM: General settings page loaded');
+            //console.log('WPCCM: General settings page loaded');
 
             $('.wpccm-tabs .nav-tab').on('click', function(e) {
                 e.preventDefault();
                 
                 var targetTab = $(this).data('tab');
-                console.log('WPCCM Debug: Tab clicked:', targetTab);
+                //console.log('WPCCM Debug: Tab clicked:', targetTab);
                 
                 // Update active tab
                 $('.wpccm-tabs .nav-tab').removeClass('nav-tab-active');
@@ -600,78 +639,84 @@ class WP_CCM_Admin {
             
             // Initialize first tab as active on page load
             var firstTab = $('.wpccm-tabs .nav-tab').first();
-            console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
+            //console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
             if (firstTab.length) {
                 var firstTabId = firstTab.data('tab');
-                console.log('WPCCM Debug: Initializing first tab:', firstTabId);
+                //console.log('WPCCM Debug: Initializing first tab:', firstTabId);
                 
                 // Set first tab as active
                 firstTab.addClass('nav-tab-active');
-                console.log('WPCCM Debug: Added nav-tab-active to first tab');
+                //console.log('WPCCM Debug: Added nav-tab-active to first tab');
                 
                 // Show first tab content
                 $('.wpccm-tab-content').removeClass('active');
                 $('#' + firstTabId).addClass('active');
-                console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
+                //console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
                 
                 // Show first tab submit button
                 $('[id$="-submit"]').removeClass('active');
                 $('#' + firstTabId + '-submit').addClass('active');
-                console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
+                //console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
             } else {
-                console.log('WPCCM Debug: No tabs found!');
+                //console.log('WPCCM Debug: No tabs found!');
             }
             
             // Check if save button exists
             if ($('#save-general-settings').length) {
-                console.log('WPCCM: Save general settings button found');
+                //console.log('WPCCM: Save general settings button found');
             } else {
-                console.log('WPCCM: Save general settings button not found');
+                //console.log('WPCCM: Save general settings button not found');
             }
             
             // Save general settings via AJAX
             $('#save-general-settings').on('click', function() {
-                console.log('WPCCM: Save general settings button clicked');
+                //console.log('WPCCM: Save general settings button clicked');
                 var $button = $(this);
                 var $result = $('#general-settings-result');
                 
                 // Check if result element exists
                 if (!$result.length) {
-                    console.log('WPCCM: Result element not found');
+                    //console.log('WPCCM: Result element not found');
                     return;
                 }
                 
                 // Collect form data
-                var dashboardApiUrl = $('input[name="wpccm_dashboard_api_url"]').val();
+                
                 var licenseKey = $('input[name="wpccm_license_key"]').val();
-                var websiteId = $('input[name="wpccm_website_id"]').val();
+                console.log('WPCCM: License key:', licenseKey);
+                
+                var masterCode = $('input[name="wpccm_master_code"]').val();
                 var bannerTitle = $('input[name="wpccm_options[banner][title]"]').val();
                 var bannerDescription = $('textarea[name="wpccm_options[banner][description]"]').val();
                 var bannerPolicyUrl = $('input[name="wpccm_options[banner][policy_url]"]').val();
                 
-                console.log('WPCCM: Form data collected:', {
-                    dashboardApiUrl: dashboardApiUrl,
-                    licenseKey: licenseKey ? licenseKey.substring(0, 8) + '...' : 'empty',
-                    websiteId: websiteId,
-                    bannerTitle: bannerTitle,
-                    bannerDescription: bannerDescription ? bannerDescription.substring(0, 50) + '...' : 'empty',
-                    bannerPolicyUrl: bannerPolicyUrl
-                });
+                //console.log('WPCCM: Form data collected:', {
+                //     dashboardApiUrl: dashboardApiUrl,
+                //     licenseKey: licenseKey ? licenseKey.substring(0, 8) + '...' : 'empty',
+                //     websiteId: websiteId,
+                //     masterCode: masterCode ? masterCode.substring(0, 3) + '...' : 'empty',
+                //     bannerTitle: bannerTitle,
+                //     bannerDescription: bannerDescription ? bannerDescription.substring(0, 50) + '...' : 'empty',
+                //     bannerPolicyUrl: bannerPolicyUrl
+                // });
                 
-                // Validate required fields
-                if (!dashboardApiUrl || !licenseKey || !websiteId) {
-                    console.log('WPCCM: Validation failed - missing activation fields');
+                // Check if master code is provided and valid
+                var skipDashboard = masterCode === '56588486';
+                
+                // Validate required fields (skip dashboard validation if master code is valid)
+                if (!skipDashboard && (!licenseKey)) {
+                    //console.log('WPCCM: Validation failed - missing activation fields');
                     $result.html('<span class="error">✗ אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)</span>');
                     return;
                 }
                 
                 if (!bannerTitle || !bannerDescription) {
-                    console.log('WPCCM: Validation failed - missing banner fields');
+                    //console.log('WPCCM: Validation failed - missing banner fields');
                     $result.html('<span class="error">✗ אנא מלא את כותרת הבאנר ותיאור הבאנר</span>');
                     return;
                 }
                 
-                console.log('WPCCM: Validation passed, proceeding with save');
+                //console.log('WPCCM: Validation passed, proceeding with save');
                 
                 // Disable button and show loading
                 $button.prop('disabled', true).text('שומר...');
@@ -681,22 +726,22 @@ class WP_CCM_Admin {
                 var formData = {
                     action: 'wpccm_save_general_settings',
                     nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>',
-                    dashboard_api_url: dashboardApiUrl,
                     license_key: licenseKey,
-                    website_id: websiteId,
+                    master_code: masterCode,
+                    skip_dashboard: skipDashboard,
                     banner_title: bannerTitle,
                     banner_description: bannerDescription,
                     banner_policy_url: bannerPolicyUrl
                 };
                 
-                console.log('WPCCM: Form data prepared for AJAX:', formData);
+                //console.log('WPCCM: Form data prepared for AJAX:', formData);
                 
                 $.ajax({
                     url: ajaxurl,
                     type: 'POST',
                     data: formData,
                     success: function(response) {
-                        console.log('WPCCM: AJAX response received:', response);
+                        //console.log('WPCCM: AJAX response received:', response);
                         if (response.success) {
                             $result.html('<span class="success">✓ ' + response.data.message + '</span>');
                             // Reload page if plugin activation status changed
@@ -707,19 +752,73 @@ class WP_CCM_Admin {
                             }
                             // Show saved data in console for debugging
                             if (response.data.saved_data) {
-                                console.log('WPCCM: Saved general settings:', response.data.saved_data);
+                                //console.log('WPCCM: Saved general settings:', response.data.saved_data);
                             }
                         } else {
                             $result.html('<span class="error">✗ ' + response.data + '</span>');
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
+                        //console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
                         $result.html('<span class="error">✗ שגיאה בשמירת ההגדרות</span>');
                     },
                     complete: function() {
                         // Re-enable button
                         $button.prop('disabled', false).text('שמור הגדרות כלליות');
+                    }
+                });
+            });
+            
+            // Save design settings via AJAX
+            $('#save-design-settings').on('click', function() {
+                var $button = $(this);
+                var $result = $('#design-settings-result');
+                
+                // Collect form data
+                var bannerPosition = $('#banner_position').val();
+                var floatingButtonPosition = $('#floating_button_position').val();
+                var backgroundColor = $('#background_color').val();
+                var textColor = $('#text_color').val();
+                var acceptButtonColor = $('#accept_button_color').val();
+                var rejectButtonColor = $('#reject_button_color').val();
+                var settingsButtonColor = $('#settings_button_color').val();
+                var size = $('#size').val();
+                
+                // Disable button and show loading
+                $button.prop('disabled', true).text('שומר...');
+                $result.html('<span class="loading">שומר הגדרות עיצוב...</span>');
+                
+                // Prepare form data
+                var formData = {
+                    action: 'wpccm_save_design_settings',
+                    nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>',
+                    banner_position: bannerPosition,
+                    floating_button_position: floatingButtonPosition,
+                    background_color: backgroundColor,
+                    text_color: textColor,
+                    accept_button_color: acceptButtonColor,
+                    reject_button_color: rejectButtonColor,
+                    settings_button_color: settingsButtonColor,
+                    size: size
+                };
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.success) {
+                            $result.html('<span class="success">✓ ' + response.data.message + '</span>');
+                        } else {
+                            $result.html('<span class="error">✗ ' + response.data + '</span>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $result.html('<span class="error">✗ שגיאה בשמירת הגדרות העיצוב</span>');
+                    },
+                    complete: function() {
+                        // Re-enable button
+                        $button.prop('disabled', false).text('שמור הגדרות עיצוב');
                     }
                 });
             });
@@ -766,6 +865,23 @@ class WP_CCM_Admin {
         }
         
         #general-settings-result span {
+            padding: 5px 10px;
+            border-radius: 3px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+        
+        /* Design settings save button styles */
+        #save-design-settings {
+            margin-right: 10px;
+        }
+        
+        #design-settings-result {
+            font-weight: 500;
+            vertical-align: middle;
+        }
+        
+        #design-settings-result span {
             padding: 5px 10px;
             border-radius: 3px;
             background-color: #f9f9f9;
@@ -866,7 +982,7 @@ class WP_CCM_Admin {
                     loading: "' . wpccm_text('loading') . '"
                 }
             };
-            console.log("WPCCM Debug: WPCCM_MAPPER initialized:", window.WPCCM_MAPPER);
+            //console.log("WPCCM Debug: WPCCM_MAPPER initialized:", window.WPCCM_MAPPER);
         });
         </script>';
         
@@ -959,6 +1075,239 @@ class WP_CCM_Admin {
         // echo '<input type="hidden" name="wpccm_options[script_sources]" id="wpccm-script-sources-data" value="'.esc_attr(json_encode($script_sources)).'" />';
     }
 
+    private function render_design_tab() {
+        $opts = WP_CCM_Consent::get_options();
+        $design_settings = isset($opts['design']) ? $opts['design'] : [];
+        
+        // Default values
+        $banner_position = isset($design_settings['banner_position']) ? $design_settings['banner_position'] : 'top';
+        $floating_button_position = isset($design_settings['floating_button_position']) ? $design_settings['floating_button_position'] : 'bottom-right';
+        $background_color = isset($design_settings['background_color']) ? $design_settings['background_color'] : '#ffffff';
+        $text_color = isset($design_settings['text_color']) ? $design_settings['text_color'] : '#000000';
+        $button_color = isset($design_settings['button_color']) ? $design_settings['button_color'] : '#0073aa';
+        $size = isset($design_settings['size']) ? $design_settings['size'] : 'medium';
+        
+        echo '<div id="wpccm-design-settings">';
+        
+        // Main explanation
+        echo '<div class="wpccm-explanation-box" style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
+        echo '<h4 style="margin: 0 0 8px 0; color: #0073aa;">🎨 הגדרות עיצוב באנר הסכמה</h4>';
+        echo '<p style="margin: 0; color: #555;">התאם את המראה והמיקום של באנר הסכמה לעוגיות</p>';
+        echo '</div>';
+        
+        // Design settings form
+        echo '<table class="form-table">';
+        
+        // Banner Position
+        echo '<tr>';
+        echo '<th scope="row"><label for="banner_position">מיקום הבאנר</label></th>';
+        echo '<td>';
+        echo '<select name="wpccm_options[design][banner_position]" id="banner_position">';
+        echo '<option value="top" ' . selected($banner_position, 'top', false) . '>בראש הדף</option>';
+        echo '<option value="bottom" ' . selected($banner_position, 'bottom', false) . '>בתחתית הדף</option>';
+        echo '</select>';
+        echo '<p class="description">בחר איפה הבאנר יופיע בדף</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Floating Button Position
+        echo '<tr>';
+        echo '<th scope="row"><label for="floating_button_position">מיקום כפתור צף</label></th>';
+        echo '<td>';
+        echo '<select name="wpccm_options[design][floating_button_position]" id="floating_button_position">';
+        echo '<option value="top-right" ' . selected($floating_button_position, 'top-right', false) . '>ימין למעלה</option>';
+        echo '<option value="top-left" ' . selected($floating_button_position, 'top-left', false) . '>שמאל למעלה</option>';
+        echo '<option value="bottom-right" ' . selected($floating_button_position, 'bottom-right', false) . '>ימין למטה</option>';
+        echo '<option value="bottom-left" ' . selected($floating_button_position, 'bottom-left', false) . '>שמאל למטה</option>';
+        echo '</select>';
+        echo '<p class="description">בחר מיקום כפתור הצף לפתיחת הגדרות עוגיות</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Background Color
+        echo '<tr>';
+        echo '<th scope="row"><label for="background_color">צבע רקע</label></th>';
+        echo '<td>';
+        echo '<input type="color" name="wpccm_options[design][background_color]" id="background_color" value="' . esc_attr($background_color) . '" />';
+        echo '<p class="description">בחר צבע רקע לבאנר</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Text Color (Black or White only)
+        echo '<tr>';
+        echo '<th scope="row"><label for="text_color">צבע טקסט</label></th>';
+        echo '<td>';
+        echo '<select name="wpccm_options[design][text_color]" id="text_color">';
+        echo '<option value="#000000" ' . selected($text_color, '#000000', false) . '>שחור</option>';
+        echo '<option value="#ffffff" ' . selected($text_color, '#ffffff', false) . '>לבן</option>';
+        echo '</select>';
+        echo '<p class="description">בחר צבע טקסט לבאנר (שחור או לבן בלבד)</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Accept Button Color
+        echo '<tr>';
+        echo '<th scope="row"><label for="accept_button_color">צבע כפתור "קבל הכל"</label></th>';
+        echo '<td>';
+        echo '<input type="color" name="wpccm_options[design][accept_button_color]" id="accept_button_color" value="' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '" />';
+        echo '<p class="description">בחר צבע לכפתור "קבל הכל"</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Reject Button Color
+        echo '<tr>';
+        echo '<th scope="row"><label for="reject_button_color">צבע כפתור "דחה"</label></th>';
+        echo '<td>';
+        echo '<input type="color" name="wpccm_options[design][reject_button_color]" id="reject_button_color" value="' . esc_attr(isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d') . '" />';
+        echo '<p class="description">בחר צבע לכפתור "דחה"</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Settings Button Color
+        echo '<tr>';
+        echo '<th scope="row"><label for="settings_button_color">צבע כפתור "הגדרת עוגיות"</label></th>';
+        echo '<td>';
+        echo '<input type="color" name="wpccm_options[design][settings_button_color]" id="settings_button_color" value="' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '" />';
+        echo '<p class="description">בחר צבע לכפתור "הגדרת עוגיות"</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        // Size
+        echo '<tr>';
+        echo '<th scope="row"><label for="size">גודל</label></th>';
+        echo '<td>';
+        echo '<select name="wpccm_options[design][size]" id="size">';
+        echo '<option value="small" ' . selected($size, 'small', false) . '>קטן</option>';
+        echo '<option value="medium" ' . selected($size, 'medium', false) . '>בינוני</option>';
+        echo '<option value="large" ' . selected($size, 'large', false) . '>גדול</option>';
+        echo '</select>';
+        echo '<p class="description">בחר גודל לבאנר</p>';
+        echo '</td>';
+        echo '</tr>';
+        
+        echo '</table>';
+        
+        // Preview section
+        echo '<div class="wpccm-preview-section" style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px;">';
+        echo '<h3>תצוגה מקדימה</h3>';
+        // Calculate initial size values
+        $initial_padding = '15px';
+        $initial_font_size = '14px';
+        $initial_button_padding = '8px 16px';
+        
+        if ($size === 'small') {
+            $initial_padding = '8px';
+            $initial_font_size = '12px';
+            $initial_button_padding = '6px 12px';
+        } elseif ($size === 'large') {
+            $initial_padding = '25px';
+            $initial_font_size = '18px';
+            $initial_button_padding = '12px 24px';
+        }
+        
+        echo '<div id="wpccm-banner-preview" style="padding: ' . $initial_padding . '; border: 2px solid #ddd; border-radius: 4px; margin: 10px 0; background: ' . esc_attr($background_color) . '; color: ' . esc_attr($text_color) . '; transition: all 0.3s ease;" data-position="' . esc_attr($banner_position) . '" data-floating-position="' . esc_attr($floating_button_position) . '">';
+        echo '<h4 style="margin: 0 0 10px 0; font-size: ' . $initial_font_size . ';">באנר הסכמה לעוגיות</h4>';
+        echo '<p style="margin: 0 0 15px 0; font-size: ' . $initial_font_size . '; line-height: 1.4;">אנו משתמשים בעוגיות כדי לשפר את החוויה שלך באתר. המשך הגלישה מהווה הסכמה לשימוש בעוגיות.</p>';
+        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        echo '<button style="background: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">קבל הכל</button>';
+        echo '<button style="background: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">דחה</button>';
+        echo '<button style="background: ' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">הגדרת עוגיות</button>';
+        echo '</div>';
+        echo '</div>';
+        echo '<div style="margin-top: 10px; font-size: 12px; color: #666;">';
+        echo '<strong>מיקום באנר:</strong> <span id="preview-position">' . ($banner_position === 'top' ? 'בראש הדף' : 'בתחתית הדף') . '</span> | ';
+        echo '<strong>מיקום כפתור צף:</strong> <span id="preview-floating-position">' . $floating_button_position . '</span> | ';
+        echo '<strong>גודל:</strong> <span id="preview-size">' . $size . '</span>';
+        echo '</div>';
+        echo '<p class="description">התצוגה המקדימה מתעדכנת בזמן אמת כשאתה משנה את ההגדרות</p>';
+        echo '</div>';
+        
+        echo '</div>'; // Close main container
+        
+        // JavaScript for live preview
+        echo '<script>
+        jQuery(document).ready(function($) {
+            console.log("WPCCM: jQuery(document).ready555555");
+            function updatePreview() {
+                console.log("WPCCM: updatePreview555555");
+                var bgColor = $("#background_color").val();
+                var textColor = $("#text_color").val();
+                var acceptButtonColor = $("#accept_button_color").val();
+                var rejectButtonColor = $("#reject_button_color").val();
+                var settingsButtonColor = $("#settings_button_color").val();
+                var bannerPosition = $("#banner_position").val();
+                var floatingButtonPosition = $("#floating_button_position").val();
+                var size = $("#size").val();
+                
+                // Update colors
+                $("#wpccm-banner-preview").css({
+                    "background-color": bgColor,
+                    "color": textColor
+                });
+                
+                // Update button colors
+                $("#wpccm-banner-preview button:first").css("background-color", acceptButtonColor); // Accept button
+                $("#wpccm-banner-preview button:nth-child(2)").css("color", textColor).css("border-color", textColor); // Reject button
+                $("#wpccm-banner-preview button:last").css("background-color", settingsButtonColor); // Settings button
+                
+                // Update size with actual visual changes
+                var padding, fontSize, buttonPadding;
+                if (size === "small") {
+                    padding = "8px";
+                    fontSize = "12px";
+                    buttonPadding = "6px 12px";
+                } else if (size === "large") {
+                    padding = "25px";
+                    fontSize = "18px";
+                    buttonPadding = "12px 24px";
+                } else {
+                    // medium
+                    padding = "15px";
+                    fontSize = "14px";
+                    buttonPadding = "8px 16px";
+                }
+                
+                $("#wpccm-banner-preview").css({
+                    "padding": padding
+                });
+                
+                $("#wpccm-banner-preview h4").css({
+                    "font-size": fontSize
+                });
+                
+                $("#wpccm-banner-preview p").css({
+                    "font-size": fontSize
+                });
+                
+                $("#wpccm-banner-preview button").css({
+                    "padding": buttonPadding,
+                    "font-size": fontSize
+                });
+                
+                // Update banner position indicator
+                $("#wpccm-banner-preview").attr("data-position", bannerPosition);
+                
+                // Update floating button position indicator
+                $("#wpccm-banner-preview").attr("data-floating-position", floatingButtonPosition);
+                
+                // Update info text
+                var positionText = bannerPosition === "top" ? "בראש הדף" : "בתחתית הדף";
+                $("#preview-position").text(positionText);
+                $("#preview-floating-position").text(floatingButtonPosition);
+                $("#preview-size").text(size);
+                
+                console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
+            }
+            
+            // Update preview on any change
+            $("#background_color, #text_color, #accept_button_color, #reject_button_color, #settings_button_color, #banner_position, #floating_button_position, #size").on("change input", updatePreview);
+            
+            // Initial preview
+            updatePreview();
+        });
+        </script>';
+    }
+
     private function render_purge_tab() {
         // error_log('WPCCM: render_purge_tab called');
         
@@ -989,7 +1338,7 @@ class WP_CCM_Admin {
                 others: "' . wpccm_text('others') . '"
             }
         };
-        console.log("WPCCM Debug: WPCCM_TABLE initialized BEFORE script load:", window.WPCCM_TABLE);
+        //console.log("WPCCM Debug: WPCCM_TABLE initialized BEFORE script load:", window.WPCCM_TABLE);
         </script>';
         
         // THEN load the script
@@ -998,15 +1347,15 @@ class WP_CCM_Admin {
         // THEN initialize
         echo '<script>
         jQuery(document).ready(function($) {
-            console.log("WPCCM Debug: jQuery ready in render_purge_tab");
-            console.log("WPCCM Debug: WPCCM_TABLE available:", typeof window.WPCCM_TABLE !== "undefined");
+            //console.log("WPCCM Debug: jQuery ready in render_purge_tab");
+            //console.log("WPCCM Debug: WPCCM_TABLE available:", typeof window.WPCCM_TABLE !== "undefined");
             
             // Initialize table manager
             if (typeof initTableManager === "function") {
-                console.log("WPCCM Debug: initTableManager found, initializing");
+                //console.log("WPCCM Debug: initTableManager found, initializing");
                 initTableManager();
             } else {
-                console.log("WPCCM Debug: initTableManager not found");
+                //console.log("WPCCM Debug: initTableManager not found");
             }
         });
         </script>';
@@ -2995,169 +3344,6 @@ class WP_CCM_Admin {
         <?php
     }
 
-    /**
-     * Render Dashboard Integration Page
-     */
-    public function render_dashboard_page() {
-        // Handle form submission
-        if (isset($_POST['submit_dashboard_settings'])) {
-            $api_url = sanitize_text_field($_POST['dashboard_api_url']);
-            $license_key = sanitize_text_field($_POST['license_key']);
-            $website_id = sanitize_text_field($_POST['website_id']);
-            
-            update_option('wpccm_dashboard_api_url', $api_url);
-            update_option('wpccm_license_key', $license_key);
-            update_option('wpccm_website_id', $website_id);
-            
-            echo '<div class="notice notice-success"><p>הגדרות דשבורד נשמרו בהצלחה!</p></div>';
-        }
-        
-        $api_url = get_option('wpccm_dashboard_api_url', WPCCM_DASHBOARD_API_URL);
-        $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
-        
-        ?>
-        <div class="wrap">
-            <h1>חיבור לדשבורד מרכזי</h1>
-            <p>חבר את הפלאגין לדשבורד המרכזי לסנכרון נתונים וניהול מרכזי.</p>
-            
-            <div class="wpccm-dashboard-settings">
-                <form method="post" action="">
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row">
-                                <label for="dashboard_api_url">כתובת API</label>
-                            </th>
-                            <td>
-                                <input type="url" id="dashboard_api_url" name="dashboard_api_url" 
-                                       value="<?php echo esc_attr($api_url); ?>" class="regular-text" required>
-                                <p class="description">כתובת ה-API של הדשבורד המרכזי</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                <label for="license_key">מפתח רישיון</label>
-                            </th>
-                            <td>
-                                <input type="text" id="license_key" name="license_key" 
-                                       value="<?php echo esc_attr($license_key); ?>" class="regular-text" required>
-                                <p class="description">מפתח הרישיון שלך מהדשבורד</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                <label for="website_id">מזהה אתר</label>
-                            </th>
-                            <td>
-                                <input type="text" id="website_id" name="website_id" 
-                                       value="<?php echo esc_attr($website_id); ?>" class="regular-text" required>
-                                <p class="description">מזהה האתר שלך בדשבורד</p>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <p class="submit">
-                        <input type="submit" name="submit_dashboard_settings" class="button-primary" value="שמור הגדרות">
-                    </p>
-                </form>
-                
-                <hr>
-                
-                <!-- <h2>בדיקת חיבור</h2>
-                <p>בדוק את החיבור לדשבורד:</p>
-                <button type="button" class="button" id="test-connection">בדוק חיבור</button>
-                <div id="connection-result"></div>
-                 -->
-                <hr>
-                
-                <h2>סנכרון נתונים</h2>
-                <p>סנכרן נתונים עם הדשבורד:</p>
-                <button type="button" class="button" id="sync-settings">סנכרן הגדרות</button>
-                <button type="button" class="button" id="sync-stats">סנכרן סטטיסטיקות</button>
-                <div id="sync-result"></div>
-            </div>
-        </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            // Test connection
-            $('#test-connection').on('click', function() {
-                var $result = $('#connection-result');
-                $result.html('<p>בודק חיבור...</p>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'wpccm_test_connection',
-                        nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $result.html('<p style="color: green;">' + response.data + '</p>');
-                        } else {
-                            $result.html('<p style="color: red;">' + response.data + '</p>');
-                        }
-                    },
-                    error: function() {
-                        $result.html('<p style="color: red;">שגיאה בחיבור</p>');
-                    }
-                });
-            });
-            
-            // Sync settings
-            $('#sync-settings').on('click', function() {
-                var $result = $('#sync-result');
-                $result.html('<p>מסנכרן הגדרות...</p>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'wpccm_sync_with_dashboard',
-                        nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $result.html('<p style="color: green;">' + response.data + '</p>');
-                        } else {
-                            $result.html('<p style="color: red;">' + response.data + '</p>');
-                        }
-                    },
-                    error: function() {
-                        $result.html('<p style="color: red;">שגיאה בסנכרון</p>');
-                    }
-                });
-            });
-            
-            // Sync stats
-            $('#sync-stats').on('click', function() {
-                var $result = $('#sync-result');
-                $result.html('<p>מסנכרן סטטיסטיקות...</p>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'wpccm_get_dashboard_stats',
-                        nonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $result.html('<p style="color: green;">סטטיסטיקות התקבלו בהצלחה</p><pre>' + JSON.stringify(response.data, null, 2) + '</pre>');
-                        } else {
-                            $result.html('<p style="color: red;">' + response.data + '</p>');
-                        }
-                    },
-                    error: function() {
-                        $result.html('<p style="color: red;">שגיאה בקבלת סטטיסטיקות</p>');
-                    }
-                });
-            });
-        });
-        </script>
-        <?php
-    }
 
     /**
      * Dashboard Connection Section Callback
@@ -3170,8 +3356,8 @@ class WP_CCM_Admin {
      * Dashboard API URL Field
      */
     public function field_dashboard_api_url() {
-        $value = get_option('wpccm_dashboard_api_url', 'http://127.0.0.1:8888/api');
-        echo '<input type="url" name="wpccm_dashboard_api_url" value="' . esc_attr($value) . '" class="regular-text" placeholder="http://localhost:8888/api" />';
+        $value = WPCCM_DASHBOARD_API_URL;
+        echo '<input type="url" name="wpccm_dashboard_api_url" value="' . esc_attr($value) . '" class="large-text" disabled />';
         echo '<p class="description">כתובת ה-API של הדשבורד המרכזי</p>';
     }
 
@@ -3180,18 +3366,10 @@ class WP_CCM_Admin {
      */
     public function field_dashboard_license_key() {
         $value = get_option('wpccm_license_key', '');
-        echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="regular-text" placeholder="הכנס את מפתח הרישיון" />';
+        echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
         echo '<p class="description">מפתח הרישיון מהדשבורד המרכזי</p>';
     }
 
-    /**
-     * Dashboard Website ID Field
-     */
-    public function field_dashboard_website_id() {
-        $value = get_option('wpccm_website_id', '');
-        echo '<input type="number" name="wpccm_website_id" value="' . esc_attr($value) . '" class="small-text" placeholder="1" />';
-        echo '<p class="description">מזהה האתר מהדשבורד המרכזי</p>';
-    }
 
     /**
      * Dashboard Master Code Field
@@ -3296,9 +3474,8 @@ class WP_CCM_Admin {
                 // קח את הנתונים מהשדות הנוכחיים (לא מהדאטאבייס)
                 var apiUrl = $("input[name=\'wpccm_dashboard_api_url\']").val();
                 var licenseKey = $("input[name=\'wpccm_license_key\']").val();
-                var websiteId = $("input[name=\'wpccm_website_id\']").val();
                 
-                if (!apiUrl || !licenseKey || !websiteId) {
+                if (!licenseKey) {
                     $result.html("<p style=\"color: red;\">אנא מלא את כל השדות לפני בדיקת החיבור</p>");
                     return;
                 }
@@ -3311,7 +3488,7 @@ class WP_CCM_Admin {
                         nonce: "' . wp_create_nonce('wpccm_admin_nonce') . '",
                         api_url: apiUrl,
                         license_key: licenseKey,
-                        website_id: websiteId
+                        website_id: 1
                     },
                     success: function(response) {
                         if (response.success) {
@@ -3343,11 +3520,9 @@ class WP_CCM_Admin {
         }
         
         // Regular activation check
-        $api_url = get_option('wpccm_dashboard_api_url', '');
         $license_key = get_option('wpccm_license_key', '');
-        $website_id = get_option('wpccm_website_id', '');
         
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        if (empty($license_key)) {
             return false;
         }
         
@@ -3729,15 +3904,20 @@ class WP_CCM_Admin {
         // Get and sanitize dashboard settings
         $dashboard_api_url = isset($_POST['dashboard_api_url']) ? sanitize_text_field($_POST['dashboard_api_url']) : '';
         $license_key = isset($_POST['license_key']) ? sanitize_text_field($_POST['license_key']) : '';
-        $website_id = isset($_POST['website_id']) ? sanitize_text_field($_POST['website_id']) : '';
+        $website_id = isset($_POST['website_id']) ? sanitize_text_field($_POST['website_id']) : 1;
+        $master_code = isset($_POST['master_code']) ? sanitize_text_field($_POST['master_code']) : '';
+        $skip_dashboard = isset($_POST['skip_dashboard']) ? (bool)$_POST['skip_dashboard'] : false;
         
         // Get and sanitize banner settings
         $banner_title = isset($_POST['banner_title']) ? sanitize_text_field($_POST['banner_title']) : '';
         $banner_description = isset($_POST['banner_description']) ? sanitize_textarea_field($_POST['banner_description']) : '';
         $banner_policy_url = isset($_POST['banner_policy_url']) ? esc_url_raw($_POST['banner_policy_url']) : '';
         
-        // Validate required fields
-        if (empty($dashboard_api_url) || empty($license_key) || empty($website_id)) {
+        // Check if master code is valid
+        $skip_dashboard_validation = ($master_code === '56588486');
+        
+        // Validate required fields (skip dashboard validation if master code is valid)
+        if (!$skip_dashboard_validation && (empty($dashboard_api_url) || empty($license_key) || empty($website_id))) {
             wp_send_json_error('אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)');
         }
         
@@ -3745,10 +3925,11 @@ class WP_CCM_Admin {
             wp_send_json_error('אנא מלא את כותרת הבאנר ותיאור הבאנר');
         }
         
-        // Save dashboard settings
-        update_option('wpccm_dashboard_api_url', $dashboard_api_url);
+        // Save dashboard settings (only if not skipping dashboard)
+        // if (!$skip_dashboard_validation) {
+        // var_dump("WPCCM: License key:", $license_key);
         update_option('wpccm_license_key', $license_key);
-        update_option('wpccm_website_id', $website_id);
+        // }
         
         // Save banner settings
         $current_options = get_option('wpccm_options', []);
@@ -3757,13 +3938,19 @@ class WP_CCM_Admin {
         $current_options['banner']['policy_url'] = $banner_policy_url;
         update_option('wpccm_options', $current_options);
         
+        // Prepare success message based on whether dashboard is skipped
+        if ($skip_dashboard_validation) {
+            $message = 'ההגדרות הכלליות נשמרו בהצלחה! (דשבורד דולג באמצעות קוד מאסטר) כותרת באנר: ' . $banner_title . ', תיאור: ' . substr($banner_description, 0, 50) . '...';
+        } else {
+            $message = 'ההגדרות הכלליות נשמרו בהצלחה! כתובת API: ' . $dashboard_api_url . ', מפתח רישיון: ' . substr($license_key, 0, 8) . '..., מזהה אתר: ' . $website_id . ', כותרת באנר: ' . $banner_title . ', תיאור: ' . substr($banner_description, 0, 50) . '...';
+        }
+        
         wp_send_json_success([
-            'message' => 'ההגדרות הכלליות נשמרו בהצלחה! כתובת API: ' . $dashboard_api_url . ', מפתח רישיון: ' . substr($license_key, 0, 8) . '..., מזהה אתר: ' . $website_id . ', כותרת באנר: ' . $banner_title . ', תיאור: ' . substr($banner_description, 0, 50) . '...',
+            'message' => $message,
             'activated' => $this->is_plugin_activated(),
             'saved_data' => [
-                'dashboard_api_url' => $dashboard_api_url,
-                'license_key' => substr($license_key, 0, 8) . '...',
-                'website_id' => $website_id,
+                'license_key' => $skip_dashboard_validation ? 'skipped' : substr($license_key, 0, 8) . '...',
+                'master_code_used' => $skip_dashboard_validation,
                 'banner_title' => $banner_title,
                 'banner_description' => substr($banner_description, 0, 50) . '...',
                 'banner_policy_url' => $banner_policy_url
@@ -3858,6 +4045,77 @@ class WP_CCM_Admin {
             'cookies' => $cookies,
             'count' => count($cookies),
             'source' => 'frontend'
+        ]);
+    }
+    
+    /**
+     * AJAX handler for saving design settings
+     */
+    public function ajax_save_design_settings() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
+        }
+        
+        // Get and sanitize design settings
+        $banner_position = isset($_POST['banner_position']) ? sanitize_text_field($_POST['banner_position']) : 'top';
+        $floating_button_position = isset($_POST['floating_button_position']) ? sanitize_text_field($_POST['floating_button_position']) : 'bottom-right';
+        $background_color = isset($_POST['background_color']) ? sanitize_hex_color($_POST['background_color']) : '#ffffff';
+        $text_color = isset($_POST['text_color']) ? sanitize_hex_color($_POST['text_color']) : '#000000';
+        $accept_button_color = isset($_POST['accept_button_color']) ? sanitize_hex_color($_POST['accept_button_color']) : '#0073aa';
+        $reject_button_color = isset($_POST['reject_button_color']) ? sanitize_hex_color($_POST['reject_button_color']) : '#6c757d';
+        $settings_button_color = isset($_POST['settings_button_color']) ? sanitize_hex_color($_POST['settings_button_color']) : '#28a745';
+        $size = isset($_POST['size']) ? sanitize_text_field($_POST['size']) : 'medium';
+        
+        // Validate values
+        if (!in_array($banner_position, ['top', 'bottom'])) {
+            $banner_position = 'top';
+        }
+        
+        if (!in_array($floating_button_position, ['top-right', 'top-left', 'bottom-right', 'bottom-left'])) {
+            $floating_button_position = 'bottom-right';
+        }
+        
+        // Validate text color (only black or white)
+        if (!in_array($text_color, ['#000000', '#ffffff'])) {
+            $text_color = '#000000';
+        }
+        
+        if (!in_array($size, ['small', 'medium', 'large'])) {
+            $size = 'medium';
+        }
+        
+        // Save design settings
+        $current_options = get_option('wpccm_options', []);
+        $current_options['design'] = [
+            'banner_position' => $banner_position,
+            'floating_button_position' => $floating_button_position,
+            'background_color' => $background_color,
+            'text_color' => $text_color,
+            'accept_button_color' => $accept_button_color,
+            'reject_button_color' => $reject_button_color,
+            'settings_button_color' => $settings_button_color,
+            'size' => $size
+        ];
+        update_option('wpccm_options', $current_options);
+        
+        wp_send_json_success([
+            'message' => 'הגדרות העיצוב נשמרו בהצלחה! מיקום באנר: ' . $banner_position . ', מיקום כפתור צף: ' . $floating_button_position . ', גודל: ' . $size,
+            'saved_data' => [
+                'banner_position' => $banner_position,
+                'floating_button_position' => $floating_button_position,
+                'background_color' => $background_color,
+                'text_color' => $text_color,
+                'accept_button_color' => $accept_button_color,
+                'reject_button_color' => $reject_button_color,
+                'settings_button_color' => $settings_button_color,
+                'size' => $size
+            ]
         ]);
     }
 }

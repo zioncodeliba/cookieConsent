@@ -151,11 +151,9 @@ public static function is_plugin_activated() {
     }
     
     // Regular activation check
-    $api_url = get_option('wpccm_dashboard_api_url', '');
     $license_key = get_option('wpccm_license_key', '');
-    $website_id = get_option('wpccm_website_id', '');
     
-    if (empty($api_url) || empty($license_key) || empty($website_id)) {
+    if (empty($license_key)) {
         return false;
     }
     

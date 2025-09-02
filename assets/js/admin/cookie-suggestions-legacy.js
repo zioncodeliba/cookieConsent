@@ -9,7 +9,7 @@
  */
 
 (function() {
-    console.log("okokokokinitCookieSuggestions");
+    //console.log("okokokokinitCookieSuggestions");
     function initCookieSuggestions() {
         if (typeof jQuery === 'undefined') {
             console.warn('jQuery not loaded yet, retrying...');
@@ -110,7 +110,7 @@
         }
 
         // TODO: Implement addSelectedCookies functionality
-        console.log('Selected cookies:', selectedCookies);
+        //console.log('Selected cookies:', selectedCookies);
     }
 
     // TODO: REFACTORING NOTES:

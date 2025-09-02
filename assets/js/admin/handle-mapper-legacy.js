@@ -9,7 +9,7 @@
  */
 
 (function() {
-    console.log("okokokokinitHandleMapper");
+    //console.log("okokokokinitHandleMapper");
     function initHandleMapper() {
         if (typeof jQuery === 'undefined') {
             console.warn('jQuery not loaded yet, retrying...');
@@ -18,7 +18,7 @@
         }
         
         if (typeof WPCCM_MAPPER === 'undefined') {
-            console.warn('WPCCM_MAPPER global not found');
+            // console.warn('WPCCM_MAPPER global not found');
             return;
         }
         
