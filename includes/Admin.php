@@ -524,9 +524,9 @@ class WP_CCM_Admin {
             <nav class="nav-tab-wrapper wpccm-tabs">
                 <a href="#general" class="nav-tab nav-tab-active" data-tab="general">הגדרות כלליות</a>
                 <a href="#design" class="nav-tab" data-tab="design">הגדרות עיצוב</a>
-                <a href="#purge" class="nav-tab" data-tab="purge">מחיקת עוגיות</a>
+                <a href="#purge" class="nav-tab" data-tab="purge">מיפוי עוגיות</a>
                 <a href="#mapping" class="nav-tab" data-tab="mapping">מיפוי סקריפטים</a>
-                <a href="#categoriess" class="nav-tab" data-tab="categoriess">קטגוריות עוגיות</a>
+                <a href="#categoriess" class="nav-tab" data-tab="categoriess">קטגוריות</a>
             </nav>
             
             <form method="post" action="options.php">
@@ -535,8 +535,7 @@ class WP_CCM_Admin {
                 
                 <!-- Tab Content -->
                 <div id="general" class="wpccm-tab-content active">
-                    <!-- <h2>הגדרות כלליות</h2>
-                    <p>תוכן טאב הגדרות כלליות</p> -->
+                    
                     <?php do_settings_sections('wpccm_general'); ?>
                     <p class="submit">
                         <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
@@ -546,13 +545,10 @@ class WP_CCM_Admin {
 
                 <!-- Tab Content -->
                 <div id="design" class="wpccm-tab-content">
-                    <!-- <h2>הגדרות עיצוב</h2>
-                    <p>תוכן טאב הגדרות עיצוב</p> -->
+                    
                     <?php 
                     try {
-                        // error_log('WPCCM Debug: About to call render_design_tab');
                         $this->render_design_tab(); 
-                        // error_log('WPCCM Debug: render_design_tab completed');
                     } catch (Exception $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת הגדרות עיצוב: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
@@ -567,13 +563,9 @@ class WP_CCM_Admin {
                 </div>
                 
                 <div id="purge" class="wpccm-tab-content">
-                    <!-- <h2>מחיקת עוגיות</h2>
-                    <p>תוכן טאב מחיקת עוגיות</p> -->
                     <?php 
                     try {
-                        // error_log('WPCCM Debug: About to call render_purge_tab');
                         $this->render_purge_tab(); 
-                        // error_log('WPCCM Debug: render_purge_tab completed');
                     } catch (Exception $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת מחיקת עוגיות: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
@@ -1483,9 +1475,7 @@ class WP_CCM_Admin {
     }
 
     private function render_purge_tab() {
-        // error_log('WPCCM: render_purge_tab called');
         
-        // Set up WPCCM_TABLE data FIRST
         echo '<script>
         window.WPCCM_TABLE = {
             ajaxUrl: "' . admin_url('admin-ajax.php') . '",

@@ -5,8 +5,8 @@ if (!defined('ABSPATH')) {
 ?>
 
 <div class="wpccm-advanced-scanner-section">
-    <h2>סורק סקריפטים מתקדם</h2>
-    <p class="description">סרוק ונהל סקריפטים באתר שלך עם טכנולוגיה מתקדמת להתאמה עם הגדרות ה-GDPR.</p>
+    <!-- <h2>סורק סקריפטים מתקדם</h2>
+    <p class="description">סרוק ונהל סקריפטים באתר שלך עם טכנולוגיה מתקדמת להתאמה עם הגדרות ה-GDPR.</p> -->
     
     <?php if (isset($_GET['settings-updated'])): ?>
         <div class="notice notice-success is-dismissible">

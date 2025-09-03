@@ -479,7 +479,7 @@
 
     
     $(document).on('click', '#wpccm-sync-current-cookies-btn', function() {
-        //console.log('WPCCM: Syncing cookies from frontend URL:########################');
+        console.log('WPCCM: Syncing cookies from frontend URL:########################');
         const button = $(this);
         const originalText = button.text();
         
@@ -582,7 +582,8 @@
                     if (frontendResponse.success) {
                         const frontendCookies = frontendResponse.data.cookies || [];
                         
-                        //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
+                        console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
+                        const $result = $('#wpccm-sync-result');
                         
                         // Show success message
                         $result.html('<span class="success">נמצאו ' + frontendCookies.length + ' עוגיות מהאתר</span>');

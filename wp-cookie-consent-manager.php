@@ -117,7 +117,7 @@ function wpccm_text($key, $default = '') {
         'save_text' => ['en' => 'Save Text', 'he' => 'טקסט שמירה'],
         'policy_url' => ['en' => 'Policy URL', 'he' => 'קישור למדיניות'],
         'handle_category_map' => ['en' => 'Handle:Category Map', 'he' => 'מיפוי Handle:קטגוריה'],
-        'cookies_to_purge' => ['en' => 'Cookies to Purge', 'he' => 'עוגיות למחיקה'],
+        'cookies_to_purge' => ['en' => 'Cookies to Purge', 'he' => 'מיפוי עוגיות'],
         'cookie_expiry_days' => ['en' => 'Cookie Expiry (days)', 'he' => 'תוקף עוגיות (ימים)'],
         
         // Default Banner Texts
@@ -261,9 +261,9 @@ function wpccm_text($key, $default = '') {
         'cookie_purge_explanation' => ['en' => 'Cookies in this list will be automatically deleted when visitors reject non-essential cookies through the consent banner.', 'he' => 'עוגיות ברשימה זו יימחקו אוטומטית כאשר מבקרים דוחים עוגיות לא הכרחיות דרך באנר ההסכמה.'],
         'sync_explanation' => ['en' => 'Find and add ALL cookies currently present on your website (including necessary ones)', 'he' => 'מצא והוסף את כל העוגיות הקיימות כרגע באתר שלך (כולל הכרחיות)'],
         'suggest_explanation' => ['en' => 'Get suggestions from a predefined list of common tracking cookies', 'he' => 'קבל הצעות מרשימה מוגדרת מראש של עוגיות מעקב נפוצות'],
-        'what_are_purge_cookies' => ['en' => 'What are purge cookies?', 'he' => 'מה זה עוגיות למחיקה?'],
+        'what_are_purge_cookies' => ['en' => 'What are purge cookies?', 'he' => 'מה זה מיפוי עוגיות?'],
         'add_cookie_manually' => ['en' => 'Add cookie manually', 'he' => 'הוסף עוגיה ידנית'],
-        'no_cookies_configured' => ['en' => 'No cookies configured for purging', 'he' => 'לא הוגדרו עוגיות למחיקה'],
+        'no_cookies_configured' => ['en' => 'No cookies configured for purging', 'he' => 'לא הוגדרו עוגיות למיפוי'],
         'default_cookies_warning' => ['en' => 'When visitors reject cookies, the system will use default cookies (_ga, _gid, _fbp, _hjSessionUser). Use the "Sync with Current Cookies" button to add cookies specific to your website.', 'he' => 'כאשר מבקרים דוחים עוגיות, המערכת תשתמש בעוגיות ברירת מחדל (_ga, _gid, _fbp, _hjSessionUser). השתמש בכפתור "סנכרן עם עוגיות נוכחיות" כדי להוסיף עוגיות ספציפיות לאתר שלך.'],
         'clear_all' => ['en' => 'Clear All', 'he' => 'מחק הכל'],
         'clear_all_cookies' => ['en' => 'Clear All Cookies', 'he' => 'מחק כל העוגיות'],
