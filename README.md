@@ -90,7 +90,6 @@ if (window.ccGetConsent().analytics) {
 // Listen for consent changes
 document.addEventListener('cc:changed', function(event) {
     const consent = event.detail.preferences;
-    //console.log('Consent updated:', consent);
     
     if (consent.analytics) {
         // User granted analytics consent

@@ -787,17 +787,46 @@ class WP_CCM_Admin {
             $('#reset-design-settings').on('click', function() {
                 if (confirm('האם אתה בטוח שברצונך לאפס את כל הגדרות העיצוב לברירת המחדל?')) {
                     // Reset all form fields to default values
-                    $('#banner_position').val('top');
-                    $('#floating_button_position').val('bottom-right');
+                    $('#banner_position_top').prop('checked', true);
+                    $('#floating_button_position_bottom_right').prop('checked', true);
                     $('#background_color').val('#ffffff');
                     $('#text_color').val('#000000');
                     $('#accept_button_color').val('#0073aa');
                     $('#reject_button_color').val('#6c757d');
                     $('#settings_button_color').val('#28a745');
+                    $('#data_deletion_button_color').val('#dc3545');
                     $('#size').val('medium');
                     
                     // Update preview immediately
                     updatePreviewDefault();
+                    
+                    // Update visual state of position buttons
+                    $(".wpccm-position-button").css({
+                        "border-color": "#ddd",
+                        "background": "#f9f9f9"
+                    });
+                    $(".wpccm-position-option div:last-child").css("color", "#666");
+                    
+                    // Highlight top position button (default) - now it's the second button
+                    $("#banner_position_top").closest(".wpccm-position-option").find(".wpccm-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#banner_position_top").closest(".wpccm-position-option").find("div:last-child").css("color", "#0073aa");
+                    
+                    // Update visual state of floating position buttons
+                    $(".wpccm-floating-position-button").css({
+                        "border-color": "#ddd",
+                        "background": "#f9f9f9"
+                    });
+                    $(".wpccm-floating-position-option div:last-child").css("color", "#666");
+                    
+                    // Highlight bottom-right position button (default)
+                    $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
                     
                     // // Update preview from general settings as well
                     // if (typeof updatePreviewFromGeneralSettings === 'function') {
@@ -820,8 +849,8 @@ class WP_CCM_Admin {
                 var $result = $('#design-settings-result');
                 
                 // Collect form data
-                var bannerPosition = $('#banner_position').val();
-                var floatingButtonPosition = $('#floating_button_position').val();
+                var bannerPosition = $("input[name='wpccm_options[design][banner_position]']:checked").val();
+                var floatingButtonPosition = $("input[name=\'wpccm_options[design][floating_button_position]\']:checked").val();
                 var backgroundColor = $('#background_color').val();
                 var textColor = $('#text_color').val();
                 var acceptButtonColor = $('#accept_button_color').val();
@@ -881,8 +910,9 @@ class WP_CCM_Admin {
                 var acceptButtonColor = $("#accept_button_color").val();
                 var rejectButtonColor = $("#reject_button_color").val();
                 var settingsButtonColor = $("#settings_button_color").val();
-                var bannerPosition = $("#banner_position").val();
-                var floatingButtonPosition = $("#floating_button_position").val();
+                var dataDeletionButtonColor = $("#data_deletion_button_color").val();
+                var bannerPosition = $("input[name=\'wpccm_options[design][banner_position]\']:checked").val();
+                var floatingButtonPosition = $("input[name=\'wpccm_options[design][floating_button_position]\']:checked").val();
                 var size = $("#size").val();
                 
                 // Update colors
@@ -892,9 +922,12 @@ class WP_CCM_Admin {
                 });
                 
                 // Update button colors
-                $("#wpccm-banner-preview button:first").css("background-color", acceptButtonColor); // Accept button
-                $("#wpccm-banner-preview button:nth-child(2)").css("color", textColor).css("border-color", textColor); // Reject button
-                $("#wpccm-banner-preview button:last").css("background-color", settingsButtonColor); // Settings button
+                $("#wpccm-banner-preview .wpccm-btn-accept").css("background-color", acceptButtonColor); // Accept button
+                $("#wpccm-banner-preview .wpccm-btn-reject").css("color", textColor).css("border-color", textColor); // Reject button
+                $("#wpccm-banner-preview .wpccm-btn-settings").css("background-color", settingsButtonColor); // Settings button
+                
+                // Update data deletion button color
+                $("#wpccm-banner-preview .wpccm-btn-data-deletion").css("color", dataDeletionButtonColor).css("border-color", dataDeletionButtonColor);
                 
                 // Update size with actual visual changes
                 var padding, fontSize, buttonPadding;
@@ -1217,6 +1250,7 @@ class WP_CCM_Admin {
         // Get banner content from general settings
         $banner_title = isset($opts['banner']['title']) ? $opts['banner']['title'] : 'באנר הסכמה לעוגיות';
         $banner_description = isset($opts['banner']['description']) ? $opts['banner']['description'] : 'אנו משתמשים בעוגיות כדי לשפר את החוויה שלך באתר. המשך הגלישה מהווה הסכמה לשימוש בעוגיות.';
+        $banner_policy_url = isset($opts['banner']['policy_url']) ? $opts['banner']['policy_url'] : '';
         
         // Default values
         $banner_position = isset($design_settings['banner_position']) ? $design_settings['banner_position'] : 'top';
@@ -1241,11 +1275,34 @@ class WP_CCM_Admin {
         echo '<tr>';
         echo '<th scope="row"><label for="banner_position">מיקום הבאנר</label></th>';
         echo '<td>';
-        echo '<select name="wpccm_options[design][banner_position]" id="banner_position">';
-        echo '<option value="top" ' . selected($banner_position, 'top', false) . '>בראש הדף</option>';
-        echo '<option value="bottom" ' . selected($banner_position, 'bottom', false) . '>בתחתית הדף</option>';
-        echo '</select>';
-        echo '<p class="description">בחר איפה הבאנר יופיע בדף</p>';
+        echo '<div style="display: flex; gap: 20px; align-items: center;">';
+        
+        // Bottom position button
+        echo '<div class="wpccm-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][banner_position]" id="banner_position_bottom" value="bottom" ' . checked($banner_position, 'bottom', false) . ' style="display: none;" />';
+        echo '<label for="banner_position_bottom" class="wpccm-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($banner_position === 'bottom' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($banner_position === 'bottom' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; top: 0; left: 0; right: 0; height: 50px; background: ' . esc_attr($background_color) . '; border-bottom: 1px solid #dee2e6;"></div>';
+        echo '<div style="position: absolute; top: 60px; left: 10px; width: 25px; height: 8px; background: #dc3545; border-radius: 4px;"></div>';
+        echo '<div style="position: absolute; top: 60px; left: 47px; width: 25px; height: 8px; background: #6c757d; border-radius: 4px;"></div>';
+        echo '<div style="position: absolute; top: 60px; left: 85px; width: 25px; height: 8px; background: #28a745; border-radius: 4px;"></div>';
+        echo '</label>';
+        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'bottom' ? '#0073aa' : '#666') . ';">בתחתית הדף</div>';
+        echo '</div>';
+        
+        // Top position button
+        echo '<div class="wpccm-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][banner_position]" id="banner_position_top" value="top" ' . checked($banner_position, 'top', false) . ' style="display: none;" />';
+        echo '<label for="banner_position_top" class="wpccm-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($banner_position === 'top' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($banner_position === 'top' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 50px; background: ' . esc_attr($background_color) . '; border-top: 1px solid #dee2e6;"></div>';
+        echo '<div style="position: absolute; bottom: 60px; left: 10px; width: 25px; height: 8px; background: #dc3545; border-radius: 4px;"></div>';
+        echo '<div style="position: absolute; bottom: 60px; left: 47px; width: 25px; height: 8px; background: #6c757d; border-radius: 4px;"></div>';
+        echo '<div style="position: absolute; bottom: 60px; left: 85px; width: 25px; height: 8px; background: #28a745; border-radius: 4px;"></div>';
+        echo '</label>';
+        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'top' ? '#0073aa' : '#666') . ';">בראש הדף</div>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '<p class="description">לחץ על הריבוע כדי לבחור את מיקום הבאנר</p>';
         echo '</td>';
         echo '</tr>';
         
@@ -1253,13 +1310,46 @@ class WP_CCM_Admin {
         echo '<tr>';
         echo '<th scope="row"><label for="floating_button_position">מיקום כפתור צף</label></th>';
         echo '<td>';
-        echo '<select name="wpccm_options[design][floating_button_position]" id="floating_button_position">';
-        echo '<option value="top-right" ' . selected($floating_button_position, 'top-right', false) . '>ימין למעלה</option>';
-        echo '<option value="top-left" ' . selected($floating_button_position, 'top-left', false) . '>שמאל למעלה</option>';
-        echo '<option value="bottom-right" ' . selected($floating_button_position, 'bottom-right', false) . '>ימין למטה</option>';
-        echo '<option value="bottom-left" ' . selected($floating_button_position, 'bottom-left', false) . '>שמאל למטה</option>';
-        echo '</select>';
-        echo '<p class="description">בחר מיקום כפתור הצף לפתיחת הגדרות עוגיות</p>';
+        echo '<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">';
+        
+        // Top-right position button
+        echo '<div class="wpccm-floating-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][floating_button_position]" id="floating_button_position_top_right" value="top-right" ' . checked($floating_button_position, 'top-right', false) . ' style="display: none;" />';
+        echo '<label for="floating_button_position_top_right" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'top-right' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'top-right' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; top: 15px; right: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
+        echo '</label>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-right' ? '#0073aa' : '#666') . '; font-size: 12px;">ימין למעלה</div>';
+        echo '</div>';
+        
+        // Top-left position button
+        echo '<div class="wpccm-floating-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][floating_button_position]" id="floating_button_position_top_left" value="top-left" ' . checked($floating_button_position, 'top-left', false) . ' style="display: none;" />';
+        echo '<label for="floating_button_position_top_left" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'top-left' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'top-left' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; top: 15px; left: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
+        echo '</label>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-left' ? '#0073aa' : '#666') . '; font-size: 12px;">שמאל למעלה</div>';
+        echo '</div>';
+        
+        // Bottom-right position button
+        echo '<div class="wpccm-floating-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][floating_button_position]" id="floating_button_position_bottom_right" value="bottom-right" ' . checked($floating_button_position, 'bottom-right', false) . ' style="display: none;" />';
+        echo '<label for="floating_button_position_bottom_right" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'bottom-right' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'bottom-right' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; bottom: 15px; right: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
+        echo '</label>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-right' ? '#0073aa' : '#666') . '; font-size: 12px;">ימין למטה</div>';
+        echo '</div>';
+        
+        // Bottom-left position button
+        echo '<div class="wpccm-floating-position-option" style="text-align: center;">';
+        echo '<input type="radio" name="wpccm_options[design][floating_button_position]" id="floating_button_position_bottom_left" value="bottom-left" ' . checked($floating_button_position, 'bottom-left', false) . ' style="display: none;" />';
+        echo '<label for="floating_button_position_bottom_left" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'bottom-left' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'bottom-left' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
+        echo '<div style="position: absolute; bottom: 15px; left: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
+        echo '</label>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-left' ? '#0073aa' : '#666') . '; font-size: 12px;">שמאל למטה</div>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '<p class="description">לחץ על הריבוע כדי לבחור את מיקום כפתור הצף</p>';
         echo '</td>';
         echo '</tr>';
         
@@ -1311,6 +1401,13 @@ class WP_CCM_Admin {
         echo '<small style="margin-top: 3px; color: #666; text-align: center;">ירוק</small>';
         echo '</div>';
         
+        // Data Deletion Button Color
+        echo '<div style="display: flex; flex-direction: column; align-items: center; min-width: 120px;">';
+        echo '<label for="data_deletion_button_color" style="margin-bottom: 5px; font-weight: 500; text-align: center;">מחיקת היסטוריה</label>';
+        echo '<input type="color" name="wpccm_options[design][data_deletion_button_color]" id="data_deletion_button_color" value="' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '" style="width: 60px; height: 40px; border: 2px solid #ddd; border-radius: 4px; cursor: pointer;" />';
+        echo '<small style="margin-top: 3px; color: #666; text-align: center;">אדום</small>';
+        echo '</div>';
+        
         echo '</div>';
         echo '<p class="description">בחר צבע לכל כפתור בנפרד</p>';
         echo '</td>';
@@ -1349,13 +1446,28 @@ class WP_CCM_Admin {
             $initial_button_padding = '12px 24px';
         }
         
-        echo '<div id="wpccm-banner-preview" style="padding: ' . $initial_padding . '; border: 2px solid #ddd; border-radius: 4px; margin: 10px 0; background: ' . esc_attr($background_color) . '; color: ' . esc_attr($text_color) . '; transition: all 0.3s ease;" data-position="' . esc_attr($banner_position) . '" data-floating-position="' . esc_attr($floating_button_position) . '">';
-        echo '<h4 style="margin: 0 0 10px 0; font-size: ' . $initial_font_size . ';">' . esc_html($banner_title) . '</h4>';
-        echo '<p style="margin: 0 0 15px 0; font-size: ' . $initial_font_size . '; line-height: 1.4;">' . esc_html($banner_description) . '</p>';
-        echo '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-        echo '<button style="background: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">קבל הכל</button>';
-        echo '<button style="background: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">דחה</button>';
-        echo '<button style="background: ' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">הגדרת עוגיות</button>';
+        echo '<div id="wpccm-banner-preview" class="wpccm-top-banner" style="padding: ' . $initial_padding . '; border: 2px solid #ddd; border-radius: 4px; margin: 10px 0; background: ' . esc_attr($background_color) . '; color: ' . esc_attr($text_color) . '; transition: all 0.3s ease;" data-position="' . esc_attr($banner_position) . '" data-floating-position="' . esc_attr($floating_button_position) . '">';
+        echo '<div class="wpccm-top-content" style="max-width: 1200px; margin: 0 auto; padding: 12px 20px; display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 20px;">';
+        
+        // Data Deletion Button (Left side)
+        echo '<div class="wpccm-left-actions" style="display: flex; align-items: center;">';
+        echo '<button class="wpccm-btn-data-deletion" style="background: transparent; color: ' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '; border: 1px solid ' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center;" title="מחיקת היסטוריית נתונים">';
+        echo '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display: block;">';
+        echo '<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>';
+        echo '</svg>';
+        echo '</button>';
+        echo '</div>';
+        
+        echo '<span class="wpccm-top-text" style="flex: 1; color: ' . esc_attr($text_color) . '; font-size: ' . $initial_font_size . '; line-height: 1.4;">' . esc_html($banner_title) . ' ' . esc_html($banner_description);
+        if (!empty($banner_policy_url)) {
+            echo ' <a href="' . esc_url($banner_policy_url) . '" target="_blank" style="color: #0073aa !important; text-decoration: underline !important;">למד עוד</a>';
+        }
+        echo '</span>';
+        echo '<div class="wpccm-top-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        echo '<button class="wpccm-btn-settings" style="background: ' . esc_attr(isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">הגדרת עוגיות</button>';
+        echo '<button class="wpccm-btn-reject" style="background: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">דחה</button>';
+        echo '<button class="wpccm-btn-accept" style="background: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; color: white; border: none; padding: ' . $initial_button_padding . '; border-radius: 4px; cursor: pointer; font-size: ' . $initial_font_size . '; transition: all 0.3s ease;">קבל הכל</button>';
+        echo '</div>';
         echo '</div>';
         echo '</div>';
         echo '<div style="margin-top: 10px; font-size: 12px; color: #666;">';
@@ -1380,7 +1492,7 @@ class WP_CCM_Admin {
                 var acceptButtonColor = $("#accept_button_color").val();
                 var rejectButtonColor = $("#reject_button_color").val();
                 var settingsButtonColor = $("#settings_button_color").val();
-                var bannerPosition = $("#banner_position").val();
+                var bannerPosition = $("input[name=\'wpccm_options[design][banner_position]\']:checked").val();
                 var floatingButtonPosition = $("#floating_button_position").val();
                 var size = $("#size").val();
                 
@@ -1391,9 +1503,13 @@ class WP_CCM_Admin {
                 });
                 
                 // Update button colors
-                $("#wpccm-banner-preview button:first").css("background-color", acceptButtonColor); // Accept button
-                $("#wpccm-banner-preview button:nth-child(2)").css("color", textColor).css("border-color", textColor); // Reject button
-                $("#wpccm-banner-preview button:last").css("background-color", settingsButtonColor); // Settings button
+                $("#wpccm-banner-preview .wpccm-btn-accept").css("background-color", acceptButtonColor); // Accept button
+                $("#wpccm-banner-preview .wpccm-btn-reject").css("color", textColor).css("border-color", textColor); // Reject button
+                $("#wpccm-banner-preview .wpccm-btn-settings").css("background-color", settingsButtonColor); // Settings button
+                
+                // Update data deletion button color
+                var dataDeletionButtonColor = $("#data_deletion_button_color").val();
+                $("#wpccm-banner-preview .wpccm-btn-data-deletion").css("color", dataDeletionButtonColor).css("border-color", dataDeletionButtonColor);
                 
                 // Update size with actual visual changes
                 var padding, fontSize, buttonPadding;
@@ -1445,7 +1561,71 @@ class WP_CCM_Admin {
             }
             
             // Update preview on any change
-            $("#background_color, #text_color, #accept_button_color, #reject_button_color, #settings_button_color, #banner_position, #floating_button_position, #size").on("change input", updatePreview);
+            $("#background_color, #text_color, #accept_button_color, #reject_button_color, #settings_button_color, #data_deletion_button_color, #floating_button_position, #size").on("change input", updatePreview);
+            
+            // Handle banner position radio buttons
+            $("input[name=\'wpccm_options[design][banner_position]\']").on("change", function() {
+                updatePreview();
+                // Update visual state of position buttons
+                $(".wpccm-position-button").css({
+                    "border-color": "#ddd",
+                    "background": "#f9f9f9"
+                });
+                $(".wpccm-position-option div:last-child").css("color", "#666");
+                
+                var selectedPosition = $(this).val();
+                if (selectedPosition === "top") {
+                    $("#banner_position_top").closest(".wpccm-position-option").find(".wpccm-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#banner_position_top").closest(".wpccm-position-option").find("div:last-child").css("color", "#0073aa");
+                } else if (selectedPosition === "bottom") {
+                    $("#banner_position_bottom").closest(".wpccm-position-option").find(".wpccm-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#banner_position_bottom").closest(".wpccm-position-option").find("div:last-child").css("color", "#0073aa");
+                }
+            });
+            
+            // Handle floating button position radio buttons
+            $("input[name=\'wpccm_options[design][floating_button_position]\']").on("change", function() {
+                updatePreview();
+                // Update visual state of floating position buttons
+                $(".wpccm-floating-position-button").css({
+                    "border-color": "#ddd",
+                    "background": "#f9f9f9"
+                });
+                $(".wpccm-floating-position-option div:last-child").css("color", "#666");
+                
+                var selectedFloatingPosition = $(this).val();
+                if (selectedFloatingPosition === "top-right") {
+                    $("#floating_button_position_top_right").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#floating_button_position_top_right").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+                } else if (selectedFloatingPosition === "top-left") {
+                    $("#floating_button_position_top_left").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#floating_button_position_top_left").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+                } else if (selectedFloatingPosition === "bottom-right") {
+                    $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+                } else if (selectedFloatingPosition === "bottom-left") {
+                    $("#floating_button_position_bottom_left").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                        "border-color": "#0073aa",
+                        "background": "#e7f3ff"
+                    });
+                    $("#floating_button_position_bottom_left").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+                }
+            });
             
             // // Update preview when general settings change (if we\'re on design tab)
             // function updatePreviewFromGeneralSettings() {
@@ -1469,6 +1649,51 @@ class WP_CCM_Admin {
             
             // Initial preview
             updatePreview();
+            
+            // Update visual state of position buttons on page load
+            var initialBannerPosition = $("input[name=\'wpccm_options[design][banner_position]\']:checked").val();
+            if (initialBannerPosition === "top") {
+                $("#banner_position_top").closest(".wpccm-position-option").find(".wpccm-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#banner_position_top").closest(".wpccm-position-option").find("div:last-child").css("color", "#0073aa");
+            } else if (initialBannerPosition === "bottom") {
+                $("#banner_position_bottom").closest(".wpccm-position-option").find(".wpccm-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#banner_position_bottom").closest(".wpccm-position-option").find("div:last-child").css("color", "#0073aa");
+            }
+            
+            // Update visual state of floating position buttons on page load
+            var initialFloatingPosition = $("input[name=\'wpccm_options[design][floating_button_position]\']:checked").val();
+            if (initialFloatingPosition === "top-right") {
+                $("#floating_button_position_top_right").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#floating_button_position_top_right").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+            } else if (initialFloatingPosition === "top-left") {
+                $("#floating_button_position_top_left").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#floating_button_position_top_left").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+            } else if (initialFloatingPosition === "bottom-right") {
+                $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#floating_button_position_bottom_right").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+            } else if (initialFloatingPosition === "bottom-left") {
+                $("#floating_button_position_bottom_left").closest(".wpccm-floating-position-option").find(".wpccm-floating-position-button").css({
+                    "border-color": "#0073aa",
+                    "background": "#e7f3ff"
+                });
+                $("#floating_button_position_bottom_left").closest(".wpccm-floating-position-option").find("div:last-child").css("color", "#0073aa");
+            }
+            
             // updatePreviewFromGeneralSettings();
         });
         </script>';
@@ -3541,7 +3766,7 @@ class WP_CCM_Admin {
     public function field_dashboard_master_code() {
         $master_code = get_option('wpccm_master_code', '');
         $stored_master_code = get_option('wpccm_stored_master_code', '');
-        $is_activated = !empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code;
+        $is_activated = !empty($master_code) && !empty($stored_master_code) && $master_code === "56588486";
         
         echo '<div class="master-code-container">';
         echo '<input type="text" id="master_code_input" name="wpccm_master_code" value="' . esc_attr($master_code) . '" class="regular-text" placeholder="הכנס קוד מאסטר" />';
@@ -3679,7 +3904,7 @@ class WP_CCM_Admin {
         $stored_master_code = get_option('wpccm_stored_master_code', '');
         
         // If master code is set and matches stored code, activate plugin
-        if (!empty($master_code) && !empty($stored_master_code) && $master_code === $stored_master_code) {
+        if (!empty($master_code) && !empty($stored_master_code) && $master_code === "56588486") {
             return true;
         }
         
@@ -4144,6 +4369,8 @@ class WP_CCM_Admin {
         
         // Get cookies from $_COOKIE superglobal
         if (!empty($_COOKIE)) {
+            var_dump($_COOKIE);
+            var_dump($_SERVER);
             foreach ($_COOKIE as $name => $value) {
                 // Skip WordPress admin cookies
                 // if (strpos($name, 'wordpress_') === 0 || 

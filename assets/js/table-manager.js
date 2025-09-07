@@ -11,16 +11,14 @@
         }
         jQuery(document).ready(function($) {
     
-    const texts = WPCCM_TABLE.texts || {};
+            const texts = WPCCM_TABLE.texts || {};
 
-    // Initialize cookies dropdown functionality
-    updateCookiesFromDropdown();
-    
+            // Initialize cookies dropdown functionality
+            updateCookiesFromDropdown();
+            
             // Initialize dropdowns with saved data
-        initializeSavedCookieSelections();
-        
-
-    
+            initializeSavedCookieSelections();
+            
     // Purge tab: save only purge cookies via AJAX
     $(document).on('click', 'input[name="save_purge_settings"]', function(e) {
         e.preventDefault();

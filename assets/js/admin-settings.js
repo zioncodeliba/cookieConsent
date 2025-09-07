@@ -30,7 +30,6 @@
      */
     function init() {
         bindEvents();
-        //console.log('WPCCM Admin Settings initialized');
     }
 
     /**

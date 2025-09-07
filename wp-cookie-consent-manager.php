@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.25
+ * Version: 1.0.23
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -13,11 +13,11 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-define('WPCCM_VERSION', '1.0.25');
+define('WPCCM_VERSION', '1.0.23');
 
 // Dashboard API Configuration
 define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.25');
+define('WPCCM_DASHBOARD_VERSION', '1.0.23');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
@@ -477,6 +477,7 @@ class WP_CCM {
         $accept_button_color = isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa';
         $reject_button_color = isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d';
         $settings_button_color = isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745';
+        $data_deletion_button_color = isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545';
         $size = isset($design_settings['size']) ? $design_settings['size'] : 'medium';
         
         // Calculate size values
@@ -504,6 +505,7 @@ class WP_CCM {
                 data-accept-button-color="' . esc_attr($accept_button_color) . '"
                 data-reject-button-color="' . esc_attr($reject_button_color) . '"
                 data-settings-button-color="' . esc_attr($settings_button_color) . '"
+                data-data-deletion-button-color="' . esc_attr($data_deletion_button_color) . '"
                 data-size="' . esc_attr($size) . '"
                 data-padding="' . esc_attr($padding) . '"
                 data-font-size="' . esc_attr($font_size) . '"

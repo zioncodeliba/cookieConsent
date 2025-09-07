@@ -60,7 +60,7 @@ add_action('admin_notices', function() {
                     nonce: "' . wp_create_nonce('wpccm_detect_nonce') . '"
                 },
                 success: function(response) {
-                    //console.log("AJAX Test Response:", response);
+                   
                     alert("AJAX Test: " + JSON.stringify(response, null, 2));
                 },
                 error: function(xhr, status, error) {

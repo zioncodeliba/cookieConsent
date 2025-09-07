@@ -449,17 +449,12 @@ jQuery(document).ready(function($) {
         site_url: '<?php echo home_url(); ?>'
     };
     
-    // //console.log('WPCCM Data:', wpccmDetectData);
-    // //console.log('Generated nonce:', wpccmDetectData.nonce);
-    // //console.log('Current user can manage_options:', <?php echo current_user_can('manage_options') ? 'true' : 'false'; ?>);
-    // //console.log('Current user ID:', <?php echo get_current_user_id(); ?>);
-
     // Initialize
     init();
 
     function init() {
         bindEvents();
-        // //console.log('WPCCM Advanced Scanner initialized');
+
     }
 
     function bindEvents() {
@@ -486,21 +481,15 @@ jQuery(document).ready(function($) {
         // Listen for tab changes to check form existence and setup additional handlers if needed
         $(document).on('click', '.nav-tab[data-tab="mapping"]', function() {
             setTimeout(function() {
-                // //console.log('Mapping tab opened - Form exists:', $('#wpccm-advanced-mappings-form').length);
-                // //console.log('Submit button exists:', $('#wpccm-advanced-mappings-form button[type="submit"]').length);
-                // //console.log('Tab content visible:', $('#mapping').hasClass('active'));
-                // //console.log('Tab content display:', $('#mapping').css('display'));
                 
                 // Ensure event handlers are attached even if tab is loaded dynamically
                 const $form = $('#wpccm-advanced-mappings-form');
                 const $submitBtn = $form.find('button[type="submit"]');
                 
                 if ($form.length && $submitBtn.length) {
-                    // //console.log('Form and submit button found - ensuring click handler is attached');
                     
                     // Remove any existing handlers and add a fresh one (to prevent duplicates)
                     $submitBtn.off('click.wpccm-save').on('click.wpccm-save', function(e) {
-                        // //console.log('Direct button click handler triggered!');
                         e.preventDefault();
                         handleMappingsFormSubmit(e);
                     });
@@ -508,7 +497,7 @@ jQuery(document).ready(function($) {
             }, 500);
         });
         
-        //console.log('WPCCM Advanced Scanner events bound successfully');
+        
     }
     
 
@@ -552,8 +541,7 @@ jQuery(document).ready(function($) {
             try {
                 iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
             } catch (e) {
-                //console.log('Cannot access iframe content due to CORS policy - using fallback method');
-                // If we can't access iframe content due to CORS, use the registered scripts from WordPress
+                /// If we can't access iframe content due to CORS, use the registered scripts from WordPress
                 scanRegisteredScripts();
                 return;
             }
@@ -590,7 +578,7 @@ jQuery(document).ready(function($) {
                         src: src
                     });
                 } catch (e) {
-                    //console.log('Error processing script:', src, e);
+                    console.log('Error processing script:', src, e);
                 }
             });
             
@@ -1042,13 +1030,10 @@ jQuery(document).ready(function($) {
 
 
     function saveAllMappingsNewMethod() {
-        //console.log('saveAllMappingsNewMethod called - NEW METHOD!');
-        
+       
         // Debug: check table state
         const $tbody = $('#wpccm-script-mappings');
         const $allRows = $tbody.find('tr');
-        //console.log('Total rows in table:', $allRows.length);
-        //console.log('Table HTML:', $tbody.html());
         
         // Collect all mappings from the form and convert to same format as saveSelectedItems
         const selectedItems = [];
@@ -1058,24 +1043,12 @@ jQuery(document).ready(function($) {
             const $keyInput = $row.find('.wpccm-mapping-key');
             const $categorySelect = $row.find('.wpccm-mapping-category');
             
-            // Debug: log what we find in each row
-            //console.log('Row found:', {
-            //     hasKeyInput: $keyInput.length > 0,
-            //     hasCategory: $categorySelect.length > 0,
-            //     keyValue: $keyInput.length > 0 ? $keyInput.val() : 'N/A',
-            //     categoryValue: $categorySelect.length > 0 ? $categorySelect.val() : 'N/A',
-            //     rowHTML: $row.html()
-            // });
-            
             if ($keyInput.length && $categorySelect.length) {
                 const key = $keyInput.val().trim();
                 const category = $categorySelect.val();
                 
-                //console.log('Processing row:', { key: `"${key}"`, category: `"${category}"`, keyLength: key.length });
-                
                 // Only add if both key and category have actual values
                 if (key && key.length > 0 && category && category.length > 0) {
-                    //console.log('Adding to selectedItems:', { key, category });
                     selectedItems.push({
                         key: key,
                         handle: key, // Use the key as handle (could be script handle)
@@ -1083,10 +1056,10 @@ jQuery(document).ready(function($) {
                         category: category
                     });
                 } else {
-                    //console.log('Skipping empty row:', { key, category });
+                    console.log('Skipping empty row:', { key, category });
                 }
             } else {
-                //console.log('Row missing input elements');
+                console.log('Row missing input elements');
             }
         });
         
@@ -1094,8 +1067,6 @@ jQuery(document).ready(function($) {
             alert('לא נמצאו מיפויים לשמירה. אנא הוסף מיפויים לפני השמירה.');
             return;
         }
-        
-        //console.log('NEW METHOD - Mappings to save:', selectedItems);
         
         // Show saving state
         const $newButton = $('#wpccm-save-new-method');
@@ -1112,7 +1083,7 @@ jQuery(document).ready(function($) {
                 selected_items: JSON.stringify(selectedItems)
             },
             success: function(response) {
-                //console.log('Response:', response);
+                
                 if (response.success) {
                     // Reload the page to refresh the table
                     location.reload();
@@ -1121,7 +1092,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                //console.log('NEW METHOD - Error:', { xhr, status, error });
+                console.log('NEW METHOD - Error:', { xhr, status, error });
                 alert('שגיאה בתקשורת עם השרת (שיטה חדשה): ' + error);
             },
             complete: function() {
@@ -1131,9 +1102,7 @@ jQuery(document).ready(function($) {
     }
 
     function updateMappingsTable(mappings) {
-        //console.log('updateMappingsTable called with:', mappings);
         const $tbody = $('#wpccm-script-mappings');
-        //console.log('Table tbody found:', $tbody.length);
         $tbody.empty();
         
         const categories = {

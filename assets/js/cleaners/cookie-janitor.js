@@ -4,12 +4,13 @@
  */
 
 // Use global constant from consent store
-
+// Storage key for consent preferences
+const CC_STORAGE_KEY1 = 'cc_prefs_v1';
 // Configuration
 const JANITOR_CONFIG = {
     // Cookies that should always be preserved
     protectedCookies: [
-        CC_STORAGE_KEY, // Always keep consent preferences
+        CC_STORAGE_KEY1, // Always keep consent preferences
         'PHPSESSID',
         'wordpress_',
         'wp-',

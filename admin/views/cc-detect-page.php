@@ -30,18 +30,6 @@ function wpccm_render_detect_page($detected_items) {
         <?php endif; ?>
         
         <div class="wpccm-detect-container">
-            <!-- Debug Info -->
-            <div class="wpccm-debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">
-                <strong>Debug Info:</strong><br>
-                <span id="wpccm-debug-status">Loading...</span><br>
-                <button type="button" onclick="//console.log('wpccmDetectData:', window.wpccmDetectData)">Check Data</button>
-                <button type="button" onclick="//console.log('jQuery loaded:', typeof jQuery)">Check jQuery</button>
-                <button type="button" onclick="//console.log('Current page hook:', 'settings_page_cc-detect')">Check Hook</button>
-                <button type="button" onclick="//console.log('Current URL:', window.location.href)">Check URL</button>
-                <button type="button" onclick="//console.log('Page title:', document.title)">Check Title</button>
-                <button type="button" onclick="//console.log('Scripts loaded:', document.querySelectorAll('script[src*=&quot;detect-page&quot;]').length)">Check Scripts</button>
-                <button type="button" onclick="testAjaxSave()">Test AJAX Save</button>
-            </div>
             
             <style>
             .wpccm-mappings-section {
@@ -134,7 +122,7 @@ function wpccm_render_detect_page($detected_items) {
                     },
                     success: function(response) {
                         alert('Test AJAX Success: ' + JSON.stringify(response, null, 2));
-                        //console.log('Test AJAX Success:', response);
+                        console.log('Test AJAX Success:', response);
                     },
                     error: function(xhr, status, error) {
                         alert('Test AJAX Error: ' + error + '\nStatus: ' + status + '\nResponse: ' + xhr.responseText);
