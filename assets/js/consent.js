@@ -275,9 +275,14 @@ function generateCategoryToggles(texts, cookiesByCategory) {
             return;
         }
         
-        var checked = cat.required ? 'checked' : '';
+        // Check current consent state for this category
+        var currentConsent = getCookie('consent_' + cat.key) === 'true';
+        var isChecked = cat.required || currentConsent;
+        
+        var checked = isChecked ? 'checked' : '';
         var disabled = cat.required ? 'disabled' : '';
-        var statusText = cat.required ? (texts.always_enabled || 'Always Enabled') : (texts.disabled || 'Disabled');
+        var statusText = cat.required ? (texts.always_enabled || 'Always Enabled') : 
+                        (isChecked ? (texts.enabled || 'Enabled') : (texts.disabled || 'Disabled'));
         
         // Generate cookies list for this category
         var cookiesHtml = '';
@@ -366,23 +371,27 @@ function renderBanner(){
     var langAttr = isHebrew ? ' data-lang="he"' : '';
 
     // Create the small top banner first with dynamic styles
-    var bannerStyle = (designSettings.bannerPosition === 'bottom' ? 'top: auto !important; bottom: 0 !important; border-top: 1px solid #dee2e6 !important; border-bottom: none !important;' : 'top: 0 !important;') +
-    'background-color: ' + designSettings.backgroundColor + ' !important; color: ' + designSettings.textColor + ' !important; padding: ' + designSettings.padding + ' !important; font-size: ' + designSettings.fontSize + ' !important;';
-    
+    var bannerStyle = (designSettings.bannerPosition === 'bottom' ? 'top: auto ; bottom: 0 ; border-top: 1px solid #dee2e6 ; border-bottom: none ;' : 'top: 0 ;') +
+    'background-color: ' + designSettings.backgroundColor + ' ; color: ' + designSettings.textColor + ' ; padding: ' + designSettings.padding + ' ; font-size: ' + designSettings.fontSize + ' ;';
+    //for class condition
+    var _class = (designSettings.textColor === '#ffffff' ? 'dark-theme' : 'light-theme');
+
 
     
     var topBannerHtml = ''+
-    '<div class="wpccm-top-banner"' + langAttr + ' role="dialog" aria-live="polite" style="' + bannerStyle + '">\n' +
-    ' <div class="wpccm-top-content" style="max-width: 1200px; margin: 0 auto; padding: 12px 20px; display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 20px;">\n' +
+    '<div class="wpccm-top-banner '+_class+' banner_'+designSettings.bannerPosition+'"' + langAttr + ' role="dialog" aria-live="polite" style="' + bannerStyle + '">\n' +
+    ' <div class="wpccm-top-content " style="max-width: 1200px; margin: 0 auto; padding: 12px 20px; display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 20px;">\n' +
     ' <div class="wpccm-left-actions" style="display: flex; align-items: center;">\n' +
-    ' <button class="wpccm-btn-data-deletion" id="wpccm-data-deletion-btn" style="background-color: transparent !important; color: ' + designSettings.dataDeletionButtonColor + ' !important; border: 1px solid ' + designSettings.dataDeletionButtonColor + ' !important; padding: ' + designSettings.buttonPadding + ' !important; border-radius: 4px !important; cursor: pointer !important; font-size: ' + designSettings.fontSize + ' !important; transition: all 0.3s ease !important; display: flex !important; align-items: center !important; justify-content: center !important;" title="מחיקת היסטוריית נתונים"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display: block;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>\n' +
-    ' </div>\n' +
-    ' <span class="wpccm-top-text" style="flex: 1; color: ' + designSettings.textColor + ' !important; font-size: ' + designSettings.fontSize + ' !important; line-height: 1.4;">' + (b.description || texts.cookie_description || 'We use cookies on our website to give you the most relevant experience by remembering your preferences and repeat visits. By clicking "Accept All", you consent to the use of ALL the cookies.') + (b.policy_url ? ' <a href="' + b.policy_url + '" target="_blank" style="color: ' + designSettings.acceptButtonColor + ' !important; text-decoration: underline !important;">' + (texts.learn_more || 'Learn more') + '</a>' : '') + '</span>\n' +
     ' <div class="wpccm-top-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">\n' +
-    ' <button class="wpccm-btn-settings" id="wpccm-settings-btn" style="background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; border: none !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.cookie_settings || 'Cookie Settings') + '</button>\n' +
-    ' <button class="wpccm-btn-reject" id="wpccm-reject-all-btn" style="background-color: transparent !important; color: ' + designSettings.textColor + ' !important; border: 1px solid ' + designSettings.textColor + ' !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.reject_all || 'Reject All') + '</button>\n' +
-    ' <button class="wpccm-btn-accept" id="wpccm-accept-all-btn" style="background-color: ' + designSettings.acceptButtonColor + ' !important; color: white !important; border: none !important; padding: ' + designSettings.buttonPadding + ' !important; font-size: ' + designSettings.fontSize + ' !important;">' + (texts.accept_all || 'Accept All') + '</button>\n' +
+    ' <button class="wpccm-btn-data-deletion" id="wpccm-data-deletion-btn" style="background-color: transparent ; color: ' + designSettings.dataDeletionButtonColor + ' ; border: 1px solid ' + designSettings.dataDeletionButtonColor + ' ; padding: ' + designSettings.buttonPadding + ' ; cursor: pointer ; font-size: ' + designSettings.fontSize + ' ; transition: all 0.3s ease ; display: flex ; align-items: center ; justify-content: center ; gap: 5px;"><svg xmlns="http://www.w3.org/2000/svg" style="width: ' + (designSettings.size === 'small' ? '16px' : designSettings.size === 'large' ? '24px' : '20px') + '; height: ' + (designSettings.size === 'small' ? '16px' : designSettings.size === 'large' ? '24px' : '20px') + ';" viewBox="0 0 20 20" fill="none"><path d="M1 1L9 9.5M12.554 9.085C15.034 10.037 17.017 9.874 19 9.088C18.5 15.531 15.496 18.008 11.491 19C11.491 19 8.474 16.866 8.039 11.807C7.992 11.259 7.969 10.986 8.082 10.677C8.196 10.368 8.42 10.147 8.867 9.704C9.603 8.976 9.97 8.612 10.407 8.52C10.844 8.43 11.414 8.648 12.554 9.085Z" stroke=' + designSettings.dataDeletionButtonColor + ' stroke-linecap="round" stroke-linejoin="round"/><path d="M17.5 14.446C17.5 14.446 15 14.93 12.5 13" stroke=' + designSettings.dataDeletionButtonColor + ' stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 5.25C13.5 5.58152 13.6317 5.89946 13.8661 6.13388C14.1005 6.3683 14.4185 6.5 14.75 6.5C15.0815 6.5 15.3995 6.3683 15.6339 6.13388C15.8683 5.89946 16 5.58152 16 5.25C16 4.91848 15.8683 4.60054 15.6339 4.36612C15.3995 4.1317 15.0815 4 14.75 4C14.4185 4 14.1005 4.1317 13.8661 4.36612C13.6317 4.60054 13.5 4.91848 13.5 5.25Z" stroke=' + designSettings.dataDeletionButtonColor + '/><path d="M11 2V2.1" stroke=' + designSettings.dataDeletionButtonColor + ' stroke-linecap="round" stroke-linejoin="round"/></svg> ניקוי היסטוריה </button>\n' +
+    ' <button class="wpccm-btn-reject" id="wpccm-reject-all-btn" style="background-color: transparent ; color: ' + designSettings.textColor + ' ; border: 1px solid ' + designSettings.textColor + ' ; padding: ' + designSettings.buttonPadding + ' ; font-size: ' + designSettings.fontSize + ' ;">' + (texts.reject_all || 'דחה הכל') + '</button>\n' +
+    ' <button class="wpccm-btn-accept" id="wpccm-accept-all-btn" style="    background-color: transparent ; color:'+ designSettings.acceptButtonColor + ' ; border:1px solid ' + designSettings.acceptButtonColor + ' ; padding: ' + designSettings.buttonPadding + ' ; font-size: ' + designSettings.fontSize + ' ;">' + (texts.accept_all || 'קבל הכל') + '</button>\n' +
     ' </div>\n' +
+    ' <button class="wpccm-btn-settings" id="wpccm-settings-btn" style="border-color: ' + designSettings.settingsButtonColor + ' ; width: ' + (designSettings.size === 'small' ? '32px' : designSettings.size === 'large' ? '48px' : '40px') + ' ; height: ' + (designSettings.size === 'small' ? '32px' : designSettings.size === 'large' ? '48px' : '40px') + ' ;" ><svg xmlns="http://www.w3.org/2000/svg" style="width: ' + (designSettings.size === 'small' ? '16px' : designSettings.size === 'large' ? '24px' : '20px') + '; height: ' + (designSettings.size === 'small' ? '16px' : designSettings.size === 'large' ? '24px' : '20px') + ';" viewBox="0 0 20 20" fill="none"><path d="M8.54149 7.47418C8.20711 7.6643 7.91364 7.91868 7.67796 8.22268C7.44229 8.52667 7.26908 8.87429 7.1683 9.2455C7.06752 9.61671 7.04116 10.0042 7.09074 10.3856C7.14032 10.7671 7.26485 11.1349 7.45718 11.4681C7.64951 11.8012 7.90583 12.093 8.21139 12.3266C8.51694 12.5603 8.86569 12.7312 9.23757 12.8295C9.60944 12.9278 9.99709 12.9516 10.3782 12.8995C10.7593 12.8474 11.1263 12.7204 11.4582 12.5259C12.1226 12.1363 12.606 11.4998 12.8029 10.7552C12.9997 10.0106 12.8941 9.21833 12.509 8.55133C12.1239 7.88432 11.4906 7.39672 10.7473 7.19492C10.004 6.99312 9.21104 7.09351 8.54149 7.47418ZM8.19566 11.0417C8.05671 10.8047 7.96601 10.5425 7.92879 10.2703C7.89157 9.99806 7.90856 9.72117 7.97879 9.45555C8.04901 9.18992 8.17109 8.94081 8.33798 8.72256C8.50487 8.50431 8.71329 8.32122 8.95123 8.18384C9.18917 8.04647 9.45193 7.95751 9.72439 7.92209C9.99685 7.88668 10.2736 7.90551 10.5388 7.9775C10.8039 8.04948 11.0522 8.17321 11.2694 8.34154C11.4865 8.50988 11.6682 8.71951 11.804 8.95835C12.0759 9.4366 12.1476 10.003 12.0035 10.5339C11.8593 11.0648 11.511 11.5172 11.0346 11.7923C10.5582 12.0673 9.99228 12.1428 9.46041 12.0022C8.92855 11.8616 8.47389 11.5163 8.19566 11.0417Z" fill=' + designSettings.settingsButtonColor + ' /><path d="M8.8834 2.08331C8.67444 2.08343 8.47314 2.16204 8.31941 2.30358C8.16569 2.44511 8.07074 2.63924 8.0534 2.84748L7.96423 3.91331C7.14681 4.18703 6.39292 4.62264 5.74756 5.19415L4.77923 4.73748C4.59014 4.64848 4.37451 4.63378 4.17509 4.69629C3.97567 4.7588 3.80701 4.89396 3.70256 5.07498L2.5859 7.00831C2.48127 7.1894 2.44856 7.4032 2.49426 7.60728C2.53995 7.81136 2.66071 7.9908 2.83256 8.10998L3.7109 8.71998C3.53895 9.56465 3.53895 10.4353 3.7109 11.28L2.83256 11.89C2.66071 12.0092 2.53995 12.1886 2.49426 12.3927C2.44856 12.5968 2.48127 12.8106 2.5859 12.9916L3.70256 14.925C3.80701 15.106 3.97567 15.2412 4.17509 15.3037C4.37451 15.3662 4.59014 15.3515 4.77923 15.2625L5.7484 14.8058C6.3935 15.3772 7.1471 15.8128 7.96423 16.0866L8.0534 17.1525C8.07074 17.3607 8.16569 17.5548 8.31941 17.6964C8.47314 17.8379 8.67444 17.9165 8.8834 17.9166H11.1167C11.3257 17.9165 11.527 17.8379 11.6807 17.6964C11.8344 17.5548 11.9294 17.3607 11.9467 17.1525L12.0359 16.0866C12.8533 15.8129 13.6072 15.3773 14.2526 14.8058L15.2209 15.2625C15.41 15.3515 15.6256 15.3662 15.825 15.3037C16.0245 15.2412 16.1931 15.106 16.2976 14.925L17.4142 12.9916C17.5189 12.8106 17.5516 12.5968 17.5059 12.3927C17.4602 12.1886 17.3394 12.0092 17.1676 11.89L16.2892 11.28C16.4612 10.4353 16.4612 9.56465 16.2892 8.71998L17.1676 8.10998C17.3394 7.9908 17.4602 7.81136 17.5059 7.60728C17.5516 7.4032 17.5189 7.1894 17.4142 7.00831L16.2976 5.07498C16.1931 4.89396 16.0245 4.7588 15.825 4.69629C15.6256 4.63378 15.41 4.64848 15.2209 4.73748L14.2517 5.19415C13.6066 4.62274 12.853 4.18713 12.0359 3.91331L11.9467 2.84748C11.9294 2.63924 11.8344 2.44511 11.6807 2.30358C11.527 2.16204 11.3257 2.08343 11.1167 2.08331H8.8834ZM8.8834 2.91665H11.1167L11.2526 4.54998L11.5301 4.62915C12.4152 4.88169 13.2242 5.34918 13.8851 5.98998L14.0926 6.18998L15.5759 5.49165L16.6926 7.42498L15.3467 8.35998L15.4167 8.63915C15.6392 9.53273 15.6392 10.4672 15.4167 11.3608L15.3467 11.64L16.6926 12.575L15.5759 14.5083L14.0926 13.8091L13.8851 14.0091C13.2243 14.6503 12.4153 15.118 11.5301 15.3708L11.2526 15.45L11.1167 17.0833H8.8834L8.74756 15.45L8.47006 15.3708C7.58489 15.1183 6.77588 14.6508 6.11506 14.01L5.90756 13.81L4.42423 14.5083L3.30756 12.575L4.6534 11.64L4.5834 11.3608C4.35889 10.4675 4.35889 9.53248 4.5834 8.63915L4.6534 8.35998L3.3084 7.42498L4.42506 5.49165L5.9084 6.19081L6.1159 5.99081C6.77663 5.34971 7.58564 4.88193 8.4709 4.62915L8.7484 4.54998L8.8834 2.91665Z" fill=' + designSettings.settingsButtonColor + ' /></svg></button>\n' +
+    ' </div>\n' +
+    ' <span class="wpccm-top-text" style="flex: 1; color: ' + designSettings.textColor + ' ; font-size: ' + designSettings.fontSize + ' ; line-height: 1.4; display: flex; align-items: center; gap: 10px;">\n' +
+    ' <svg xmlns="http://www.w3.org/2000/svg" style="width: ' + (designSettings.size === 'small' ? '35px' : designSettings.size === 'large' ? '55px' : '45px') + '; height: ' + (designSettings.size === 'small' ? '35px' : designSettings.size === 'large' ? '55px' : '45px') + '; flex-shrink: 0;" viewBox="0 0 71 71" fill="none"><g clip-path="url(#clip0_123_23)"><path d="M21.627 47.9957C24.6078 47.9957 27.0242 45.1557 27.0242 41.6523C27.0242 38.149 24.6078 35.309 21.627 35.309C18.6462 35.309 16.2297 38.149 16.2297 41.6523C16.2297 45.1557 18.6462 47.9957 21.627 47.9957Z" fill="#33294D"/><path d="M50.2095 47.9957C53.1903 47.9957 55.6067 45.1557 55.6067 41.6523C55.6067 38.149 53.1903 35.309 50.2095 35.309C47.2287 35.309 44.8123 38.149 44.8123 41.6523C44.8123 45.1557 47.2287 47.9957 50.2095 47.9957Z" fill="#33294D"/><path d="M39.8331 45.4354C38.8069 44.4801 37.4005 43.9451 35.9182 43.9451C34.4359 43.9451 33.0296 44.4801 32.0033 45.4354C31.0531 46.3143 30.521 47.4607 30.521 48.6453C30.521 51.2438 32.9535 53.3455 35.9182 53.3455C38.8829 53.3455 41.3154 51.2438 41.3154 48.6453C41.3154 46.0468 40.7833 46.2761 39.8331 45.4354ZM35.9182 45.015C37.1345 45.015 38.2367 45.4736 38.9969 46.1614C38.2747 46.8875 37.1725 47.3843 35.9182 47.3843C34.6639 47.3843 33.5237 46.8875 32.8395 46.1614C33.5997 45.4354 34.7019 45.015 35.9182 45.015ZM35.9182 52.3902C34.5119 52.3902 33.2576 51.8552 32.3834 51.0145C32.8775 50.5177 34.1698 49.486 35.9182 50.5559C37.6286 49.486 38.9589 50.4795 39.453 51.0145C38.5788 51.8552 37.3245 52.3902 35.9182 52.3902Z" fill="#33294D" stroke="#33294D" stroke-miterlimit="10"/><path d="M22.9572 30.303C23.2233 31.6404 21.931 32.9779 20.0686 33.3218C18.2441 33.6657 16.5338 32.8633 16.3057 31.564C16.0396 30.2266 17.3319 28.8891 19.1944 28.5452C21.0188 28.2013 22.7292 29.0037 22.9572 30.303Z" fill="#33294D"/><path d="M48.917 30.303C48.651 31.6404 49.9433 32.9779 51.8057 33.3218C53.6301 33.6657 55.3405 32.8633 55.5685 31.564C55.8346 30.2266 54.5423 28.8891 52.6799 28.5452C50.8555 28.2013 49.1451 29.0037 48.917 30.303Z" fill="#33294D"/><path d="M35.5001 1.64317C37.7046 1.64317 39.8331 1.83424 41.9235 2.25458C42.8357 4.70022 45.3443 8.82724 52.0718 9.43865C52.0718 9.43865 54.2383 14.4446 61.1939 14.4446C68.1495 14.4446 61.65 14.4446 61.878 14.4446C66.4391 20.2148 69.1757 27.5517 69.1757 35.5C69.1757 43.4483 69.1757 37.2578 69.0617 38.1367C69.4798 38.8245 69.4417 39.7417 68.8716 40.3913L68.7956 40.4677C66.4011 56.8229 52.4139 69.3568 35.5001 69.3568C18.5863 69.3568 4.40909 56.6701 2.16658 40.2002C1.67247 39.6652 1.52044 38.8628 1.8245 38.1749L1.93853 37.9074C1.86251 37.105 1.86251 36.3025 1.86251 35.5C1.8245 16.8138 16.9139 1.64317 35.5001 1.64317ZM35.5001 5.12227e-06C16.0397 5.12227e-06 0.190135 15.9349 0.190135 35.5C0.190135 55.0651 0.190135 36.9139 0.266152 37.6017C-0.151942 38.6717 -0.0379162 39.8945 0.608229 40.8498C1.86251 49.1039 5.96744 56.6701 12.2389 62.1728C18.6623 67.8665 26.9482 71 35.5381 71C44.128 71 52.2999 67.9047 58.7233 62.2874C64.9567 56.8229 69.0997 49.3332 70.43 41.1555C71.0761 40.162 71.2281 38.9392 70.8101 37.831C70.8481 37.0667 70.8861 36.3025 70.8861 35.5C70.8861 27.3988 68.2255 19.7562 63.2083 13.4128L62.6762 12.7632H61.84C61.65 12.8014 61.4219 12.8014 61.2319 12.8014C55.4926 12.8014 53.7062 8.94188 53.6302 8.78903L53.2501 7.87191L52.2619 7.79548C46.7126 7.29871 44.4701 4.16524 43.5199 1.68138L43.1778 0.802481L42.2656 0.611415C40.0611 0.191071 37.8186 -0.038208 35.5381 -0.038208L35.5001 5.12227e-06Z" fill="#33294D"/></g><defs><clipPath id="clip0_123_23"><rect width="71" height="71" fill="white"/></clipPath></defs></svg>\n' + 
+    ' <span style="flex: 1;">' + (b.description || texts.cookie_description || 'We use cookies on our website to give you the most relevant experience by remembering your preferences and repeat visits. By clicking "Accept All", you consent to the use of ALL the cookies.') + (b.policy_url ? ' <a href="' + b.policy_url + '" target="_blank" style="color: ' + designSettings.acceptButtonColor + ' ; text-decoration: underline ;">' + (texts.learn_more || 'Learn more') + '</a>' : '')+ '</span></span>\n' +
     ' </div>\n' +
     '</div>';
 
@@ -408,14 +417,19 @@ function renderBanner(){
     
     // Render banner immediately with available data
     (function(cookiesByCategory) {
+        // Determine theme for modals
+        var modalThemeClass = (designSettings.textColor === '#ffffff' ? 'dark-theme' : 'light-theme');
+        var modalBgColor = (designSettings.textColor === '#ffffff' ? '#2c2c2c' : '#ffffff');
+        var modalTextColor = (designSettings.textColor === '#ffffff' ? '#ffffff' : '#000000');
+        
         // Create the detailed modal (hidden by default)
         var modalHtml = ''+
-        '<div class="wpccm-modal" id="wpccm-modal" style="display: none;" role="dialog" aria-modal="true">\n' +
+        '<div class="wpccm-modal ' + modalThemeClass + '" id="wpccm-modal" style="display: none;" role="dialog" aria-modal="true">\n' +
         ' <div class="wpccm-modal-overlay"></div>\n' +
-        ' <div class="wpccm-modal-content">\n' +
+        ' <div class="wpccm-modal-content" style="background-color: ' + modalBgColor + '; color: ' + modalTextColor + ';">\n' +
         ' <div class="wpccm-modal-header">\n' +
         ' <h2>' + (b.title || texts.privacy_overview || 'Privacy Overview') + '</h2>\n' +
-        ' <button class="wpccm-modal-close" aria-label="Close">&times;</button>\n' +
+        ' <button class="wpccm-modal-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="37" height="37" viewBox="0 0 37 37" fill="none"><path d="M18.5 2.3125C9.48125 2.3125 2.3125 9.48125 2.3125 18.5C2.3125 27.5188 9.48125 34.6875 18.5 34.6875C27.5188 34.6875 34.6875 27.5188 34.6875 18.5C34.6875 9.48125 27.5188 2.3125 18.5 2.3125ZM18.5 32.375C10.8688 32.375 4.625 26.1313 4.625 18.5C4.625 10.8688 10.8688 4.625 18.5 4.625C26.1313 4.625 32.375 10.8688 32.375 18.5C32.375 26.1313 26.1313 32.375 18.5 32.375Z" fill="' + (designSettings.textColor === '#ffffff' ? '#ffffff' : '#D3D3D3') + '"/><path d="M24.7437 26.5938L18.5 20.35L12.2563 26.5938L10.4062 24.7437L16.65 18.5L10.4062 12.2563L12.2563 10.4062L18.5 16.65L24.7437 10.4062L26.5938 12.2563L20.35 18.5L26.5938 24.7437L24.7437 26.5938Z" fill="' + (designSettings.textColor === '#ffffff' ? '#ffffff' : '#D3D3D3') + '"/></svg></button>\n' +
         ' </div>\n' +
         ' <div class="wpccm-modal-body">\n' +
         ' <p>' + (b.description || texts.cookie_description || 'This website uses cookies to improve your experience while you navigate through the website. Out of these, the cookies that are categorized as necessary are stored on your browser as they are essential for the working of basic functionalities of the website...') + (b.policy_url ? ' <a href="' + b.policy_url + '" target="_blank" style="color: #0073aa; text-decoration: underline;">' + (texts.learn_more || 'Learn more') + '</a>' : '') + '</p>\n' +
@@ -450,12 +464,12 @@ function renderBanner(){
         
         // Add data deletion modal
         var dataDeletionModalHtml = ''+
-        '<div class="wpccm-modal" id="wpccm-data-deletion-modal" style="display: none;" role="dialog" aria-modal="true">\n' +
+        '<div class="wpccm-modal ' + modalThemeClass + '" id="wpccm-data-deletion-modal" style="display: none;" role="dialog" aria-modal="true">\n' +
         ' <div class="wpccm-modal-overlay"></div>\n' +
-        ' <div class="wpccm-modal-content">\n' +
+        ' <div class="wpccm-modal-content" style="background-color: ' + modalBgColor + '; color: ' + modalTextColor + ';">\n' +
         ' <div class="wpccm-modal-header">\n' +
         ' <h2>' + (texts.data_deletion || 'מחיקת היסטוריית נתונים') + '</h2>\n' +
-        ' <button class="wpccm-modal-close" aria-label="Close">&times;</button>\n' +
+        ' <button class="wpccm-modal-close" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="37" height="37" viewBox="0 0 37 37" fill="none"><path d="M18.5 2.3125C9.48125 2.3125 2.3125 9.48125 2.3125 18.5C2.3125 27.5188 9.48125 34.6875 18.5 34.6875C27.5188 34.6875 34.6875 27.5188 34.6875 18.5C34.6875 9.48125 27.5188 2.3125 18.5 2.3125ZM18.5 32.375C10.8688 32.375 4.625 26.1313 4.625 18.5C4.625 10.8688 10.8688 4.625 18.5 4.625C26.1313 4.625 32.375 10.8688 32.375 18.5C32.375 26.1313 26.1313 32.375 18.5 32.375Z" fill="' + (designSettings.textColor === '#ffffff' ? '#ffffff' : '#D3D3D3') + '"/><path d="M24.7437 26.5938L18.5 20.35L12.2563 26.5938L10.4062 24.7437L16.65 18.5L10.4062 12.2563L12.2563 10.4062L18.5 16.65L24.7437 10.4062L26.5938 12.2563L20.35 18.5L26.5938 24.7437L24.7437 26.5938Z" fill="' + (designSettings.textColor === '#ffffff' ? '#ffffff' : '#D3D3D3') + '"/></svg></button>\n' +
         ' </div>\n' +
         ' <div class="wpccm-modal-body">\n' +
         ' <p>' + (texts.data_deletion_description || 'בחר את סוג הנתונים שברצונך למחוק:') + '</p>\n' +
@@ -950,7 +964,12 @@ function hideBanner() {
     
     // Show floating button after banner is hidden
     setTimeout(function() {
-        initFloatingButton();
+        var floatingButton = document.getElementById('wpccm-floating-btn');
+        if (floatingButton) {
+            floatingButton.style.display = 'flex';
+        } else {
+            initFloatingButton();
+        }
     }, 500);
 }
 
@@ -1165,138 +1184,63 @@ function createFloatingButton() {
         buttonPadding: root.getAttribute('data-button-padding') || '8px 16px'
     };
 
-    var floatingButtonHtml = '';
-        if (designSettings.floatingPosition) {
-            var floatingButtonStyle = 'position: fixed !important; z-index: 999998 !important; cursor: pointer !important; border: none !important; border-radius: 50% !important; width: 50px !important; height: 50px !important; background-color: ' + designSettings.settingsButtonColor + ' !important; color: white !important; font-size: 20px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important; transition: all 0.3s ease !important;';
-            
-            // Position the floating button
-            if (designSettings.floatingPosition === 'top-right') {
-                floatingButtonStyle += 'top: 20px !important; right: 20px !important;';
-            } else if (designSettings.floatingPosition === 'top-left') {
-                floatingButtonStyle += 'top: 20px !important; left: 20px !important;';
-            } else if (designSettings.floatingPosition === 'bottom-right') {
-                floatingButtonStyle += 'bottom: 20px !important; right: 20px !important;';
-            } else if (designSettings.floatingPosition === 'bottom-left') {
-                floatingButtonStyle += 'bottom: 20px !important; left: 20px !important;';
-            }
-            
-            floatingButtonHtml = '<button id="wpccm-floating-btn" style="' + floatingButtonStyle + '" title="' + (texts.cookie_settings || 'Cookie Settings') + '">🍪</button>';
-        }
+    // ' + designSettings.settingsButtonColor + '
+    // transparent !important
+    // Dynamic colors based on theme
+    var _classbg = (designSettings.textColor === '#ffffff' ? '#000000' : '#ffffff');
+    var _classcolor = (designSettings.textColor === '#ffffff' ? '#ffffff' : '#33294D');
     
-    // Create floating button
+    // Create floating button with new structure and dynamic styling
     var button = document.createElement('button');
-    // var button = floatingButtonHtml;
-    button.innerHTML = floatingButtonHtml;
-    // button.id = 'wpccm-floating-button';
-    // button.className = 'wpccm-floating-button';
-    // button.innerHTML = '🍪'; // Cookie emoji
-    button.title = 'תתתתתתתתהגדרות עוגיות';
+    button.id = 'wpccm-floating-btn';
+    button.className = 'wpccm-floating-button';
     
-    // Create popup
-    var popup = document.createElement('div');
-    popup.id = 'wpccm-floating-popup';
-    popup.className = 'wpccm-floating-popup';
-    popup.innerHTML = '<div class="wpccm-floating-popup-content">' +
-        '<button class="wpccm-floating-popup-button primary" onclick="editCookieSettings()">עריכת עוגיות</button>' +
-        '<button class="wpccm-floating-popup-button secondary" onclick="closeFloatingPopup()">סגור</button>' +
-        '</div>';
+    // Create the button content with original logo and text
+    button.innerHTML = '<span class="wpccm-button-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 71 71" fill="none"><g clip-path="url(#clip0_123_23)"><path d="M21.627 47.9957C24.6078 47.9957 27.0242 45.1557 27.0242 41.6523C27.0242 38.149 24.6078 35.309 21.627 35.309C18.6462 35.309 16.2297 38.149 16.2297 41.6523C16.2297 45.1557 18.6462 47.9957 21.627 47.9957Z" fill="' + _classcolor + '"></path><path d="M50.2095 47.9957C53.1903 47.9957 55.6067 45.1557 55.6067 41.6523C55.6067 38.149 53.1903 35.309 50.2095 35.309C47.2287 35.309 44.8123 38.149 44.8123 41.6523C44.8123 45.1557 47.2287 47.9957 50.2095 47.9957Z" fill="' + _classcolor + '"></path><path d="M39.8331 45.4354C38.8069 44.4801 37.4005 43.9451 35.9182 43.9451C34.4359 43.9451 33.0296 44.4801 32.0033 45.4354C31.0531 46.3143 30.521 47.4607 30.521 48.6453C30.521 51.2438 32.9535 53.3455 35.9182 53.3455C38.8829 53.3455 41.3154 51.2438 41.3154 48.6453C41.3154 46.0468 40.7833 46.2761 39.8331 45.4354ZM35.9182 45.015C37.1345 45.015 38.2367 45.4736 38.9969 46.1614C38.2747 46.8875 37.1725 47.3843 35.9182 47.3843C34.6639 47.3843 33.5237 46.8875 32.8395 46.1614C33.5997 45.4354 34.7019 45.015 35.9182 45.015ZM35.9182 52.3902C34.5119 52.3902 33.2576 51.8552 32.3834 51.0145C32.8775 50.5177 34.1698 49.486 35.9182 50.5559C37.6286 49.486 38.9589 50.4795 39.453 51.0145C38.5788 51.8552 37.3245 52.3902 35.9182 52.3902Z" fill="' + _classcolor + '" stroke="' + _classcolor + '" stroke-miterlimit="10"></path><path d="M22.9572 30.303C23.2233 31.6404 21.931 32.9779 20.0686 33.3218C18.2441 33.6657 16.5338 32.8633 16.3057 31.564C16.0396 30.2266 17.3319 28.8891 19.1944 28.5452C21.0188 28.2013 22.7292 29.0037 22.9572 30.303Z" fill="' + _classcolor + '"></path><path d="M48.917 30.303C48.651 31.6404 49.9433 32.9779 51.8057 33.3218C53.6301 33.6657 55.3405 32.8633 55.5685 31.564C55.8346 30.2266 54.5423 28.8891 52.6799 28.5452C50.8555 28.2013 49.1451 29.0037 48.917 30.303Z" fill="' + _classcolor + '"></path><path d="M35.5001 1.64317C37.7046 1.64317 39.8331 1.83424 41.9235 2.25458C42.8357 4.70022 45.3443 8.82724 52.0718 9.43865C52.0718 9.43865 54.2383 14.4446 61.1939 14.4446C68.1495 14.4446 61.65 14.4446 61.878 14.4446C66.4391 20.2148 69.1757 27.5517 69.1757 35.5C69.1757 43.4483 69.1757 37.2578 69.0617 38.1367C69.4798 38.8245 69.4417 39.7417 68.8716 40.3913L68.7956 40.4677C66.4011 56.8229 52.4139 69.3568 35.5001 69.3568C18.5863 69.3568 4.40909 56.6701 2.16658 40.2002C1.67247 39.6652 1.52044 38.8628 1.8245 38.1749L1.93853 37.9074C1.86251 37.105 1.86251 36.3025 1.86251 35.5C1.8245 16.8138 16.9139 1.64317 35.5001 1.64317ZM35.5001 5.12227e-06C16.0397 5.12227e-06 0.190135 15.9349 0.190135 35.5C0.190135 55.0651 0.190135 36.9139 0.266152 37.6017C-0.151942 38.6717 -0.0379162 39.8945 0.608229 40.8498C1.86251 49.1039 5.96744 56.6701 12.2389 62.1728C18.6623 67.8665 26.9482 71 35.5381 71C44.128 71 52.2999 67.9047 58.7233 62.2874C64.9567 56.8229 69.0997 49.3332 70.43 41.1555C71.0761 40.162 71.2281 38.9392 70.8101 37.831C70.8481 37.0667 70.8861 36.3025 70.8861 35.5C70.8861 27.3988 68.2255 19.7562 63.2083 13.4128L62.6762 12.7632H61.84C61.65 12.8014 61.4219 12.8014 61.2319 12.8014C55.4926 12.8014 53.7062 8.94188 53.6302 8.78903L53.2501 7.87191L52.2619 7.79548C46.7126 7.29871 44.4701 4.16524 43.5199 1.68138L43.1778 0.802481L42.2656 0.611415C40.0611 0.191071 37.8186 -0.038208 35.5381 -0.038208L35.5001 5.12227e-06Z" fill="' + _classcolor + '"></path></g><defs><clipPath id="clip0_123_23"><rect width="71" height="71" fill="white"></rect></clipPath></defs></svg></span><span class="wpccm-button-text">COOKIE SETTINGS</span>';
+    button.title = 'Cookie Settings';
     
-    // Add click event to toggle popup
+    // Apply dynamic styling based on theme
+    var dynamicStyle = '';
+    
+    // Position the button based on settings
+    if (designSettings.floatingPosition === 'top-right') {
+        dynamicStyle += 'top: 20px; right: 20px; ';
+    } else if (designSettings.floatingPosition === 'top-left') {
+        dynamicStyle += 'top: 20px; left: 20px; ';
+    } else if (designSettings.floatingPosition === 'bottom-right') {
+        dynamicStyle += 'bottom: 20px; right: 20px; ';
+    } else if (designSettings.floatingPosition === 'bottom-left') {
+        dynamicStyle += 'bottom: 20px; left: 20px; ';
+    }
+    
+    // Add dynamic background color based on theme
+    dynamicStyle += 'background-color: ' + _classbg + '; ';
+    dynamicStyle += 'color: ' + _classcolor + '; ';
+    
+    button.style.cssText += dynamicStyle;
+    
+    // Add click event to open settings directly
     button.addEventListener('click', function(e) {
         e.stopPropagation();
-        toggleFloatingPopup();
-    });
-    
-    // Close popup when clicking outside
-    document.addEventListener('click', function(e) {
-        var popup = document.getElementById('wpccm-floating-popup');
-        if (popup && !popup.contains(e.target) && !button.contains(e.target)) {
-            closeFloatingPopup();
-        }
-    });
-    
-    // Update popup position on window resize
-    window.addEventListener('resize', function() {
-        var popup = document.getElementById('wpccm-floating-popup');
-        if (popup && popup.classList.contains('show')) {
-            toggleFloatingPopup(); // This will reposition the popup
-        }
+        editCookieSettings(); // Open settings directly without popup
     });
     
     // Add to body
     document.body.appendChild(button);
-    document.body.appendChild(popup);
 }
 
-function toggleFloatingPopup() {
-    console.log("toggleFloatingPopup"); 
-    var popup = document.getElementById('wpccm-floating-popup');
-    var button = document.getElementById('wpccm-floating-btn');
-    
-    if (popup && button) {
-        console.log("toggleFloatingPopup55555"); 
-        // Get button position
-        var buttonRect = button.getBoundingClientRect();
-        var popupRect = popup.getBoundingClientRect();
-        
-        // Check if button is in top position
-        var isTopPosition = buttonRect.top < window.innerHeight / 2;
-        
-        // Calculate popup position based on button position
-        var popupTop, popupLeft;
-        
-        if (isTopPosition) {
-            // Button is in top half - show popup below button
-            popupTop = buttonRect.bottom + 10; // 10px gap below
-            popup.classList.add('arrow-up');
-            popup.classList.remove('arrow-down');
-        } else {
-            // Button is in bottom half - show popup above button
-            popupTop = buttonRect.top - popupRect.height - 10; // 10px gap above
-            popup.classList.add('arrow-down');
-            popup.classList.remove('arrow-up');
-        }
-        
-        popupLeft = buttonRect.left + (buttonRect.width / 2) - (popupRect.width / 2);
-        
-        // Ensure popup doesn't go off screen
-        if (popupLeft < 20) popupLeft = 20;
-        if (popupLeft + popupRect.width > window.innerWidth - 20) {
-            popupLeft = window.innerWidth - popupRect.width - 20;
-        }
-        
-        console.log(popupTop);
-        console.log(popupLeft);
-        // Position the popup
-        popup.style.top = popupTop + 'px';
-        popup.style.left = popupLeft + 'px';
-        
-        // Position the arrow to point to the button
-        var arrowLeft = buttonRect.left + (buttonRect.width / 2) - popupLeft - 8; // 8px is half arrow width
-        popup.style.setProperty('--arrow-left', arrowLeft + 'px');
-        
-        popup.classList.toggle('show');
-    }
-}
-
-function closeFloatingPopup() {
-    var popup = document.getElementById('wpccm-floating-popup');
-    if (popup) {
-        popup.classList.remove('show');
-    }
-}
+// Popup functions removed - floating button now opens settings directly
 
 function editCookieSettings() {
-    closeFloatingPopup();
+    // Hide the floating button when opening settings
+    var floatingButton = document.getElementById('wpccm-floating-btn');
+    if (floatingButton) {
+        floatingButton.style.display = 'none';
+    }
     
-    // Reset the consent state to show banner again
+    // Only reset the main consent state to show banner again
+    // Keep individual category preferences intact so they show in the modal
     deleteCookie('wpccm_consent');
-    
-    // Also clear old format cookies
-    var categories = ['necessary', 'functional', 'performance', 'analytics', 'advertisement', 'others'];
-    categories.forEach(function(cat) {
-        deleteCookie('consent_' + cat);
-    });
     
     // Re-render the banner
     renderBanner();
@@ -1304,7 +1248,6 @@ function editCookieSettings() {
 
 // Make functions global for onclick handlers
 window.editCookieSettings = editCookieSettings;
-window.closeFloatingPopup = closeFloatingPopup;
 
 /**
  * Log consent action to database

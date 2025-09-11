@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.29
+ * Version: 1.0.30
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -13,11 +13,12 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-define('WPCCM_VERSION', '1.0.29');
+define('WPCCM_VERSION', '1.0.30');
 
 // Dashboard API Configuration
-define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.29');
+// define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
+define('WPCCM_DASHBOARD_API_URL', 'http://localhost:8000/api');
+define('WPCCM_DASHBOARD_VERSION', '1.0.30');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
@@ -108,6 +109,7 @@ function wpccm_text($key, $default = '') {
         'banner_settings' => ['en' => 'Banner Settings', 'he' => 'הגדרות באנר'],
         'script_mapping' => ['en' => 'Script Mapping', 'he' => 'מיפוי סקריפטים'],
         'cookie_purging' => ['en' => 'Cookie Purging', 'he' => 'מחיקת עוגיות'],
+        'symc_cookie_and_script' => ['en' => 'Symc Cookie And Script', 'he' => 'סנכרון עוגיות וסכריפטים'],
         
         // Banner Fields
         'title' => ['en' => 'Title', 'he' => 'כותרת'],
@@ -275,6 +277,7 @@ function wpccm_text($key, $default = '') {
         'cookie_reason_security' => ['en' => 'Security token - prevents attacks', 'he' => 'אסימון אבטחה - מונע התקפות'],
         'cookie_reason_wordpress' => ['en' => 'WordPress core functionality', 'he' => 'פונקציונליות ליבה של WordPress'],
         'cookie_reason_necessary' => ['en' => 'Essential for basic site functionality', 'he' => 'חיוני לתפקוד בסיסי של האתר'],
+        'enter_license_key' => ['en' => 'Enter the license key you received when purchasing the plugin', 'he' => 'הזן את מפתח הרישיון שקיבלת בעת רכישת התוסף'],
     ];
     
     $locale = get_locale();
@@ -474,10 +477,10 @@ class WP_CCM {
         $floating_button_position = isset($design_settings['floating_button_position']) ? $design_settings['floating_button_position'] : 'bottom-right';
         $background_color = isset($design_settings['background_color']) ? $design_settings['background_color'] : '#ffffff';
         $text_color = isset($design_settings['text_color']) ? $design_settings['text_color'] : '#000000';
-        $accept_button_color = isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa';
-        $reject_button_color = isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#6c757d';
-        $settings_button_color = isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#28a745';
-        $data_deletion_button_color = isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545';
+        $accept_button_color = isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#000000';
+        $reject_button_color = isset($design_settings['reject_button_color']) ? $design_settings['reject_button_color'] : '#000000';
+        $settings_button_color = isset($design_settings['settings_button_color']) ? $design_settings['settings_button_color'] : '#000000';
+        $data_deletion_button_color = isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#000000';
         $size = isset($design_settings['size']) ? $design_settings['size'] : 'medium';
         
         // Calculate size values

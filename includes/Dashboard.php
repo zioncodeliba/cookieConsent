@@ -45,10 +45,16 @@ class WP_CCM_Dashboard {
             wp_send_json_error('חסרים פרטי רישיון');
         }
         
-        $response = wp_remote_get($this->api_url . '/plugin/websites/' . $this->website_id . '/info?license_key=' . urlencode($this->license_key), array(
+        $domain = parse_url(get_site_url(), PHP_URL_HOST);
+        
+        $response = wp_remote_post($this->api_url . '/plugin/validate-license', array(
             'headers' => array(
                 'Content-Type' => 'application/json'
             ),
+            'body' => json_encode(array(
+                'license_key' => $this->license_key,
+                'domain' => $domain
+            )),
             'timeout' => 10
         ));
         
@@ -57,10 +63,15 @@ class WP_CCM_Dashboard {
         }
         
         $code = wp_remote_retrieve_response_code($response);
-        if ($code === 200) {
-            wp_send_json_success('דדדדדדדדדחיבור מוצלח לדשבורד');
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        if ($code === 200 && isset($data['valid']) && $data['valid']) {
+            $message = isset($data['message']) ? $data['message'] : 'חיבור מוצלח לדשבורד';
+            wp_send_json_success($message);
         } else {
-            wp_send_json_error('שגיאה בחיבור - קוד: ' . $code);
+            $error_message = isset($data['message']) ? $data['message'] : 'שגיאה בחיבור - קוד: ' . $code;
+            wp_send_json_error($error_message);
         }
     }
 
@@ -68,55 +79,58 @@ class WP_CCM_Dashboard {
      * בדיקת חיבור שקטה (ללא AJAX response)
      */
     public function test_connection_silent() {
-        $master_code = get_option('wpccm_master_code', '');
-        // $stored_master_code = get_option('wpccm_stored_master_code', '');
-        $stored_master_code = '56588486';
-        
-        // If master code is set and matches stored code, activate plugin
-        if (!empty($master_code) && !empty($stored_master_code) && $master_code === "56588486") {
-            return true;
-        }
-
-        if (empty($this->website_id) || empty($this->license_key)) {
+        if (empty($this->license_key)) {
             return false;
         }
         
-        $response = wp_remote_get($this->api_url . '/plugin/websites/' . $this->website_id . '/info?license_key=' . urlencode($this->license_key), array(
+        $domain = parse_url(get_site_url(), PHP_URL_HOST);
+        
+        $response = wp_remote_post($this->api_url . '/plugin/validate-license', array(
             'headers' => array(
                 'Content-Type' => 'application/json'
             ),
+            'body' => json_encode(array(
+                'license_key' => $this->license_key,
+                'domain' => $domain
+            )),
             'timeout' => 5
         ));
         
-        // if (is_wp_error($response)) {
-        //     return false;
-        // }
         if (is_wp_error($response)) {
-            wp_send_json_error('שגיאה בחיבור: ' . $response->get_error_message());
+            return false;
         }
         
         $code = wp_remote_retrieve_response_code($response);
-        return $code === 200;
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        return $code === 200 && isset($data['valid']) && $data['valid'];
     }
 
     /**
      * בדיקת חיבור עם נתונים מותאמים אישית (מהשדות הנוכחיים)
      */
     public function test_connection_custom() {
+        
         check_ajax_referer('wpccm_admin_nonce', 'nonce');
         
         $api_url = sanitize_text_field($_POST['api_url'] ?? '');
         $license_key = sanitize_text_field($_POST['license_key'] ?? '');
-        $website_id = 1;
         
-        if (empty($api_url) || empty($license_key) || empty($website_id)) {
+        if (empty($api_url) || empty($license_key)) {
             wp_send_json_error('חסרים פרטי רישיון');
         }
         
-        $response = wp_remote_get($api_url . '/plugin/websites/' . $website_id . '/info?license_key=' . urlencode($license_key), array(
+        $domain = parse_url(get_site_url(), PHP_URL_HOST);
+        
+        $response = wp_remote_post($api_url . '/plugin/validate-license', array(
             'headers' => array(
                 'Content-Type' => 'application/json'
             ),
+            'body' => json_encode(array(
+                'license_key' => $license_key,
+                'domain' => $domain
+            )),
             'timeout' => 10
         ));
         
@@ -125,11 +139,15 @@ class WP_CCM_Dashboard {
         }
         
         $code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
         
-        if ($code === 200) {
-            wp_send_json_success('חיבור מוצלח לדשבורד');
+        if ($code === 200 && isset($data['valid']) && $data['valid']) {
+            $message = isset($data['message']) ? $data['message'] : 'חיבור מוצלח לדשבורד';
+            wp_send_json_success($message);
         } else {
-            wp_send_json_error('שגיאה בחיבור - קוד: ' . $code);
+            $error_message = isset($data['message']) ? $data['message'] : 'שגיאה בחיבור - קוד: ' . $code;
+            wp_send_json_error($error_message);
         }
     }
     

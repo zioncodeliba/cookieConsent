@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 /* Cookies Input Container Styles */
 .cookies-input-container {
     position: relative;
@@ -52,12 +51,18 @@
 }
 
 /* Top Banner (small notification) */
-.wpccm-top-banner { position: fixed !important; left: 0; right: 0; background: #f8f9fa; border-bottom: 1px solid #dee2e6; z-index: 999999; font-size: 13px; line-height: 1.4; max-width: calc(100% - 110px); margin: 0 auto; border-radius: 20px 20px 0 0 !important; box-shadow: 0 -2px 14px rgba(0,0,0,0.2); }
-.wpccm-top-banner.banner_top{border-radius: 0 0  20px 20px !important;} 
-
-.wpccm-top-banner {padding: 20px 62px !important;}
-.wpccm-top-banner .wpccm-top-content{padding: 0 !important;max-width: 100% !important;}
-.wpccm-top-banner .wpccm-top-actions button{border-radius: 30px;}
+.wpccm-top-banner {
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 
 .wpccm-top-content {
     max-width: 1200px;
@@ -69,10 +74,11 @@
     gap: 20px;
 }
 
-.wpccm-top-text { flex: 1; font-size: 19px ;font-weight: 400;color: #000000; line-height: 1.5; display: flex ; align-items: center; flex-wrap: wrap; }
-.wpccm-top-text svg{margin-left: 27px;}
-.wpccm-top-text a{ font-size: 19px ;font-weight: 400;color: #000000;margin-right: 5px;}
-.wpccm-top-text span{max-width: 797px;}
+.wpccm-top-text {
+    flex: 1;
+    color: #495057;
+    line-height: 1.5;
+}
 
 .wpccm-top-actions {
     display: flex;
@@ -81,15 +87,30 @@
     flex-shrink: 0;
 }
 
-.wpccm-btn-settings { width: 40px; height: 40px; border-radius: 50%; display: flex;align-items: center;justify-content: center; cursor: pointer; border: 1px solid #000000;margin-right: 30px;background-color: transparent !important;}
+.wpccm-btn-settings {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #6c757d;
+    border-radius: 4px;
+    color: #6c757d;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
 
+.wpccm-btn-settings:hover {
+    background: #6c757d;
+    color: white;
+}
 
 .wpccm-btn-data-deletion {
     padding: 6px 12px;
     background: transparent;
-    border: 1px solid #000;
+    border: 1px solid #0000;
     border-radius: 4px;
-    color: #000;
+    color: #0000;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -99,7 +120,7 @@
 }
 
 .wpccm-btn-data-deletion:hover {
-    background: #000;
+    background: #0000;
     color: white;
 }
 
@@ -125,7 +146,7 @@
     background: #0000;
     border: none;
     border-radius: 4px;
-    color: white;
+    color: #0000;
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -185,27 +206,46 @@
     justify-content: space-between;
 }
 
-.wpccm-modal-header h2 { margin: 0; font-size: 25px; font-weight: 400; color: #000; }
+.wpccm-modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #212529;
+}
 
-.wpccm-modal-close { background: none;  cursor: pointer; padding: 0; width: 35px; height: 35px; display: flex ; align-items: center; justify-content: center;transition: background-color 0.2s ease; border:none !important; padding: 0; box-sizing: border-box; margin: 0; line-height: 1; }
-.wpccm-modal-close:hover {opacity: 0.8;}
+.wpccm-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.wpccm-modal-close:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
 
 .wpccm-modal-body {
-    padding: 20px;
+    padding: 24px;
     overflow-y: auto;
     flex: 1;
 }
 
 .wpccm-modal-body > p {
     margin: 0 0 24px 0;
-    color: #8F8F8F;
-    line-height: 1;
-    font-size: 18px;
-    font-family: "Inter", sans-serif;
-    font-weight: 300;
-
+    color: #6c757d;
+    line-height: 1.6;
+    font-size: 14px;
 }
-.wpccm-modal-body > p a{color: #37B1D3;font-size: 18px;font-weight: 300;}
 
 .wpccm-categories {
     display: flex;
@@ -213,7 +253,11 @@
     gap: 16px;
 }
 
-.wpccm-category { border: 1px solid #DBDBDB; border-radius: 20px; overflow: hidden; }
+.wpccm-category {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
 
 .wpccm-category-header {
     padding: 16px 20px;
@@ -227,7 +271,12 @@
     flex: 1;
 }
 
-.wpccm-category-info h4 { margin: 0 0 11px 0; font-size: 22px; font-weight: 500; color: #000; }
+.wpccm-category-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #212529;
+}
 
 .wpccm-category-info p {
     margin: 0;
@@ -303,29 +352,27 @@ input:checked + .wpccm-slider:before {
 
 .wpccm-modal-footer {
     padding: 20px 24px;
+    border-top: 1px solid #dee2e6;
     display: flex;
     justify-content: center;
 }
 
 .wpccm-btn-save-accept {
-       padding: 11px 45px;
-    background: transparent;
+    padding: 12px 24px;
+    background: #28a745;
     border: none;
     border-radius: 6px;
-    color: #006EBD;
+    color: white;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.2s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border: 1px solid #006EBD;
-    border-radius: 50px;
 }
 
 .wpccm-btn-save-accept:hover {
-    background-color: #006EBD;
-    color:#fff;
+    background: #218838;
 }
 
 /* RTL Support for Hebrew */
@@ -636,199 +683,155 @@ body.rtl .wpccm-top-actions {
     left: 20px;
     width: 60px;
     height: 60px;
-    /* background color set dynamically by JavaScript */
+    background: #2c3e50;
     border: none;
-    border-radius: 30px;
+    border-radius: 50%;
     cursor: pointer;
     z-index: 9999;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* color set dynamically by JavaScript */
+    color: white;
     font-size: 24px;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.wpccm-floating-button .wpccm-button-icon {
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.wpccm-floating-button .wpccm-button-icon svg {
-    width: 36px;
-    height: 36px;
-}
-
-.wpccm-floating-button .wpccm-button-text {
-    opacity: 0;
-    width: 0;
-    margin-left: 0;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .wpccm-floating-button:hover {
-    width: 200px;
-    /* background color will be slightly darker than the base color */
-    filter: brightness(0.9);
+    background: #34495e;
+    transform: scale(1.1);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-
-.wpccm-floating-button:hover .wpccm-button-text {
-    opacity: 1;
-    width: auto;
-    margin-left: 10px;
 }
 
 .wpccm-floating-button:active {
     transform: scale(0.95);
 }
 
-/* Dark theme modal styles */
-.wpccm-modal.dark-theme .wpccm-modal-content {
-    background-color: #2c2c2c !important;
-    color: #ffffff !important;
-    border: 1px solid #444444;
+/* Floating Button Popup */
+.wpccm-floating-popup {
+    position: fixed;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    z-index: 9998;
+    min-width: 180px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    border: 1px solid #e1e5e9;
 }
 
-.wpccm-modal.dark-theme .wpccm-modal-header {
-    border-bottom-color: #444444 !important;
+.wpccm-floating-popup.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
 }
 
-.wpccm-modal.dark-theme .wpccm-modal-header h2 {
-    color: #ffffff !important;
+.wpccm-floating-popup::before {
+    content: '';
+    position: absolute;
+    left: var(--arrow-left, 30px);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
 }
 
-.wpccm-modal.dark-theme .wpccm-modal-body {
-    color: #ffffff !important;
+/* Arrow pointing down (popup above button) */
+.wpccm-floating-popup.arrow-down::before {
+    bottom: -8px;
+    border-top: 8px solid white;
 }
 
-.wpccm-modal.dark-theme .wpccm-modal-body p {
-    color: #ffffff !important;
+/* Arrow pointing up (popup below button) */
+.wpccm-floating-popup.arrow-up::before {
+    top: -8px;
+    border-bottom: 8px solid white;
 }
 
-.wpccm-modal.dark-theme .wpccm-modal-body a {
-    color: #66b3ff !important;
+.wpccm-floating-popup-content {
+    padding: 0;
 }
 
-.wpccm-modal.dark-theme .wpccm-category {
-    background-color: #3c3c3c !important;
-    border-color: #555555 !important;
+.wpccm-floating-popup-button {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: right;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+    border-radius: 0;
 }
 
-.wpccm-modal.dark-theme .wpccm-category h3 {
-    color: #ffffff !important;
+.wpccm-floating-popup-button:first-child {
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
 }
 
-.wpccm-modal.dark-theme .wpccm-category p {
-    color: #cccccc !important;
+.wpccm-floating-popup-button:last-child {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
-.wpccm-modal.dark-theme .wpccm-toggle {
-    background-color: #555555 !important;
+.wpccm-floating-popup-button:hover {
+    background-color: #f8f9fa;
 }
 
-.wpccm-modal.dark-theme .wpccm-toggle.active {
-    background-color: #0073aa !important;
+.wpccm-floating-popup-button.primary {
+    color: #2c3e50;
+    font-weight: 500;
 }
 
-.wpccm-modal.dark-theme .wpccm-btn-save-accept {
-    background-color: #0073aa !important;
-    color: #ffffff !important;
+.wpccm-floating-popup-button.secondary {
+    color: #6c757d;
 }
 
-.wpccm-modal.dark-theme .wpccm-btn-save-accept:hover {
-    background-color: #005a87 !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-deletion-option {
-    background-color: #3c3c3c !important;
-    border-color: #555555 !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-deletion-option label {
-    color: #ffffff !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-option-description {
-    color: #cccccc !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-ip-info {
-    background-color: #3c3c3c !important;
-    border-color: #555555 !important;
-    color: #ffffff !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-ip-input {
-    background-color: #555555 !important;
-    border-color: #666666 !important;
-    color: #ffffff !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-btn-submit-deletion,
-.wpccm-modal.dark-theme .wpccm-btn-edit-ip,
-.wpccm-modal.dark-theme .wpccm-btn-save-ip,
-.wpccm-modal.dark-theme .wpccm-btn-cancel {
-    background-color: #0073aa !important;
-    color: #ffffff !important;
-    border-color: #0073aa !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-btn-submit-deletion:hover,
-.wpccm-modal.dark-theme .wpccm-btn-edit-ip:hover,
-.wpccm-modal.dark-theme .wpccm-btn-save-ip:hover {
-    background-color: #005a87 !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-btn-cancel {
-    background-color: #666666 !important;
-    border-color: #666666 !important;
-}
-
-.wpccm-modal.dark-theme .wpccm-btn-cancel:hover {
-    background-color: #555555 !important;
-}
-
-/* Floating Button Popup styles removed - button now opens settings directly */
-*{box-sizing: border-box !important;font-family: "Inter", sans-serif;}
 /* Data Deletion Modal Styles */
 .wpccm-data-deletion-options {
     margin: 20px 0;
 }
 
 .wpccm-deletion-option {
-       margin-bottom: 20px;
-    padding: 11px 48px 18px 20px;
+    margin-bottom: 20px;
+    padding: 15px;
     border: 1px solid #e1e5e9;
     border-radius: 8px;
-    background: #fff;
-    position: relative;
-    font-family: "Inter", sans-serif;
+    background: #f8f9fa;
 }
-.wpccm-deletion-option input[type="radio"] { position: absolute; top: 14px; right: 16px; width: 22px; height: 22px; margin: 0 !important; }
-.wpccm-deletion-radio { display: flex; align-items: flex-start; cursor: pointer; margin-bottom: 2px; }
 
-.wpccm-deletion-radio input[type="radio"] { margin: 0 10px 0 0; margin-top: 2px; }
-.wpccm-radio-label { font-weight: 300; color: #242424; font-size: 16px; font-family: "Inter", sans-serif; }
+.wpccm-deletion-radio {
+    display: flex;
+    align-items: flex-start;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
 
-.wpccm-option-description {font-family: "Inter", sans-serif; margin: 0; color: #727272; font-size: 14px; line-height: 1.4;}
+.wpccm-deletion-radio input[type="radio"] {
+    margin: 0 10px 0 0;
+    margin-top: 2px;
+}
 
+.wpccm-radio-label {
+    font-weight: 500;
+    color: #212529;
+    font-size: 14px;
+}
 
+.wpccm-option-description {
+    margin: 8px 0 0 25px;
+    color: #6c757d;
+    font-size: 13px;
+    line-height: 1.4;
+}
 
 .wpccm-ip-section {
     margin: 20px 0;
     padding: 15px;
-    background: #fff;
+    background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #e1e5e9;
 }
@@ -841,10 +844,10 @@ body.rtl .wpccm-top-actions {
 }
 
 .wpccm-ip-input {
-        width: 100%;
+    width: 100%;
     padding: 8px 12px;
-    border: 1px solid #DBDBDB;
-    border-radius: 8px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
     font-family: inherit;
     font-size: 14px;
     background: white;
@@ -856,38 +859,51 @@ body.rtl .wpccm-top-actions {
     outline: none;
 }
 
-.wpccm-edit-ip-btn { margin-top: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: background-color 0.2s ease; font-weight: 400; width: 80px; line-height: 30px; padding: 0; border-radius: 30px; background-color: #fff !important; color: #006EBD; border: 1px solid #006EBD !important; font-family: "Inter", sans-serif; }
-
-.wpccm-edit-ip-btn:hover {
-    background-color: #006EBD !important;
-    color: #fff !important;
+.wpccm-edit-ip-btn {
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: #007cba;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-.wpccm-btn-cancel { padding: 11.5px 35.5px; background: #fff; border: 1px solid #777777; border-radius: 30px; color: #777777; font-size: 12px; cursor: pointer; transition: background-color 0.2s ease; margin-right: 0; font-family: "Inter", sans-serif; margin-left: 15px; }
+.wpccm-edit-ip-btn:hover {
+    background: #005a87;
+}
+
+.wpccm-btn-cancel {
+    padding: 8px 16px;
+    background: #6c757d;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-right: 10px;
+}
 
 .wpccm-btn-cancel:hover {
-    background-color: #777777;
-    color: #fff;
+    background: #5a6268;
 }
 
 .wpccm-btn-submit-deletion {
-      font-size: 12px;
+    padding: 8px 16px;
+    background: #dc3545;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    font-weight: 400;
-    width: auto;
-    line-height: 30px;
-    padding: 0 36px;
-    border-radius: 30px;
-    background-color: #fff !important;
-    color: #006EBD;
-    border: 1px solid #006EBD !important;
-    font-family: "Inter", sans-serif;
 }
 
 .wpccm-btn-submit-deletion:hover {
-    background-color: #006EBD !important;
-    color: #fff !important;
+    background: #c82333;
 }
 
 /* Status indicators */
@@ -910,23 +926,3 @@ body.rtl .wpccm-top-actions {
     color: #0c5460;
     border: 1px solid #bee5eb;
 }
-
-
-/* dark-theme */
-.light-theme.wpccm-top-banner{background-color: #fff !important; color: #000 !important;}
-.light-theme.wpccm-top-banner .wpccm-top-text,
-.light-theme.wpccm-top-banner .wpccm-top-text a{color: #000 !important;}
-.light-theme.wpccm-top-banner .wpccm-top-actions button{color: #000 !important;border-color: #000 !important;}
-.light-theme.wpccm-top-banner .wpccm-top-actions button svg path{stroke:#000 !important}
-.light-theme.wpccm-top-banner .wpccm-btn-settings{border-color: #000 !important;}
-.light-theme.wpccm-top-banner .wpccm-btn-settings svg path{fill:#000 !important;}
-
-/* dark-theme */
-.dark-theme.wpccm-top-banner{background-color: #242424F2 !important; color: #fff !important;}
-.dark-theme.wpccm-top-banner .wpccm-top-text,
-.dark-theme.wpccm-top-banner .wpccm-top-text a{color: #fff !important;}
-.dark-theme.wpccm-top-banner .wpccm-top-text svg path {fill:#C79ADB !important ;}
-.dark-theme.wpccm-top-banner .wpccm-top-actions button{color: #fff !important;border-color: #fff !important;}
-.dark-theme.wpccm-top-banner .wpccm-top-actions button svg path{stroke:#fff !important}
-.dark-theme.wpccm-top-banner .wpccm-btn-settings{border-color: #fff !important;}
-.dark-theme.wpccm-top-banner .wpccm-btn-settings svg path{fill:#ffffff !important;}

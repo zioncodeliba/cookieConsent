@@ -1210,3 +1210,5 @@ jQuery(document).ready(function($) {
     `).appendTo('head');
 });
 </script>
+
+</div> <!-- Close wpccm-advanced-scanner-section -->

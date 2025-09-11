@@ -49,6 +49,8 @@
             removeMappingRow($(this));
         });
 
+        // Live preview updates - handled by PHP inline script
+
         // Save mappings
         $(document).on('click', CONFIG.selectors.saveButton, function(e) {
             e.preventDefault();
@@ -452,6 +454,7 @@
         // Default to others
         return 'others';
     }
+
 
     // Initialize when DOM is ready
     $(document).ready(init);
