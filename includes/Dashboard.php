@@ -80,7 +80,10 @@ class WP_CCM_Dashboard {
      */
     public function test_connection_silent() {
         if (empty($this->license_key)) {
-            return false;
+            return array(
+                'success' => false,
+                'error' => 'מפתח רישיון חסר'
+            );
         }
         
         $domain = parse_url(get_site_url(), PHP_URL_HOST);
@@ -95,16 +98,75 @@ class WP_CCM_Dashboard {
             )),
             'timeout' => 5
         ));
+        // echo '<pre>';
+        // print_r($response);
+        // echo '</pre>';
+        // // var_dump($response);
+        // die();
         
         if (is_wp_error($response)) {
-            return false;
+            return array(
+                'success' => false,
+                'error' => 'שגיאת תקשורת: ' . $response->get_error_message()
+            );
         }
         
         $code = wp_remote_retrieve_response_code($response);
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         
-        return $code === 200 && isset($data['valid']) && $data['valid'];
+        if ($code === 200 && isset($data['valid']) && $data['valid']) {
+            // בדיקה נוספת של סטטוס האתר
+            if (isset($data['website']) && isset($data['website']['status'])) {
+                $website_status = $data['website']['status'];
+                if ($website_status !== 'active') {
+                    $error_message = 'האתר מוגדר כלא פעיל בדשבורד המרכזי';
+                    
+                    // הודעות ספציפיות לפי סטטוס
+                    switch ($website_status) {
+                        case 'inactive':
+                            $error_message = 'האתר מוגדר כלא פעיל בדשבורד המרכזי - יש להפעיל את האתר';
+                            break;
+                        case 'suspended':
+                            $error_message = 'האתר הושעה בדשבורד המרכזי - צור קשר עם התמיכה';
+                            break;
+                        case 'pending':
+                            $error_message = 'האתר ממתין לאישור בדשבורד המרכזי';
+                            break;
+                        default:
+                            $error_message = 'סטטוס האתר בדשבורד: ' . $website_status;
+                    }
+                    
+                    return array(
+                        'success' => false,
+                        'error' => $error_message,
+                        'code' => $code,
+                        'website_status' => $website_status
+                    );
+                }
+            }
+            
+            return array(
+                'success' => true,
+                'message' => 'רישיון תקף'
+            );
+        }
+        
+        // טיפול בהודעות שגיאה ספציפיות מהשרת
+        $error_message = 'רישיון לא תקף';
+        if (isset($data['message'])) {
+            $error_message = $data['message'];
+        } elseif (isset($data['error'])) {
+            $error_message = $data['error'];
+        } elseif ($code !== 200) {
+            $error_message = 'שגיאת שרת: קוד ' . $code;
+        }
+        
+        return array(
+            'success' => false,
+            'error' => $error_message,
+            'code' => $code
+        );
     }
 
     /**

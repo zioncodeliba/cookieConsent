@@ -109,20 +109,26 @@
 
         
         tableRows.each(function() {
-            const cookieName = $(this).find('.cookie-input').val().trim();
-            const currentCategory = $(this).find('.category-select').val();
+            const cookieInput = $(this).find('.cookie-input');
+            const categorySelect = $(this).find('.category-select');
             
-
-            
-            if (cookieName) {
-                // Get category from handle mapping
-                const mappedCategory = getCategoryFromMapping(cookieName);
-
+            if (cookieInput.length > 0 && categorySelect.length > 0) {
+                const cookieName = cookieInput.val();
+                const currentCategory = categorySelect.val();
                 
-                if (mappedCategory && mappedCategory !== currentCategory) {
-                    // Update the category select
-                    $(this).find('.category-select').val(mappedCategory);
+                if (cookieName && typeof cookieName === 'string') {
+                    const trimmedName = cookieName.trim();
+                    if (trimmedName) {
+                        // Get category from handle mapping
+                        const mappedCategory = getCategoryFromMapping(trimmedName);
 
+                        
+                        if (mappedCategory && mappedCategory !== currentCategory) {
+                            // Update the category select
+                            $(this).find('.category-select').val(mappedCategory);
+
+                        }
+                    }
                 }
             }
         });
@@ -168,9 +174,15 @@
             // Add to purge list (we'll need to save to the purge section)
             const currentPurgeCookies = [];
             $('#wpccm-cookies-table tbody tr').each(function() {
-                const cookieName = $(this).find('.cookie-input').val().trim();
-                if (cookieName) {
-                    currentPurgeCookies.push(cookieName);
+                const cookieInput = $(this).find('.cookie-input');
+                if (cookieInput.length > 0) {
+                    const cookieName = cookieInput.val();
+                    if (cookieName && typeof cookieName === 'string') {
+                        const trimmedName = cookieName.trim();
+                        if (trimmedName) {
+                            currentPurgeCookies.push(trimmedName);
+                        }
+                    }
                 }
             });
             
@@ -487,7 +499,8 @@
         const currentUrl = window.location.href;
         const frontendUrl = currentUrl.replace(/\/wp-admin\/.*$/, '');
         
-        //console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
+        console.log('WPCCM: Syncing cookies from frontend URL:', currentUrl);
+        console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
         
         // Show loading message
         $('#wpccm-sync-result').html('<span class="loading">סורק עוגיות מהאתר...</span>');
@@ -497,6 +510,10 @@
         iframe.style.display = 'none';
         iframe.src = frontendUrl + '/wp-admin/admin-ajax.php?action=wpccm_get_frontend_cookies&_wpnonce=' + WPCCM_TABLE.nonce;
         
+        // console.log(iframe.src);
+        // die();
+
+
         // Set up message listener for iframe response
         const messageListener = function(event) {
             if (event.origin !== window.location.origin && event.origin !== frontendUrl) {
@@ -512,6 +529,7 @@
                 if (event.data.success) {
                     const frontendCookies = event.data.cookies || [];
                     
+                    console.log('WPCCM: Found cookies from frontend:', frontendCookies);
                     //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
                     
                     // Show success message
@@ -808,9 +826,15 @@
         // Get cookies from purge list
         const purgeCookies = [];
         $('#wpccm-cookies-table tbody tr').each(function() {
-            const cookieName = $(this).find('.cookie-input').val().trim();
-            if (cookieName) {
-                purgeCookies.push(cookieName);
+            const cookieInput = $(this).find('.cookie-input');
+            if (cookieInput.length > 0) {
+                const cookieName = cookieInput.val();
+                if (cookieName && typeof cookieName === 'string') {
+                    const trimmedName = cookieName.trim();
+                    if (trimmedName) {
+                        purgeCookies.push(trimmedName);
+                    }
+                }
             }
         });
         
@@ -1018,16 +1042,22 @@
 
         
         tableRows.each(function() {
-            const cookieName = $(this).find('.cookie-input').val().trim();
-            const category = $(this).find('.category-select').val();
+            const cookieInput = $(this).find('.cookie-input');
+            const categorySelect = $(this).find('.category-select');
             
-
-            
-            if (cookieName) {
-                cookies.push({
-                    name: cookieName,
-                    category: category
-                });
+            if (cookieInput.length > 0 && categorySelect.length > 0) {
+                const cookieName = cookieInput.val();
+                const category = categorySelect.val();
+                
+                if (cookieName && typeof cookieName === 'string') {
+                    const trimmedName = cookieName.trim();
+                    if (trimmedName) {
+                        cookies.push({
+                            name: trimmedName,
+                            category: category || 'others'
+                        });
+                    }
+                }
             }
         });
         
@@ -1041,9 +1071,6 @@
         } else {
 
         }
-        
-
-
 
     }
 
@@ -1250,9 +1277,15 @@
         // Check for existing cookies to avoid duplicates
         const existingCookies = [];
         $('#wpccm-cookies-table tbody tr').each(function() {
-            const cookieName = $(this).find('.cookie-input').val().trim();
-            if (cookieName) {
-                existingCookies.push(cookieName);
+            const cookieInput = $(this).find('.cookie-input');
+            if (cookieInput.length > 0) {
+                const cookieName = cookieInput.val();
+                if (cookieName && typeof cookieName === 'string') {
+                    const trimmedName = cookieName.trim();
+                    if (trimmedName) {
+                        existingCookies.push(trimmedName);
+                    }
+                }
             }
         });
 
@@ -1262,8 +1295,7 @@
         let addedCount = 0;
         suggestions.forEach(function(item) {
             if (!existingCookies.includes(item.name)) {
-
-                addCookieRow(item.name, item.category || 'others'); // Use suggestion category or default to others
+                addCookieRowReadOnly(item.name, item.category || 'others', item.value || ''); // Use read-only format with value
                 addedCount++;
             } else {
 
@@ -1294,7 +1326,98 @@
             }
         }
         
+        // Auto-save cookies after adding them
+        if (addedCount > 0) {
+            autoSaveCookies();
+        }
 
+    }
+
+    /**
+     * Add cookie row in read-only format (new style)
+     */
+    function addCookieRowReadOnly(cookieName, category, cookieValue) {
+        const tbody = $('#wpccm-cookies-table tbody');
+        
+        // Remove empty table message if it exists
+        const emptyMessage = tbody.find('tr td[colspan="4"]');
+        if (emptyMessage.length > 0) {
+            emptyMessage.closest('tr').remove();
+        }
+        
+        // Use provided cookie value or default to empty
+        cookieValue = cookieValue || '';
+        
+        // Truncate long values for display
+        if (cookieValue.length > 50) {
+            cookieValue = cookieValue.substring(0, 50) + '...';
+        }
+        
+        // Get category display name
+        const categoryDisplayNames = {
+            'necessary': 'חיוני',
+            'functional': 'פונקציונלי',
+            'performance': 'ביצועים',
+            'analytics': 'אנליטיקה',
+            'advertisement': 'פרסום',
+            'others': 'אחר'
+        };
+        const categoryDisplay = categoryDisplayNames[category] || category;
+        
+        const row = $('<tr>' +
+            '<td><strong>' + escapeHtml(cookieName) + '</strong>' +
+            '<input type="hidden" class="cookie-input" value="' + escapeHtml(cookieName) + '" />' +
+            '</td>' +
+            '<td><code>' + escapeHtml(cookieValue || 'N/A') + '</code></td>' +
+            '<td><span class="category-badge category-' + category + '">' + escapeHtml(categoryDisplay) + '</span>' +
+            '<select class="category-select" style="display: none;">' +
+            '<option value="' + escapeHtml(category) + '" selected>' + escapeHtml(categoryDisplay) + '</option>' +
+            '</select>' +
+            '</td>' +
+            '<td>' +
+            '<button type="button" class="button button-small edit-category-btn" data-cookie="' + escapeHtml(cookieName) + '" data-category="' + escapeHtml(category) + '" title="ערוך קטגוריה">' +
+            '<span class="dashicons dashicons-edit" style="font-size: 14px; line-height: 1;"></span>' +
+            '</button>' +
+            '</td>' +
+            '</tr>');
+        
+        tbody.append(row);
+        updateCookieData();
+    }
+
+    /**
+     * Auto-save cookies to database
+     */
+    function autoSaveCookies() {
+        updateCookieData(); // Update the hidden field
+        
+        const cookiesJson = $('#wpccm-cookies-data').val() || '[]';
+        
+        // Show saving indicator
+        const savingMsg = $('<div class="notice notice-info" style="margin: 10px 0;"><p>שומר עוגיות...</p></div>');
+        $('#wpccm-cookie-purge-table').prepend(savingMsg);
+        
+        $.post(WPCCM_TABLE.ajaxUrl, {
+            action: 'wpccm_save_purge_cookies',
+            cookies_json: cookiesJson,
+            _wpnonce: WPCCM_TABLE.nonce
+        }).done(function(resp) {
+            savingMsg.remove();
+            if (resp && resp.success) {
+                const successMsg = $('<div class="notice notice-success is-dismissible" style="margin: 10px 0;"><p>✓ העוגיות נשמרו אוטומטית (' + (resp.data && resp.data.saved || 0) + ')</p></div>');
+                $('#wpccm-cookie-purge-table').prepend(successMsg);
+                setTimeout(function() { successMsg.fadeOut(function() { $(this).remove(); }); }, 3000);
+            } else {
+                const errorMsg = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p>✗ שגיאה בשמירה אוטומטית</p></div>');
+                $('#wpccm-cookie-purge-table').prepend(errorMsg);
+                setTimeout(function() { errorMsg.fadeOut(function() { $(this).remove(); }); }, 5000);
+            }
+        }).fail(function() {
+            savingMsg.remove();
+            const errorMsg = $('<div class="notice notice-error is-dismissible" style="margin: 10px 0;"><p>✗ שגיאה בחיבור לשרת</p></div>');
+            $('#wpccm-cookie-purge-table').prepend(errorMsg);
+            setTimeout(function() { errorMsg.fadeOut(function() { $(this).remove(); }); }, 5000);
+        });
     }
 
     function detectCookieCategory(cookieName) {

@@ -33,6 +33,18 @@ class WP_CCM_Admin {
         add_action('wp_ajax_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
         add_action('wp_ajax_nopriv_wpccm_get_frontend_cookies', [$this, 'ajax_get_frontend_cookies']);
         
+        // Auto sync management
+        add_action('wp_ajax_wpccm_toggle_auto_sync', [$this, 'ajax_toggle_auto_sync']);
+        add_action('wp_ajax_wpccm_get_auto_sync_status', [$this, 'ajax_get_auto_sync_status']);
+        add_action('wp_ajax_wpccm_run_manual_auto_sync', [$this, 'ajax_run_manual_auto_sync']);
+        add_action('wp_ajax_wpccm_get_sync_details', [$this, 'ajax_get_sync_details']);
+        
+        // Category management
+        add_action('wp_ajax_wpccm_get_category', [$this, 'ajax_get_category']);
+        add_action('wp_ajax_wpccm_save_category', [$this, 'ajax_save_category']);
+        add_action('wp_ajax_wpccm_delete_category', [$this, 'ajax_delete_category']);
+        add_action('wp_ajax_wpccm_check_categories_table', [$this, 'ajax_check_categories_table']);
+        
         add_action('admin_notices', [$this, 'show_activation_notice']);
     }
     
@@ -144,6 +156,12 @@ class WP_CCM_Admin {
 
         // Enqueue Chart.js for statistics
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
+        
+        // Localize script to provide ajaxurl and nonce
+        wp_localize_script('jquery', 'wpccm_ajax', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wpccm_admin_nonce')
+        ]);
         
         // Debug: Log the current hook
         error_log('WPCCM: Current hook: ' . $hook);
@@ -538,6 +556,29 @@ class WP_CCM_Admin {
                 <div id="general" class="wpccm-tab-content active">
                     
                     <?php do_settings_sections('wpccm_general'); ?>
+                    
+                    <!-- Auto sync controls -->
+                    <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
+                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ סינכרון אוטומטי של עוגיות</h3>
+                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת יכולה לסרוק ולעדכן עוגיות באופן אוטומטי כל שעה עגולה ברקע, כך שתמיד תהיה לך רשימה מעודכנת של עוגיות באתר.</p>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                            <button type="button" class="button" id="wpccm-toggle-auto-sync-btn">⏸️ טוען...</button>
+                            <button type="button" class="button button-secondary" id="wpccm-test-auto-sync-btn" title="הרץ סינכרון אוטומטי עכשיו לבדיקה">🧪 בדוק עכשיו</button>
+                            <span id="wpccm-auto-sync-status" style="color: #50575e; font-size: 13px; font-weight: 500;"></span>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 3px; font-size: 12px; color: #666;">
+                            <strong>💡 איך זה עובד:</strong>
+                            <ul style="margin: 5px 0 0 20px; padding: 0;">
+                                <li>הסינכרון רץ אוטומטית כל שעה עגולה (09:00, 10:00, 11:00...)</li>
+                                <li>המערכת סורקת את האתר ומוצאת עוגיות חדשות</li>
+                                <li>עוגיות חדשות נוספות אוטומטית לטבלה במיפוי העוגיות</li>
+                                <li>ניתן להפעיל/לכבות את התכונה בכל עת</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
                     <p class="submit">
                         <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
                         <span id="general-settings-result" style="margin-left: 10px;"></span>
@@ -564,8 +605,7 @@ class WP_CCM_Admin {
                 </div>
                 
                 <div id="categoriess" class="wpccm-tab-content">
-                    <h2>קטגוריות עוגיות</h2>
-                    <p>תוכן טאב קטגוריות עוגיות</p>
+                    
                     <?php 
                     
                     try {
@@ -656,6 +696,114 @@ class WP_CCM_Admin {
                 //console.log('WPCCM: Save general settings button found');
             } else {
                 //console.log('WPCCM: Save general settings button not found');
+            }
+            
+            // Auto sync functionality
+            loadAutoSyncStatus();
+            
+            // Toggle auto sync
+            $('#wpccm-toggle-auto-sync-btn').on('click', function() {
+                const button = $(this);
+                const originalText = button.text();
+                button.text('⏳ מעדכן...').prop('disabled', true);
+                
+                // Get current status and toggle
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_auto_sync_status'
+                }).done(function(response) {
+                    if (response.success) {
+                        const newStatus = !response.data.enabled;
+                        
+                        // Toggle the status
+                        $.post(ajaxurl, {
+                            action: 'wpccm_toggle_auto_sync',
+                            enable: newStatus,
+                            _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                        }).done(function(toggleResponse) {
+                            if (toggleResponse.success) {
+                                updateAutoSyncUI(toggleResponse.data);
+                                showAutoSyncMessage(toggleResponse.data.message, 'success');
+                            } else {
+                                showAutoSyncMessage('שגיאה: ' + (toggleResponse.data || 'Unknown error'), 'error');
+                            }
+                        }).fail(function() {
+                            showAutoSyncMessage('שגיאה בעדכון הגדרות סינכרון אוטומטי', 'error');
+                        }).always(function() {
+                            button.text(originalText).prop('disabled', false);
+                        });
+                    }
+                });
+            });
+            
+            // Test auto sync
+            $('#wpccm-test-auto-sync-btn').on('click', function() {
+                const button = $(this);
+                const originalText = button.text();
+                button.text('⏳ רץ...').prop('disabled', true);
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_run_manual_auto_sync',
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success) {
+                        showAutoSyncMessage(response.data.message + ' - הדף יתרענן תוך 3 שניות', 'success');
+                        // Refresh the page after 3 seconds to show new cookies
+                        setTimeout(function() {
+                            window.location.href = window.location.href.replace(/#.*$/, '') + '#categoriess';
+                            location.reload();
+                        }, 3000);
+                    } else {
+                        showAutoSyncMessage('שגיאה: ' + (response.data || 'Unknown error'), 'error');
+                    }
+                }).fail(function() {
+                    showAutoSyncMessage('שגיאה בהפעלת סינכרון אוטומטי', 'error');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+            
+            function loadAutoSyncStatus() {
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_auto_sync_status'
+                }).done(function(response) {
+                    if (response.success) {
+                        updateAutoSyncUI(response.data);
+                    }
+                });
+            }
+            
+            function updateAutoSyncUI(data) {
+                const button = $('#wpccm-toggle-auto-sync-btn');
+                const status = $('#wpccm-auto-sync-status');
+                
+                if (data.enabled) {
+                    button.html('⏸️ השבת סינכרון').removeClass('button-primary').addClass('button-secondary');
+                    if (data.next_run_formatted) {
+                        status.html('🟢 פעיל - הרצה הבאה: ' + data.next_run_formatted);
+                        
+                        // // Show message if sync was stuck and rescheduled
+                        // if (data.was_stuck) {
+                        //     showAutoSyncMessage('⚠️ הסינכרון היה תקוע - תוזמן מחדש לשעה הבאה', 'warning');
+                        // }
+                    } else {
+                        status.html('🟢 פעיל');
+                    }
+                } else {
+                    button.html('▶️ הפעל סינכרון').removeClass('button-secondary').addClass('button-primary');
+                    status.html('🔴 כבוי');
+                }
+            }
+            
+            function showAutoSyncMessage(message, type) {
+                const messageDiv = $('<div class="notice notice-' + type + ' is-dismissible" style="margin: 10px 0;"><p>' + message + '</p></div>');
+                $('#wpccm-auto-sync-status').parent().append(messageDiv);
+                
+                // Auto remove after 5 seconds
+                setTimeout(function() {
+                    messageDiv.fadeOut(function() {
+                        $(this).remove();
+                    });
+                }, 5000);
             }
             
             // Save general settings via AJAX
@@ -771,8 +919,12 @@ class WP_CCM_Admin {
                     $('#data_deletion_button_color').val('#dc3545');
                     $('#size').val('medium');
                     
-                    // Update preview immediately
-                    updatePreviewDefault();
+                    // Update preview immediately (will be called after function is defined)
+                    setTimeout(function() {
+                        if (typeof updatePreviewDefault === 'function') {
+                            updatePreviewDefault();
+                        }
+                    }, 100);
                     
                     // Update visual state of position buttons
                     $(".wpccm-position-button").css({
@@ -877,12 +1029,6 @@ class WP_CCM_Admin {
                 });
             });
             
-            // Additional event listeners for real-time updates (for updatePreviewDefault function)
-            $("#text_color, #size").on("change input propertychange paste keyup mouseup", updatePreviewDefault);
-            
-            // Event listeners for banner position changes
-            $("input[name='wpccm_options[design][banner_position]'], input[name='wpccm_options[design][floating_button_position]']").on("change", updatePreviewDefault);
-
             function updatePreviewDefault() {
                 // console.log("WPCCM: updatePreview555555");
                 // Get text color from the only color field that exists
@@ -1097,6 +1243,12 @@ class WP_CCM_Admin {
                 }
             }
             
+            // Additional event listeners for real-time updates (after function is defined)
+            $("#text_color, #size").on("change input propertychange paste keyup mouseup", updatePreviewDefault);
+            
+            // Event listeners for banner position changes
+            $("input[name='wpccm_options[design][banner_position]'], input[name='wpccm_options[design][floating_button_position]']").on("change", updatePreviewDefault);
+            
         });
         </script>
         
@@ -1201,9 +1353,7 @@ class WP_CCM_Admin {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת עוגיות: ' . $e->getMessage() . '</p></div>';
                     }
                     ?>
-                    <p class="submit">
-                        <input type="submit" name="save_purge_settings" class="button-primary" value="שמור הגדרות עוגיות" />
-                    </p>
+                    <!-- Auto-save enabled - no manual save button needed -->
                 </div>
                 <!-- Scripts Tab Content -->
                 <div id="scripts" class="wpccm-tab-content">
@@ -1265,13 +1415,6 @@ class WP_CCM_Admin {
                 //console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
                 
             }
-            
-            // Additional event listeners for real-time updates (for updatePreviewDefault function)
-            $("#text_color, #size").on("change input propertychange paste keyup mouseup", updatePreviewDefault);
-            
-            // Event listeners for banner position changes
-            $("input[name='wpccm_options[design][banner_position]'], input[name='wpccm_options[design][floating_button_position]']").on("change", updatePreviewDefault);
-
             
         });
         </script>
@@ -2037,18 +2180,13 @@ class WP_CCM_Admin {
         });
         </script>';
         
-        $opts = WP_CCM_Consent::get_options();
-        $cookies = isset($opts['purge']['cookies']) ? $opts['purge']['cookies'] : [];
+        // Add CSS styles for the table
+        $this->add_cookie_table_styles();
+        
+        // Get cookies from new database table only
+        $cookies = wpccm_get_cookies_from_db();
         
         echo '<div id="wpccm-cookie-purge-table">';
-        
-        // Warning if no cookies configured
-        if (empty($cookies)) {
-            echo '<div class="wpccm-warning-box" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
-            echo '<h4 style="margin: 0 0 8px 0; color: #856404;">⚠️ '.wpccm_text('no_cookies_configured', 'No cookies configured for purging').'</h4>';
-            echo '<p style="margin: 0; color: #856404;">'.wpccm_text('default_cookies_warning', 'When visitors reject cookies, the system will use default cookies (_ga, _gid, _fbp, _hjSessionUser). Use the "Sync with Current Cookies" button to add cookies specific to your website.').'</p>';
-            echo '</div>';
-        }
         
         // Main explanation
         echo '<div class="wpccm-explanation-box" style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
@@ -2057,7 +2195,7 @@ class WP_CCM_Admin {
         echo '</div>';
         
         // Buttons with tooltips
-        echo '<div style="position: relative;">';
+        echo '<div style="position: relative; margin-bottom: 15px;">';
         echo '<button type="button" class="button button-primary" id="wpccm-sync-current-cookies-btn" title="'.esc_attr(wpccm_text('sync_explanation')).'">🔄 סנכרן עוגיות</button>';
         echo '<span id="wpccm-sync-result"></span>';
         echo '<button type="button" class="button" id="wpccm-sync-categories-btn" style="margin-left: 10px; background: #00a32a; color: white; display: none;" title="סנכרן קטגוריות מטבלת המיפוי">סנכרן קטגוריות</button>';
@@ -2065,15 +2203,29 @@ class WP_CCM_Admin {
         echo '<button type="button" class="button button-secondary" id="wpccm-clear-all-cookies" style="margin-left: 10px; color: #d63384; display: none;" title="'.esc_attr(wpccm_text('confirm_clear_all_cookies')).'">'.wpccm_text('clear_all_cookies').'</button>';
         echo '</div>'; // Close buttons div
         
+        
         echo '<div id="wpccm-cookie-suggestions-inline" style="margin-top: 15px;"></div>';
         
         echo '<div class="wpccm-table-container" style="margin-top: 15px; max-height: 400px; overflow-y: auto; border: 1px solid #c3c4c7; border-radius: 4px; background: #fff;">';
         echo '<table class="widefat fixed striped" id="wpccm-cookies-table" style="margin: 0; border: none;">';
         echo '<thead><tr>';
         echo '<th>'.wpccm_text('cookie_name').'</th>';
+        echo '<th>'.wpccm_text('cookie_value', 'Value').'</th>';
         echo '<th>'.wpccm_text('category').'</th>';
-        echo '<th style="width: 100px;">'.wpccm_text('actions').'</th>';
+        echo '<th style="width: 80px;">'.wpccm_text('actions').'</th>';
         echo '</tr></thead><tbody>';
+        
+        // If no cookies, show message inside table
+        if (empty($cookies)) {
+            echo '<tr>';
+            echo '<td colspan="4" style="text-align: center; padding: 40px 20px; background: #f9f9f9;">';
+            echo '<div style="font-size: 48px; margin-bottom: 15px;">🍪</div>';
+            echo '<h3 style="margin: 0 0 10px 0; color: #0073aa;">אין עוגיות רשומות במערכת</h3>';
+            echo '<p style="margin: 0 0 15px 0; color: #555;">הסריקה עובדת ברקע והתוצאות יופיעו בקרוב</p>';
+            echo '<p style="margin: 0; color: #0073aa; font-weight: 600;">💡 לחץ על "🔄 סנכרן עוגיות" כדי לסרוק עוגיות מהאתר</p>';
+            echo '</td>';
+            echo '</tr>';
+        }
         
         foreach ($cookies as $cookie_data) {
             // Support both old and new format
@@ -2085,10 +2237,38 @@ class WP_CCM_Admin {
                 $category = isset($cookie_data['category']) ? $cookie_data['category'] : '';
             }
             
+            // Get cookie value from database
+            $cookie_value = isset($cookie_data['value']) ? $cookie_data['value'] : '';
+            // Truncate long values for display
+            if (strlen($cookie_value) > 50) {
+                $cookie_value = substr($cookie_value, 0, 50) . '...';
+            }
+            
+            // Get category display name
+            $category_display = $this->get_category_display_name($category);
+            
             echo '<tr>';
-            echo '<td><input type="text" class="cookie-input" value="'.esc_attr($cookie_name).'" /></td>';
-            echo '<td>'.$this->render_category_select($category).'</td>';
-            echo '<td><button type="button" class="button remove-cookie">'.wpccm_text('remove').'</button></td>';
+            echo '<td><strong>'.esc_html($cookie_name).'</strong>';
+            // Hidden inputs to maintain data for JavaScript functions
+            echo '<input type="hidden" class="cookie-input" value="'.esc_attr($cookie_name).'" />';
+            echo '</td>';
+            echo '<td><code>'.esc_html($cookie_value ?: 'N/A').'</code></td>';
+            // Get category data for styling
+            $category_data = wpccm_get_category_by_key($category);
+            $color = $category_data ? $category_data['color'] : '#666666';
+            $icon = $category_data && !empty($category_data['icon']) ? $category_data['icon'] . ' ' : '';
+            
+            echo '<td><span class="category-badge category-'.esc_attr($category).'" style="background: '.$color.'; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">'.$icon.esc_html($category_display).'</span>';
+            // Hidden select to maintain data for JavaScript functions
+            echo '<select class="category-select" style="display: none;">';
+            echo '<option value="'.esc_attr($category).'" selected>'.esc_html($category_display).'</option>';
+            echo '</select>';
+            echo '</td>';
+            echo '<td>';
+            echo '<button type="button" class="button button-small edit-category-btn" data-cookie="'.esc_attr($cookie_name).'" data-category="'.esc_attr($category).'" title="ערוך קטגוריה">';
+            echo '<span class="dashicons dashicons-edit" style="font-size: 14px; line-height: 1;"></span>';
+            echo '</button>';
+            echo '</td>';
             echo '</tr>';
         }
         
@@ -2099,109 +2279,274 @@ class WP_CCM_Admin {
         // Hidden input to store the actual data
         $encoded_cookies = json_encode($cookies);
         echo '<input type="hidden" name="wpccm_options[purge][cookies]" id="wpccm-cookies-data" value="'.esc_attr($encoded_cookies).'" />';
+        
+        // Add category edit modal
+        $this->add_category_edit_modal();
+        
+        // Add sync history table
+        $this->render_sync_history_table();
+    }
+
+    /**
+     * Get category display name in Hebrew
+     */
+    private function get_category_display_name($category_key) {
+        $category = wpccm_get_category_by_key($category_key);
+        
+        if ($category) {
+            return $category['display_name'];
+        }
+        
+        // Fallback for backward compatibility
+        $names = [
+            'necessary' => 'חיוני',
+            'functional' => 'פונקציונלי',
+            'performance' => 'ביצועים',
+            'analytics' => 'אנליטיקה',
+            'advertisement' => 'פרסום',
+            'others' => 'אחר'
+        ];
+        
+        return isset($names[$category_key]) ? $names[$category_key] : ucfirst($category_key);
+    }
+
+    /**
+     * Add CSS for cookie table styling
+     */
+    private function add_cookie_table_styles() {
+        echo '<style>
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .category-necessary { background: #d4edda; color: #155724; }
+        .category-functional { background: #cce7ff; color: #004085; }
+        .category-performance { background: #fff3cd; color: #856404; }
+        .category-analytics { background: #e2e3e5; color: #383d41; }
+        .category-advertisement { background: #f8d7da; color: #721c24; }
+        .category-others { background: #e7f1ff; color: #0c5460; }
+        
+        #wpccm-cookies-table td {
+            vertical-align: middle;
+        }
+        #wpccm-cookies-table code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .edit-category-btn {
+            padding: 4px 6px !important;
+            min-height: auto !important;
+            height: auto !important;
+        }
+        .edit-category-btn .dashicons {
+            width: 14px;
+            height: 14px;
+        }
+        </style>';
+    }
+
+    /**
+     * Add category edit modal
+     */
+    private function add_category_edit_modal() {
+        echo '
+        <!-- Category Edit Modal -->
+        <div id="category-edit-modal" style="display: none;">
+            <div class="category-edit-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+                <div class="category-edit-dialog" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 400px;">
+                    <h3 style="margin-top: 0;">ערוך קטגוריה</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">שם העוגיה:</label>
+                        <span id="edit-cookie-name" style="font-family: monospace; background: #f8f9fa; padding: 4px 8px; border-radius: 4px;"></span>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label for="edit-category-select" style="display: block; margin-bottom: 5px; font-weight: 600;">קטגוריה:</label>
+                        <select id="edit-category-select" style="width: 100%; padding: 8px;">';
+        
+        $categories = wpccm_get_categories();
+        foreach ($categories as $category) {
+            $icon = !empty($category['icon']) ? $category['icon'] . ' ' : '';
+            echo '<option value="' . esc_attr($category['category_key']) . '">' . $icon . esc_html($category['display_name']) . '</option>';
+        }
+        
+        echo '</select>
+                    </div>
+                    <div style="text-align: left;">
+                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;">שמור</button>
+                        <button type="button" id="cancel-category-btn" class="button">ביטול</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            // Open modal when edit button clicked
+            $(document).on("click", ".edit-category-btn", function() {
+                var cookieName = $(this).data("cookie");
+                var currentCategory = $(this).data("category");
+                
+                $("#edit-cookie-name").text(cookieName);
+                $("#edit-category-select").val(currentCategory);
+                $("#category-edit-modal").data("cookie-name", cookieName).show();
+            });
+
+            // Close modal when cancel clicked
+            $("#cancel-category-btn, .category-edit-overlay").on("click", function(e) {
+                if (e.target === this) {
+                    $("#category-edit-modal").hide();
+                }
+            });
+
+            // Save category changes (old modal)
+            $("#save-category-btn").on("click", function() {
+            console.log("Save category button clicked");
+                var cookieName = $("#category-edit-modal").data("cookie-name");
+                var newCategory = $("#edit-category-select").val();
+                var newCategoryDisplay = $("#edit-category-select option:selected").text();
+                
+                // Find the row and update it
+                $(".edit-category-btn[data-cookie=\'" + cookieName + "\']").each(function() {
+                    var $row = $(this).closest("tr");
+                    var $badge = $row.find(".category-badge");
+                    var $hiddenSelect = $row.find(".category-select");
+                    
+                    // Update visual badge
+                    $badge.removeClass(function(index, className) {
+                        return (className.match(/category-\\S+/g) || []).join(" ");
+                    });
+                    $badge.addClass("category-" + newCategory);
+                    $badge.text(newCategoryDisplay);
+                    
+                    // Update hidden select
+                    $hiddenSelect.empty().append("<option value=\'" + newCategory + "\' selected>" + newCategoryDisplay + "</option>");
+                    
+                    // Update button data
+                    $(this).data("category", newCategory);
+                });
+                
+                // Update the data and trigger save
+                if (typeof updateCookieData === "function") {
+                    updateCookieData();
+                }
+                
+                // Save to database via AJAX
+                $.ajax({
+                    url: ajaxurl,
+                    type: "POST",
+                    data: {
+                        action: "wpccm_update_cookie_category",
+                        cookie_name: cookieName,
+                        category: newCategory,
+                        _wpnonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Show success message
+                            $("<div class=\"notice notice-success is-dismissible\" style=\"margin: 10px 0;\"><p>קטגוריית העוגיה עודכנה ונשמרה בהצלחה</p></div>")
+                                .prependTo("#wpccm-cookie-purge-table")
+                                .delay(3000)
+                                .fadeOut();
+                        } else {
+                            $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>שגיאה בשמירת הקטגוריה: " + (response.data || "Unknown error") + "</p></div>")
+                                .prependTo("#wpccm-cookie-purge-table")
+                                .delay(5000)
+                                .fadeOut();
+                        }
+                    },
+                    error: function() {
+                        $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>שגיאה בחיבור לשרת</p></div>")
+                            .prependTo("#wpccm-cookie-purge-table")
+                            .delay(5000)
+                            .fadeOut();
+                    }
+                });
+                
+                $("#category-edit-modal").hide();
+            });
+        });
+        </script>';
     }
 
     private function render_categories_tab() {
-        
-        // Handle form submission for categories
-        if (isset($_POST['save_categories']) && wp_verify_nonce($_POST['wpccm_categories_nonce'], 'wpccm_save_categories')) {
-            $this->save_categories();
-            echo '<div class="notice notice-success is-dismissible"><p>'.wpccm_text('save_categories').' - '.wpccm_text('saved_successfully', 'Saved successfully!').'</p></div>';
-        }
-        try {
-            $categories = WP_CCM_Consent::get_categories_with_details();
-        } catch (Exception $e) {
-            echo '<div class="notice notice-error"><p>שגיאה בטעינת קטגוריות: ' . $e->getMessage() . '</p></div>';
-            $categories = [];
-        }
+        // Get categories from new database table
+        $categories = wpccm_get_categories(false); // Get all categories including inactive
         
         echo '<div id="wpccm-categories-manager">';
-        echo '<button type="button" class="button" id="wpccm-add-category">'.wpccm_text('add_category').'</button>';
+        echo '<div style="background: #f0f0f1; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #00a32a;">';
+        echo '<h3 style="margin: 0 0 10px 0; color: #1d2327;">🏷️ ניהול קטגוריות עוגיות</h3>';
+        echo '<p style="margin: 0; color: #50575e;">כאן תוכל לנהל את הקטגוריות השונות של העוגיות באתר. כל עוגיה תשויך לאחת מהקטגוריות הללו.</p>';
+        echo '</div>';
         
-        echo '<div class="wpccm-table-container" style="margin-top: 15px; max-height: 500px; overflow-y: auto; border: 1px solid #c3c4c7; border-radius: 4px; background: #fff;">';
-        echo '<table class="widefat fixed striped" id="wpccm-categories-table" style="margin: 0; border: none;">';
-        echo '<thead><tr>';
-        echo '<th style="width: 150px;">'.wpccm_text('category_key').'</th>';
-        echo '<th style="width: 150px;">'.wpccm_text('category_name').'</th>';
-        echo '<th>'.wpccm_text('category_description').'</th>';
-        echo '<th style="width: 80px;">'.wpccm_text('required_category').'</th>';
-        echo '<th style="width: 80px;">'.wpccm_text('category_enabled').'</th>';
-        echo '<th style="width: 100px;">'.wpccm_text('actions').'</th>';
-        echo '</tr></thead><tbody>';
+        echo '<div style="margin-bottom: 15px;">';
+        echo '<button type="button" class="button button-primary" id="wpccm-add-category">➕ הוסף קטגוריה חדשה</button>';
+        echo '<button type="button" class="button button-secondary" id="wpccm-check-table" style="margin-right: 10px;">🔍 בדוק טבלה</button>';
+        echo '</div>';
         
-        foreach ($categories as $index => $category) {
-            $this->render_category_row($category, $index);
-        }
-        
-        echo '</tbody></table>';
-        echo '</div>'; // Close table container
-        echo '</div>'; // Close main container
-        
-        // echo '<p class="submit">';
-        // echo '<input type="submit" name="save_categories" class="button-primary" value="'.wpccm_text('save_categories').'" />';
-        // echo '</p>';
-        
-        // Add nonce field for categories
-        wp_nonce_field('wpccm_save_categories', 'wpccm_categories_nonce');
-        
-        // Add JavaScript for dynamic table management
-        // Temporarily disabled to debug
-        $this->enqueue_categories_js();
-    }
-    
-    private function save_categories() {
-        if (!isset($_POST['categories']) || !is_array($_POST['categories'])) {
-            return;
-        }
-        
-        $categories = [];
-        foreach ($_POST['categories'] as $category_data) {
-            if (empty($category_data['key']) || empty($category_data['name'])) {
-                continue; // Skip empty categories
-            }
-            
-            $categories[] = [
-                'key' => sanitize_key($category_data['key']),
-                'name' => sanitize_text_field($category_data['name']),
-                'description' => sanitize_textarea_field($category_data['description']),
-                'required' => isset($category_data['required']) && $category_data['required'] === '1',
-                'enabled' => isset($category_data['enabled']) && $category_data['enabled'] === '1'
-            ];
-        }
-        
-        update_option('wpccm_custom_categories', $categories);
-    }
-    
-    private function enqueue_categories_js() {
-        ?>
-        <script>
+        // Add debug button JavaScript
+        echo '<script>
         jQuery(document).ready(function($) {
-            var categoryIndex = $('.category-row').length;
-            
-            $('#wpccm-add-category').on('click', function() {
-                var newRow = $('<tr class="category-row">' +
-                    '<td><input type="text" name="categories[' + categoryIndex + '][key]" class="category-key-input" placeholder="<?php echo wpccm_text('key_placeholder'); ?>" /></td>' +
-                    '<td><input type="text" name="categories[' + categoryIndex + '][name]" class="category-name-input" placeholder="<?php echo wpccm_text('name_placeholder'); ?>" /></td>' +
-                    '<td><textarea name="categories[' + categoryIndex + '][description]" class="category-description-input" placeholder="<?php echo wpccm_text('description_placeholder'); ?>"></textarea></td>' +
-                    '<td style="text-align: center;"><input type="checkbox" name="categories[' + categoryIndex + '][required]" value="1" /></td>' +
-                    '<td style="text-align: center;"><input type="checkbox" name="categories[' + categoryIndex + '][enabled]" value="1" checked /></td>' +
-                    '<td><button type="button" class="button remove-category"><?php echo wpccm_text('delete_category'); ?></button></td>' +
-                    '</tr>');
-                
-                $('#wpccm-categories-table tbody').append(newRow);
-                categoryIndex++;
-                
-                // Scroll to new row
-                $('.wpccm-table-container').scrollTop($('.wpccm-table-container')[0].scrollHeight);
-            });
-            
-            $(document).on('click', '.remove-category', function() {
-                $(this).closest('tr').remove();
+            $("#wpccm-check-table").on("click", function() {
+                $.post(ajaxurl, {
+                    action: "wpccm_check_categories_table",
+                    _wpnonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
+                }).done(function(response) {
+                    console.log("Table check response:", response);
+                    alert(response.data || response.message || "בדיקה הושלמה - בדוק קונסול");
+                });
             });
         });
-        </script>
-        <?php
+        </script>';
+        
+        if (empty($categories)) {
+            echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
+            echo '<div style="font-size: 36px; margin-bottom: 10px;">📂</div>';
+            echo '<p style="margin: 0; font-size: 14px;">אין קטגוריות עדיין</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">לחץ על "הוסף קטגוריה חדשה" כדי להתחיל</p>';
+            echo '</div>';
+        } else {
+            echo '<div class="wpccm-table-container" style="border: 1px solid #c3c4c7; border-radius: 4px; background: #fff; overflow: hidden;">';
+            echo '<table class="widefat" id="wpccm-categories-table" style="margin: 0; border: none;">';
+            echo '<thead>';
+            echo '<tr style="background: #f6f7f7;">';
+            echo '<th style="padding: 12px; font-weight: 600;">מפתח</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">שם תצוגה</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">תיאור</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">צבע</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">אייקון</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">חיוני</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">פעיל</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">פעולות</th>';
+            echo '</tr>';
+            echo '</thead>';
+            echo '<tbody>';
+            
+            foreach ($categories as $category) {
+                $this->render_new_category_row($category);
+            }
+            
+            echo '</tbody>';
+            echo '</table>';
+            echo '</div>';
+        }
+        
+        echo '</div>'; // Close main container
+        
+        // Add category edit modal
+        $this->add_category_management_modal();
+        
+        // Add JavaScript for category management
+        $this->enqueue_new_categories_js();
     }
+    
     
     public function render_scanner_page() {
         echo '<div class="wrap">';
@@ -4043,9 +4388,20 @@ class WP_CCM_Admin {
      */
     public function field_dashboard_license_key() {
         $value = get_option('wpccm_license_key', '');
-        $is_plugin_activated = $this->is_plugin_activated();
         
-        if ($is_plugin_activated && !empty($value)) {
+        // בדיקת סטטוס הרישיון דרך Dashboard class
+        $license_status = null;
+        $error_message = '';
+        
+        if (!empty($value)) {
+            if (class_exists('WP_CCM_Dashboard')) {
+                $dashboard = WP_CCM_Dashboard::get_instance();
+                $license_status = $dashboard->test_connection_silent();
+            }
+        }
+        
+        // אם הרישיון תקף
+        if ($license_status && $license_status['success']) {
             // הצגת רישיון תקף עם אפשרות עריכה
             echo '<div class="license-field-container">';
             echo '<div class="license-status valid">';
@@ -4057,11 +4413,11 @@ class WP_CCM_Admin {
             echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
             echo '<button type="button" class="button button-small" id="cancel-edit-license" style="margin-right: 5px;">ביטול</button>';
             echo '</div>';
-        echo '</div>';
-        
+            echo '</div>';
+            
             // JavaScript לטיפול בעריכה
-        echo '<script>
-        jQuery(document).ready(function($) {
+            echo '<script>
+            jQuery(document).ready(function($) {
                 $("#edit-license-key").click(function() {
                     $(".license-status").hide();
                     $(".license-input-container").show();
@@ -4075,15 +4431,28 @@ class WP_CCM_Admin {
                 });
             });
             </script>';
-                        } else {
+        } else {
             // הצגת שדה רגיל כאשר אין רישיון תקף
             echo '<div class="license-field-container">';
+            
             if (!empty($value)) {
+                // הצגת הודעת השגיאה הספציפית מהשרת
+                $error_message = 'רישיון לא תקף או לא מחובר';
+                if ($license_status && isset($license_status['error'])) {
+                    $error_message = $license_status['error'];
+                }
+                
                 echo '<div class="license-status invalid" style="margin-bottom: 10px;">';
                 echo '<span class="dashicons dashicons-warning" style="color: orange;"></span>';
-                echo '<strong>רישיון לא תקף או לא מחובר</strong>';
+                echo '<strong>' . esc_html($error_message) . '</strong>';
+                
+                // הצגת קוד שגיאה אם קיים
+                if ($license_status && isset($license_status['code']) && $license_status['code'] !== 200) {
+                    echo '<br><small style="color: #666;">קוד שגיאה: ' . esc_html($license_status['code']) . '</small>';
+                }
                 echo '</div>';
             }
+            
             echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
             echo '<p class="description">מפתח הרישיון מהדשבורד המרכזי</p>';
             echo '</div>';
@@ -4152,7 +4521,8 @@ class WP_CCM_Admin {
         
         // Check if license is valid
         $dashboard = WP_CCM_Dashboard::get_instance();
-        return $dashboard->test_connection_silent();
+        $result = $dashboard->test_connection_silent();
+        return $result && isset($result['success']) && $result['success'];
     }
 
     /**
@@ -4543,8 +4913,12 @@ class WP_CCM_Admin {
         
         // Get cookies from $_COOKIE superglobal
         if (!empty($_COOKIE)) {
-            var_dump($_COOKIE);
-            var_dump($_SERVER);
+            wpccm_debug_log('ajax_get_frontend_cookies found cookies', ['count' => count($_COOKIE), 'cookies' => $_COOKIE]);
+            // echo '<pre>';
+            // print_r($_COOKIE);
+            // echo '</pre>';
+            // var_dump($_COOKIE);
+            // var_dump($_SERVER);
             foreach ($_COOKIE as $name => $value) {
                 // Skip WordPress admin cookies
                 // if (strpos($name, 'wordpress_') === 0 || 
@@ -4553,7 +4927,10 @@ class WP_CCM_Admin {
                 //     strpos($name, 'comment_') === 0) {
                 //     continue;
                 // }
-                $cookies[] = $name;
+                $cookies[] = [
+                    'name' => $name,
+                    'value' => $value
+                ];
             }
         }
         
@@ -4578,16 +4955,26 @@ class WP_CCM_Admin {
                     //     continue;
                     // }
                     
-                    if (!in_array($name, $cookies)) {
-                        $cookies[] = $name;
+                    // Check if this cookie name already exists
+                    $exists = false;
+                    foreach ($cookies as $existing_cookie) {
+                        if (is_array($existing_cookie) && $existing_cookie['name'] === $name) {
+                            $exists = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$exists) {
+                        // Try to get the value from $_COOKIE if available
+                        $value = isset($_COOKIE[$name]) ? $_COOKIE[$name] : '';
+                        $cookies[] = [
+                            'name' => $name,
+                            'value' => $value
+                        ];
                     }
                 }
             }
         }
-        
-        // Remove duplicates and sort
-        $cookies = array_unique($cookies);
-        sort($cookies);
         
         // Check if this is a GET request (for iframe)
         if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -4613,6 +5000,890 @@ class WP_CCM_Admin {
             'source' => 'frontend'
         ]);
     }
+    
+    /**
+     * AJAX handler for toggling auto sync
+     */
+    public function ajax_toggle_auto_sync() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $enable = isset($_POST['enable']) ? (bool) $_POST['enable'] : false;
+        
+        if ($enable) {
+            // Enable auto sync
+            wpccm_schedule_cookie_sync();
+            update_option('wpccm_auto_sync_enabled', true);
+            $message = 'סינכרון אוטומטי הופעל - יתבצע כל שעה עגולה';
+        } else {
+            // Disable auto sync
+            $timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
+            if ($timestamp) {
+                wp_unschedule_event($timestamp, 'wpccm_auto_cookie_sync');
+            }
+            update_option('wpccm_auto_sync_enabled', false);
+            $message = 'סינכרון אוטומטי בוטל';
+        }
+        
+        wpccm_debug_log('Auto sync toggled', ['enabled' => $enable]);
+        
+        wp_send_json_success([
+            'enabled' => $enable,
+            'message' => $message,
+            'next_run' => $enable ? wp_next_scheduled('wpccm_auto_cookie_sync') : null
+        ]);
+    }
+    
+    /**
+     * AJAX handler for getting auto sync status
+     */
+    public function ajax_get_auto_sync_status() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        $enabled = get_option('wpccm_auto_sync_enabled', false);
+        $next_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+        $current_time = current_time('timestamp');
+        
+        // Check if sync is stuck (next run is in the past)
+        $is_stuck = false;
+        if ($enabled && $next_run && $next_run < $current_time) {
+            $is_stuck = true;
+            // Reschedule if stuck
+            wpccm_schedule_cookie_sync();
+            $next_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+            wpccm_debug_log('Auto sync was stuck - rescheduled', [
+                'old_time' => date('Y-m-d H:i:s', $next_run),
+                'new_time' => date('Y-m-d H:i:s', wp_next_scheduled('wpccm_auto_cookie_sync'))
+            ]);
+        }
+        
+        wp_send_json_success([
+            'enabled' => $enabled,
+            'next_run' => $next_run,
+            'next_run_formatted' => $next_run ? date('Y-m-d H:i:s', $next_run) : null,
+            'current_time' => $current_time,
+            'current_time_formatted' => date('Y-m-d H:i:s', $current_time),
+            'was_stuck' => $is_stuck
+        ]);
+    }
+    
+    /**
+     * AJAX handler for running manual auto sync (for testing)
+     */
+    public function ajax_run_manual_auto_sync() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Run the auto sync function manually
+        wpccm_perform_auto_cookie_sync();
+        
+        wp_send_json_success([
+            'message' => 'סינכרון אוטומטי הופעל ידנית - בדוק את הטבלה לתוצאות',
+            'run_time' => current_time('Y-m-d H:i:s')
+        ]);
+    }
+    
+    /**
+     * AJAX handler for getting sync details
+     */
+    public function ajax_get_sync_details() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $sync_id = (int) $_POST['sync_id'];
+        if (!$sync_id) {
+            wp_send_json_error('Invalid sync ID');
+            return;
+        }
+        
+        global $wpdb;
+        $sync_history_table = $wpdb->prefix . 'ck_sync_history';
+        
+        $sync_entry = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $sync_history_table WHERE id = %d",
+            $sync_id
+        ), ARRAY_A);
+        
+        if (!$sync_entry) {
+            wp_send_json_error('Sync entry not found');
+            return;
+        }
+        
+        $cookies_data = null;
+        if (!empty($sync_entry['cookies_data'])) {
+            $cookies_data = json_decode($sync_entry['cookies_data'], true);
+        }
+        
+        wp_send_json_success([
+            'cookies_data' => $cookies_data,
+            'sync_time' => date('d/m/Y H:i:s', strtotime($sync_entry['sync_time'])),
+            'sync_type' => $sync_entry['sync_type'],
+            'status' => $sync_entry['status']
+        ]);
+    }
+    
+    /**
+     * Render sync history table
+     */
+    private function render_sync_history_table() {
+        // Get sync history
+        $history = wpccm_get_sync_history(10); // Get last 10 entries
+        
+        echo '<div style="margin-top: 30px;">';
+        echo '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 היסטוריית סינכרון עוגיות</h3>';
+        echo '<p style="margin: 0 0 15px 0; color: #50575e;">רשימת כל פעולות הסינכרון שבוצעו באתר (ידניות ואוטומטיות)</p>';
+        
+        if (empty($history)) {
+            echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
+            echo '<div style="font-size: 36px; margin-bottom: 10px;">📋</div>';
+            echo '<p style="margin: 0; font-size: 14px;">אין היסטוריית סינכרון עדיין</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">ההיסטוריה תתחיל להופיע אחרי הסינכרון הראשון</p>';
+            echo '</div>';
+        } else {
+            echo '<div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; overflow: hidden;">';
+            echo '<table class="widefat" style="margin: 0; border: none;">';
+            echo '<thead>';
+            echo '<tr style="background: #f6f7f7;">';
+            echo '<th style="padding: 12px; font-weight: 600;">זמן</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">סוג</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">סטטוס</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">עוגיות נמצאו</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">עוגיות חדשות</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">זמן ביצוע</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">פרטים</th>';
+            echo '</tr>';
+            echo '</thead>';
+            echo '<tbody>';
+            
+            foreach ($history as $entry) {
+                $sync_time = date('d/m/Y H:i', strtotime($entry['sync_time']));
+                $sync_type = $entry['sync_type'] === 'auto' ? '⏰ אוטומטי' : '👤 ידני';
+                $status = $this->get_sync_status_display($entry['status']);
+                $execution_time = $entry['execution_time'] ? number_format($entry['execution_time'], 3) . 's' : 'N/A';
+                
+                echo '<tr>';
+                echo '<td style="padding: 10px;">' . esc_html($sync_time) . '</td>';
+                echo '<td style="padding: 10px;">' . $sync_type . '</td>';
+                echo '<td style="padding: 10px;">' . $status . '</td>';
+                echo '<td style="padding: 10px; text-align: center;">' . (int) $entry['total_cookies_found'] . '</td>';
+                echo '<td style="padding: 10px; text-align: center;">';
+                if ($entry['new_cookies_added'] > 0) {
+                    echo '<strong style="color: #00a32a;">+' . (int) $entry['new_cookies_added'] . '</strong>';
+                } else {
+                    echo '<span style="color: #666;">0</span>';
+                }
+                echo '</td>';
+                echo '<td style="padding: 10px; text-align: center; font-family: monospace; font-size: 12px;">' . $execution_time . '</td>';
+                echo '<td style="padding: 10px;">';
+                
+                if (!empty($entry['cookies_data'])) {
+                    $cookies_data = json_decode($entry['cookies_data'], true);
+                    if (is_array($cookies_data) && !empty($cookies_data)) {
+                        echo '<button type="button" class="button button-small view-sync-details" data-sync-id="' . $entry['id'] . '" title="צפה בפרטי העוגיות החדשות">';
+                        echo '👁️ צפה (' . count($cookies_data) . ')';
+                        echo '</button>';
+                    }
+                }
+                
+                if (!empty($entry['error_message'])) {
+                    echo '<div style="margin-top: 5px; font-size: 11px; color: #d63384; background: #ffeaea; padding: 3px 6px; border-radius: 2px;">';
+                    echo esc_html($entry['error_message']);
+                    echo '</div>';
+                }
+                
+                echo '</td>';
+                echo '</tr>';
+            }
+            
+            echo '</tbody>';
+            echo '</table>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        
+        // Add JavaScript for viewing details
+        $this->add_sync_history_javascript();
+    }
+    
+    /**
+     * Get sync status display
+     */
+    private function get_sync_status_display($status) {
+        switch ($status) {
+            case 'success':
+                return '<span style="color: #00a32a; font-weight: 600;">✅ הצליח</span>';
+            case 'error':
+                return '<span style="color: #d63384; font-weight: 600;">❌ שגיאה</span>';
+            case 'skipped':
+                return '<span style="color: #dba617; font-weight: 600;">⏭️ דולג</span>';
+            default:
+                return '<span style="color: #666;">' . esc_html($status) . '</span>';
+        }
+    }
+    
+    /**
+     * Add sync history JavaScript
+     */
+    private function add_sync_history_javascript() {
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // View sync details
+            $('.view-sync-details').on('click', function() {
+                const syncId = $(this).data('sync-id');
+                const button = $(this);
+                const originalText = button.text();
+                
+                button.text('⏳ טוען...').prop('disabled', true);
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_sync_details',
+                    sync_id: syncId,
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success && response.data.cookies_data) {
+                        showSyncDetailsModal(response.data.cookies_data, response.data.sync_time);
+                    } else {
+                        alert('לא ניתן לטעון פרטי סינכרון');
+                    }
+                }).fail(function() {
+                    alert('שגיאה בטעינת פרטי סינכרון');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+            
+            function showSyncDetailsModal(cookiesData, syncTime) {
+                let modalHtml = '<div id="sync-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">';
+                modalHtml += '<div style="background: white; border-radius: 8px; padding: 20px; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">';
+                modalHtml += '<h3 style="margin: 0 0 15px 0;">🍪 עוגיות שנוספו בסינכרון</h3>';
+                modalHtml += '<p style="margin: 0 0 15px 0; color: #666; font-size: 13px;">זמן סינכרון: ' + syncTime + '</p>';
+                modalHtml += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">';
+                modalHtml += '<table class="widefat" style="margin: 0;">';
+                modalHtml += '<thead><tr><th>שם עוגיה</th><th>קטגוריה</th><th>ערך</th></tr></thead>';
+                modalHtml += '<tbody>';
+                
+                cookiesData.forEach(function(cookie) {
+                    const categoryBadge = getCategoryBadge(cookie.category);
+                    const truncatedValue = cookie.value && cookie.value.length > 30 ? cookie.value.substring(0, 30) + '...' : (cookie.value || 'N/A');
+                    
+                    modalHtml += '<tr>';
+                    modalHtml += '<td><strong>' + cookie.name + '</strong></td>';
+                    modalHtml += '<td>' + categoryBadge + '</td>';
+                    modalHtml += '<td><code style="font-size: 11px;">' + truncatedValue + '</code></td>';
+                    modalHtml += '</tr>';
+                });
+                
+                modalHtml += '</tbody></table>';
+                modalHtml += '</div>';
+                modalHtml += '<div style="margin-top: 15px; text-align: center;">';
+                modalHtml += '<button type="button" class="button button-primary" onclick="closeSyncDetailsModal()">סגור</button>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+                
+                $('body').append(modalHtml);
+            }
+            
+            function getCategoryBadge(category) {
+                // Get categories from PHP (will be loaded dynamically in future version)
+                const categories = <?php 
+                $categories = wpccm_get_categories();
+                $categories_js = [];
+                foreach ($categories as $cat) {
+                    $categories_js[$cat['category_key']] = [
+                        'name' => $cat['display_name'],
+                        'color' => $cat['color'],
+                        'icon' => $cat['icon'] ?? ''
+                    ];
+                }
+                echo json_encode($categories_js);
+                ?>;
+                
+                const cat = categories[category] || categories['others'] || { name: 'אחרים', color: '#666', icon: '' };
+                const icon = cat.icon ? cat.icon + ' ' : '';
+                return '<span style="background: ' + cat.color + '; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">' + icon + cat.name + '</span>';
+            }
+            
+            // Close modal function (global)
+            window.closeSyncDetailsModal = function() {
+                $('#sync-details-modal').remove();
+            };
+            
+            // Close modal on background click
+            $(document).on('click', '#sync-details-modal', function(e) {
+                if (e.target === this) {
+                    closeSyncDetailsModal();
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * AJAX handler for getting category details
+     */
+    public function ajax_get_category() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $category_id = (int) $_POST['category_id'];
+        if (!$category_id) {
+            wp_send_json_error('Invalid category ID');
+            return;
+        }
+        
+        global $wpdb;
+        $categories_table = $wpdb->prefix . 'ck_categories';
+        
+        $category = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $categories_table WHERE id = %d",
+            $category_id
+        ), ARRAY_A);
+        
+        if (!$category) {
+            wp_send_json_error('Category not found');
+            return;
+        }
+        
+        wp_send_json_success($category);
+    }
+    
+    /**
+     * AJAX handler for saving category
+     */
+    public function ajax_save_category() {
+        error_log('WPCCM: ajax_save_category called with data: ' . print_r($_POST, true));
+        
+        if (!current_user_can('manage_options')) {
+            error_log('WPCCM: No access - user cannot manage options');
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            error_log('WPCCM: Security check failed - invalid nonce');
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $category_id = (int) $_POST['category_id'];
+        $category_key = sanitize_key($_POST['category_key']);
+        $display_name = sanitize_text_field($_POST['display_name']);
+        $description = sanitize_textarea_field($_POST['description']);
+        $color = sanitize_hex_color($_POST['color']);
+        $icon = sanitize_text_field($_POST['icon']);
+        $is_essential = (int) $_POST['is_essential'];
+        
+        if (empty($category_key) || empty($display_name)) {
+            wp_send_json_error('מפתח הקטגוריה ושם התצוגה הם שדות חובה');
+            return;
+        }
+        
+        if (!$color) {
+            $color = '#666666';
+        }
+        
+        global $wpdb;
+        $categories_table = $wpdb->prefix . 'ck_categories';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$categories_table'");
+        if (!$table_exists) {
+            error_log('WPCCM: Categories table does not exist: ' . $categories_table);
+            wp_send_json_error('טבלת הקטגוריות לא קיימת. אנא כבה והפעל את הפלאגין.');
+            return;
+        }
+        
+        $data = [
+            'category_key' => $category_key,
+            'display_name' => $display_name,
+            'description' => $description,
+            'color' => $color,
+            'icon' => $icon,
+            'is_essential' => $is_essential,
+            'is_active' => 1
+        ];
+        
+        $formats = ['%s', '%s', '%s', '%s', '%s', '%d', '%d'];
+        
+        error_log('WPCCM: Attempting to save category with data: ' . print_r($data, true));
+        
+        if ($category_id) {
+            // Update existing category
+            error_log('WPCCM: Updating existing category ID: ' . $category_id);
+            $result = $wpdb->update($categories_table, $data, ['id' => $category_id], $formats, ['%d']);
+        } else {
+            // Check if category key already exists
+            $existing = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $categories_table WHERE category_key = %s",
+                $category_key
+            ));
+            
+            error_log('WPCCM: Checking existing categories for key "' . $category_key . '": ' . $existing);
+            
+            if ($existing > 0) {
+                error_log('WPCCM: Category key already exists');
+                wp_send_json_error('מפתח הקטגוריה כבר קיים');
+                return;
+            }
+            
+            // Insert new category
+            error_log('WPCCM: Inserting new category');
+            $result = $wpdb->insert($categories_table, $data, $formats);
+        }
+        
+        error_log('WPCCM: Database operation result: ' . print_r($result, true));
+        error_log('WPCCM: Last database error: ' . $wpdb->last_error);
+        
+        if ($result === false) {
+            error_log('WPCCM: Database operation failed');
+            wp_send_json_error('שגיאה בשמירת הקטגוריה: ' . $wpdb->last_error);
+            return;
+        }
+        
+        error_log('WPCCM: Category saved successfully');
+        wp_send_json_success('הקטגוריה נשמרה בהצלחה');
+    }
+    
+    /**
+     * AJAX handler for deleting category
+     */
+    public function ajax_delete_category() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $category_id = (int) $_POST['category_id'];
+        if (!$category_id) {
+            wp_send_json_error('Invalid category ID');
+            return;
+        }
+        
+        global $wpdb;
+        $categories_table = $wpdb->prefix . 'ck_categories';
+        
+        // Check if category is essential
+        $category = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $categories_table WHERE id = %d",
+            $category_id
+        ), ARRAY_A);
+        
+        if (!$category) {
+            wp_send_json_error('Category not found');
+            return;
+        }
+        
+        if ($category['is_essential']) {
+            wp_send_json_error('לא ניתן למחוק קטגוריה חיונית');
+            return;
+        }
+        
+        // Check if category is used by cookies
+        $cookies_table = $wpdb->prefix . 'ck_cookies';
+        $cookies_using_category = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $cookies_table WHERE category = %s AND is_active = 1",
+            $category['category_key']
+        ));
+        
+        if ($cookies_using_category > 0) {
+            wp_send_json_error('לא ניתן למחוק קטגוריה שבשימוש על ידי עוגיות פעילות');
+            return;
+        }
+        
+        // Delete the category
+        $result = $wpdb->delete($categories_table, ['id' => $category_id], ['%d']);
+        
+        if ($result === false) {
+            wp_send_json_error('שגיאה במחיקת הקטגוריה');
+            return;
+        }
+        
+        wp_send_json_success('הקטגוריה נמחקה בהצלחה');
+    }
+    
+    /**
+     * AJAX handler for checking categories table
+     */
+    public function ajax_check_categories_table() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        global $wpdb;
+        $categories_table = $wpdb->prefix . 'ck_categories';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$categories_table'");
+        
+        if (!$table_exists) {
+            wp_send_json_error('טבלת הקטגוריות לא קיימת! אנא כבה והפעל את הפלאגין.');
+            return;
+        }
+        
+        // Get table structure
+        $table_structure = $wpdb->get_results("DESCRIBE $categories_table");
+        
+        // Get categories count
+        $categories_count = $wpdb->get_var("SELECT COUNT(*) FROM $categories_table");
+        
+        $message = "✅ טבלת הקטגוריות קיימת!\n";
+        $message .= "📊 מספר קטגוריות: $categories_count\n";
+        $message .= "🏗️ מבנה הטבלה: " . count($table_structure) . " עמודות\n";
+        $message .= "📋 עמודות: " . implode(', ', array_column($table_structure, 'Field'));
+        
+        wp_send_json_success($message);
+    }
+    
+    /**
+     * Render a single category row in the new categories table
+     */
+    private function render_new_category_row($category) {
+        $essential_badge = $category['is_essential'] ? '<span style="background: #d63384; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">חיוני</span>' : '<span style="color: #666;">לא</span>';
+        $active_badge = $category['is_active'] ? '<span style="background: #00a32a; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">פעיל</span>' : '<span style="background: #666; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">לא פעיל</span>';
+        $icon = !empty($category['icon']) ? $category['icon'] : '📦';
+        
+        echo '<tr>';
+        echo '<td style="padding: 10px;"><code>' . esc_html($category['category_key']) . '</code></td>';
+        echo '<td style="padding: 10px;"><strong>' . esc_html($category['display_name']) . '</strong></td>';
+        echo '<td style="padding: 10px;">' . esc_html($category['description'] ?: 'אין תיאור') . '</td>';
+        echo '<td style="padding: 10px; text-align: center;">';
+        echo '<div style="width: 20px; height: 20px; background: ' . esc_attr($category['color']) . '; border-radius: 3px; margin: 0 auto; border: 1px solid #ddd;"></div>';
+        echo '</td>';
+        echo '<td style="padding: 10px; text-align: center; font-size: 18px;">' . $icon . '</td>';
+        echo '<td style="padding: 10px; text-align: center;">' . $essential_badge . '</td>';
+        echo '<td style="padding: 10px; text-align: center;">' . $active_badge . '</td>';
+        echo '<td style="padding: 10px;">';
+        echo '<button type="button" class="button button-small edit-category-btn" data-category-id="' . $category['id'] . '" title="ערוך קטגוריה">✏️ ערוך</button> ';
+        if (!$category['is_essential']) {
+            echo '<button type="button" class="button button-small delete-category-btn" data-category-id="' . $category['id'] . '" title="מחק קטגוריה" style="color: #d63384;">🗑️ מחק</button>';
+        }
+        echo '</td>';
+        echo '</tr>';
+    }
+    
+    /**
+     * Add category management modal
+     */
+    private function add_category_management_modal() {
+        ?>
+        <!-- Category Management Modal -->
+        <div id="category-management-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 500px; max-height: 80vh; overflow-y: auto;">
+                <h3 id="modal-title" style="margin-top: 0;">הוסף קטגוריה חדשה</h3>
+                
+                <form id="category-form">
+                    <input type="hidden" id="category-id" value="">
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">מפתח קטגוריה:</label>
+                        <input type="text" id="category-key" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="למשל: my_category" required>
+                        <small style="color: #666;">באנגלית בלבד, ללא רווחים</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">שם תצוגה:</label>
+                        <input type="text" id="category-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="למשל: הקטגוריה שלי" required>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">תיאור:</label>
+                        <textarea id="category-description" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 80px;" placeholder="תיאור קצר של הקטגוריה"></textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">צבע:</label>
+                            <input type="color" id="category-color" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px; height: 40px;" value="#666666">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">אייקון (אמוג'י):</label>
+                            <input type="text" id="category-icon" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="📦" maxlength="2">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="category-essential"> 
+                            <strong>קטגוריה חיונית</strong>
+                            <small style="color: #666;">(לא ניתן לכבות על ידי המשתמש)</small>
+                        </label>
+                    </div>
+                    
+                    <div style="text-align: left;">
+                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;">שמור</button>
+                        <button type="button" id="cancel-category-modal" class="button">ביטול</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>
+        jQuery(document).ready(function($) {
+            // Open modal when edit button clicked
+            $(document).on("click", ".edit-category-btn", function() {
+                var cookieName = $(this).data("cookie");
+                var currentCategory = $(this).data("category");
+                
+                $("#edit-cookie-name").text(cookieName);
+                $("#edit-category-select").val(currentCategory);
+                $("#category-edit-modal").data("cookie-name", cookieName).show();
+            });
+
+            // Close modal when cancel clicked
+            $("#cancel-category-btn, .category-edit-overlay").on("click", function(e) {
+                if (e.target === this) {
+                    $("#category-edit-modal").hide();
+                }
+            });
+
+            // Save category
+            $("#save-category-btn").on("click", function() {
+                console.log("Save category button clicked");
+                
+                // Define ajaxurl and nonce for this function
+                const ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                const nonce = '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>';
+                
+                // Get form data
+                const formData = {
+                    action: 'wpccm_save_category',
+                    category_id: $('#category-id').val(),
+                    category_key: $('#category-key').val(),
+                    display_name: $('#category-name').val(),
+                    description: $('#category-description').val(),
+                    color: $('#category-color').val(),
+                    icon: $('#category-icon').val(),
+                    is_essential: $('#category-essential').prop('checked') ? 1 : 0,
+                    _wpnonce: nonce
+                };
+                
+                console.log('Form data prepared:', formData);
+                
+                // Show loading state
+                const submitBtn = $(this);
+                const originalText = submitBtn.text();
+                submitBtn.text('🔄 שומר...').prop('disabled', true);
+                
+                // Send AJAX request
+                $.post(ajaxurl, formData).done(function(response) {
+                    console.log('Save category response:', response);
+                    if (response.success) {
+                        $('#category-management-modal').hide();
+                        location.reload(); // Refresh to show changes
+                    } else {
+                        alert('שגיאה בשמירת הקטגוריה: ' + (response.data || 'שגיאה לא ידועה'));
+                        submitBtn.text(originalText).prop('disabled', false);
+                    }
+                }).fail(function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    alert('שגיאה בשמירת הקטגוריה: ' + error);
+                    submitBtn.text(originalText).prop('disabled', false);
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Add JavaScript for new categories management
+     */
+    private function enqueue_new_categories_js() {
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            
+            // Check if wpccm_ajax is defined, fallback to manual setup
+            let ajaxurl, nonce;
+            if (typeof wpccm_ajax !== 'undefined') {
+                ajaxurl = wpccm_ajax.ajaxurl;
+                nonce = wpccm_ajax.nonce;
+                console.log('Using wpccm_ajax:', wpccm_ajax);
+            } else {
+                console.warn('wpccm_ajax not defined, using fallback');
+                ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+                nonce = '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>';
+            }
+            console.log('Using ajaxurl:', ajaxurl);
+            
+            // Add new category
+            $('#wpccm-add-category').on('click', function() {
+                
+                $('#modal-title').text('הוסף קטגוריה חדשה');
+                
+                // Reset form fields manually instead of using reset()
+                $('#category-id').val('');
+                $('#category-key').val('');
+                $('#category-name').val('');
+                $('#category-description').val('');
+                $('#category-color').val('#666666');
+                $('#category-icon').val('');
+                $('#category-essential').prop('checked', false);
+                
+                console.log('About to show modal');
+                $('#category-management-modal').show();
+                console.log('Modal show() called');
+            });
+            
+            // Edit category
+            $(document).on('click', '.edit-category-btn', function() {
+                const categoryId = $(this).data('category-id');
+                
+                $('#modal-title').text('ערוך קטגוריה');
+                $('#category-id').val(categoryId);
+                
+                // Load category data via AJAX
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_category',
+                    category_id: categoryId,
+                    _wpnonce: nonce
+                }).done(function(response) {
+                    if (response.success) {
+                        const cat = response.data;
+                        $('#category-key').val(cat.category_key);
+                        $('#category-name').val(cat.display_name);
+                        $('#category-description').val(cat.description || '');
+                        $('#category-color').val(cat.color);
+                        $('#category-icon').val(cat.icon || '');
+                        $('#category-essential').prop('checked', cat.is_essential == 1);
+                        $('#category-management-modal').show();
+                    } else {
+                        alert('שגיאה בטעינת נתוני הקטגוריה');
+                    }
+                });
+            });
+            
+            // Delete category
+            $(document).on('click', '.delete-category-btn', function() {
+                if (!confirm('האם אתה בטוח שברצונך למחוק קטגוריה זו?')) {
+                    return;
+                }
+                
+                const categoryId = $(this).data('category-id');
+                const button = $(this);
+                const originalText = button.text();
+                
+                button.text('🔄 מוחק...').prop('disabled', true);
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_delete_category',
+                    category_id: categoryId,
+                    _wpnonce: nonce
+                }).done(function(response) {
+                    if (response.success) {
+                        button.closest('tr').fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    } else {
+                        alert('שגיאה במחיקת הקטגוריה: ' + (response.data || 'שגיאה לא ידועה'));
+                        button.text(originalText).prop('disabled', false);
+                    }
+                }).fail(function() {
+                    alert('שגיאה במחיקת הקטגוריה');
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+            
+            // Save category
+            $('#category-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                console.log('Form submitted, preparing data...');
+                
+                const formData = {
+                    action: 'wpccm_save_category',
+                    category_id: $('#category-id').val(),
+                    category_key: $('#category-key').val(),
+                    display_name: $('#category-name').val(),
+                    description: $('#category-description').val(),
+                    color: $('#category-color').val(),
+                    icon: $('#category-icon').val(),
+                    is_essential: $('#category-essential').prop('checked') ? 1 : 0,
+                    _wpnonce: nonce
+                };
+                
+                console.log('Form data prepared:', formData);
+                
+                // Show loading state
+                const submitBtn = $('#category-form button[type="submit"]');
+                const originalText = submitBtn.text();
+                submitBtn.text('🔄 שומר...').prop('disabled', true);
+                
+                console.log('Sending AJAX request to:', ajaxurl);
+                console.log('Request data:', formData);
+                
+                $.post(ajaxurl, formData).done(function(response) {
+                    console.log('Save category response:', response);
+                    if (response.success) {
+                        $('#category-management-modal').hide();
+                        // location.reload(); // Refresh to show changes
+                    } else {
+                        alert('שגיאה בשמירת הקטגוריה: ' + (response.data || 'שגיאה לא ידועה'));
+                        submitBtn.text(originalText).prop('disabled', false);
+                    }
+                }).fail(function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    alert('שגיאה בשמירת הקטגוריה: ' + error);
+                    submitBtn.text(originalText).prop('disabled', false);
+                });
+            });
+            
+            // Cancel modal
+            $('#cancel-category-modal').on('click', function() {
+                $('#category-management-modal').hide();
+            });
+            
+            // Close modal when clicking on background
+            $('#category-management-modal').on('click', function(e) {
+                if (e.target === this) {
+                    $('#category-management-modal').hide();
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+    
     
     /**
      * AJAX handler for saving design settings
@@ -4692,96 +5963,4 @@ class WP_CCM_Admin {
     /**
      * Render sync page for cookies and scripts
      */
-    public function render_sync_page() {
-        ?>
-        <div class="wrap">
-            <h1>סינכרון עוגיות וסכריפטים</h1>
-            
-            <!-- Tabs Navigation -->
-            <nav class="nav-tab-wrapper wpccm-tabs">
-                <a href="#cookies" class="nav-tab" data-tab="cookies">עוגיות</a>
-                <a href="#scripts" class="nav-tab nav-tab-active" data-tab="scripts">סכריפטים</a>
-            </nav>
-            
-            <form method="post" action="options.php"> 
-                <!-- Cookies Tab Content -->
-                <div id="cookies" class="wpccm-tab-content">
-                    <?php 
-                    try {
-                        $this->render_purge_tab(); 
-                    } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת עוגיות: ' . $e->getMessage() . '</p></div>';
-                    } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת עוגיות: ' . $e->getMessage() . '</p></div>';
-                    }
-                    ?>
-                    <p class="submit">
-                        <input type="submit" name="save_purge_settings" class="button-primary" value="שמור הגדרות עוגיות" />
-                    </p>
-                </div>
-                
-                <!-- Scripts Tab Content -->
-                <div id="scripts" class="wpccm-tab-content active">
-                    <?php 
-                    try {
-                        $this->render_mapping_tab(); 
-                    } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סכריפטים: ' . $e->getMessage() . '</p></div>';
-                    } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סכריפטים: ' . $e->getMessage() . '</p></div>';
-                    }
-                    ?>
-                </div>
-                
-            </form>
-        </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            $('.wpccm-tabs .nav-tab').on('click', function(e) {
-                e.preventDefault();
-                
-                var targetTab = $(this).data('tab');
-                
-                // Update active tab
-                $('.wpccm-tabs .nav-tab').removeClass('nav-tab-active');
-                $(this).addClass('nav-tab-active');
-                
-                // Show target content
-                $('.wpccm-tab-content').removeClass('active');
-                $('#' + targetTab).addClass('active');
-                
-                // Auto-sync cookies when switching to cookies tab
-                if (targetTab === 'cookies') {
-                    // Wait a bit for the tab content to be visible
-                    setTimeout(function() {
-                        // Trigger the sync current cookies button
-                        $('#wpccm-sync-current-cookies-btn').trigger('click');
-                    }, 300);
-                }
-            });
-            
-            // Initialize first tab as active on page load
-            var firstTab = $('.wpccm-tabs .nav-tab').first();
-            if (firstTab.length) {
-                var firstTabId = firstTab.data('tab');
-                
-                // Auto-sync if the first tab is cookies
-                if (firstTabId === 'cookies') {
-                    setTimeout(function() {
-                        $('#wpccm-sync-current-cookies-btn').trigger('click');
-                    }, 500);
-                }
-            }
-            
-            // Also check if we have a hash in URL to go directly to cookies tab
-            if (window.location.hash === '#cookies') {
-                setTimeout(function() {
-                    $('#wpccm-sync-current-cookies-btn').trigger('click');
-                }, 500);
-            }
-        });
-        </script>
-        <?php
-    }
 }

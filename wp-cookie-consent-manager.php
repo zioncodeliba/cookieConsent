@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.31
+ * Version: 1.0.32
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -13,12 +13,17 @@
 if (!defined('ABSPATH')) {
     exit;
 }
-define('WPCCM_VERSION', '1.0.31');
+
+// Load debug configuration
+if (file_exists(__DIR__ . '/wpccm-debug-config.php')) {
+    require_once __DIR__ . '/wpccm-debug-config.php';
+}
+define('WPCCM_VERSION', '1.0.32');
 
 // Dashboard API Configuration
 define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
 // define('WPCCM_DASHBOARD_API_URL', 'http://localhost:8000/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.31');
+define('WPCCM_DASHBOARD_VERSION', '1.0.32');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
@@ -317,6 +322,8 @@ class WP_CCM {
 
         add_action('wp_ajax_wpccm_update_purge_list', [$this, 'ajax_update_purge_list']);
         // Save structured purge cookies (name+category) directly from Purge tab
+        add_action('wp_ajax_wpccm_create_cookies_table', [$this, 'ajax_create_cookies_table']);
+        add_action('wp_ajax_wpccm_update_cookie_category', [$this, 'ajax_update_cookie_category']);
         add_action('wp_ajax_wpccm_save_purge_cookies', [$this, 'ajax_save_purge_cookies']);
         add_action('wp_ajax_wpccm_get_current_cookies_by_category', [$this, 'ajax_get_current_cookies_by_category']);
         add_action('wp_ajax_nopriv_wpccm_get_current_cookies_by_category', [$this, 'ajax_get_current_cookies_by_category']);
@@ -362,7 +369,7 @@ class WP_CCM {
         $dashboard = WP_CCM_Dashboard::get_instance();
         $test_result = $dashboard->test_connection_silent();
         
-        if (!$test_result) {
+        if (!$test_result || !isset($test_result['success']) || !$test_result['success']) {
             error_log('WPCCM Debug - License validation failed, not loading scripts');
             return;
         }
@@ -460,7 +467,7 @@ class WP_CCM {
         $dashboard = WP_CCM_Dashboard::get_instance();
         $test_result = $dashboard->test_connection_silent();
         
-        if (!$test_result) {
+        if (!$test_result || !isset($test_result['success']) || !$test_result['success']) {
             error_log('WPCCM Debug - License validation failed, not rendering banner');
             echo '<!-- WPCCM Banner Container - Connection Failed -->';
             return;
@@ -779,6 +786,66 @@ class WP_CCM {
     /**
      * Save purge cookies with categories from Purge tab (AJAX)
      */
+    public function ajax_create_cookies_table() {
+        if (!current_user_can('manage_options')) wp_die('No access');
+        
+        // Force create/update database tables
+        wpccm_create_database_tables();
+        
+        wp_send_json_success(['message' => 'Cookies table created successfully']);
+    }
+    
+    public function ajax_update_cookie_category() {
+        if (!current_user_can('manage_options')) wp_die('No access');
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Invalid nonce');
+            return;
+        }
+        
+        $cookie_name = sanitize_text_field($_POST['cookie_name'] ?? '');
+        $category = sanitize_text_field($_POST['category'] ?? '');
+        
+        if (empty($cookie_name) || empty($category)) {
+            wp_send_json_error('Missing cookie name or category');
+            return;
+        }
+        
+        global $wpdb;
+        $cookies_table = $wpdb->prefix . 'ck_cookies';
+        
+        // Update in database
+        $result = $wpdb->update(
+            $cookies_table,
+            [
+                'category' => $category,
+                'updated_at' => current_time('mysql')
+            ],
+            ['name' => $cookie_name],
+            ['%s', '%s'],
+            ['%s']
+        );
+        
+        if ($result !== false) {
+            // Also update in wp_options for backward compatibility
+            $opts = WP_CCM_Consent::get_options();
+            if (isset($opts['purge']['cookies']) && is_array($opts['purge']['cookies'])) {
+                foreach ($opts['purge']['cookies'] as &$cookie) {
+                    if (isset($cookie['name']) && $cookie['name'] === $cookie_name) {
+                        $cookie['category'] = $category;
+                        break;
+                    }
+                }
+                update_option('wpccm_options', $opts);
+            }
+            
+            wp_send_json_success(['message' => 'Cookie category updated successfully']);
+        } else {
+            wp_send_json_error('Failed to update cookie category in database');
+        }
+    }
+    
     public function ajax_save_purge_cookies() {
         if (!current_user_can('manage_options')) wp_die('No access');
         
@@ -798,12 +865,24 @@ class WP_CCM {
                 $name = isset($cookie['name']) ? sanitize_text_field($cookie['name']) : '';
                 $category = isset($cookie['category']) ? sanitize_text_field($cookie['category']) : '';
                 if ($name !== '') {
-                    $structured[] = [ 'name' => $name, 'category' => $category ];
+                    // Get existing value from database if available
+                    global $wpdb;
+                    $cookies_table = $wpdb->prefix . 'ck_cookies';
+                    $existing_value = $wpdb->get_var($wpdb->prepare(
+                        "SELECT value FROM $cookies_table WHERE name = %s AND is_active = 1",
+                        $name
+                    ));
+                    
+                    $structured[] = [ 
+                        'name' => $name, 
+                        'category' => $category,
+                        'value' => $existing_value ?: ''
+                    ];
                 }
             } elseif (is_string($cookie)) {
                 $name = sanitize_text_field($cookie);
                 if ($name !== '') {
-                    $structured[] = [ 'name' => $name, 'category' => '' ];
+                    $structured[] = [ 'name' => $name, 'category' => '', 'value' => '' ];
                 }
             }
         }
@@ -811,6 +890,9 @@ class WP_CCM {
         $opts = WP_CCM_Consent::get_options();
         $opts['purge']['cookies'] = $structured;
         update_option('wpccm_options', $opts);
+        
+        // Also save to new cookies table
+        wpccm_save_cookies_to_db($structured);
         
         wp_send_json_success([ 'saved' => count($structured) ]);
     }
@@ -902,7 +984,7 @@ class WP_CCM {
         $name = strtolower($cookie_name);
         
         // Necessary patterns (essential for site function)
-        if (preg_match('/(phpsessid|wordpress_|_wp_session|csrf_token|wp-settings|session|auth|login|user_|admin_)/i', $name)) {
+        if (preg_match('/(consent_|phpsessid|wordpress_|_wp_session|csrf_token|wp-settings|session|auth|login|user_|admin_)/i', $name)) {
             return 'necessary';
         }
         
@@ -961,8 +1043,21 @@ class WP_CCM {
         
         $all_cookies = [];
         
-        foreach ($current_cookies as $cookie_name) {
-            $cookie_name = sanitize_text_field($cookie_name);
+        foreach ($current_cookies as $cookie_data) {
+            // Handle both old format (string) and new format (array)
+            if (is_string($cookie_data)) {
+                $cookie_name = sanitize_text_field($cookie_data);
+                $cookie_value = '';
+                wpccm_debug_log("Processing string cookie: $cookie_name");
+            } else if (is_array($cookie_data) && isset($cookie_data['name'])) {
+                $cookie_name = sanitize_text_field($cookie_data['name']);
+                $cookie_value = sanitize_textarea_field($cookie_data['value'] ?? '');
+                wpccm_debug_log("Processing array cookie: $cookie_name", ['value' => $cookie_value]);
+            } else {
+                wpccm_debug_log("Skipping invalid cookie data", $cookie_data);
+                continue;
+            }
+            
             if (empty($cookie_name)) continue;
             
             $category = $this->categorize_cookie_name($cookie_name);
@@ -970,6 +1065,7 @@ class WP_CCM {
             // Include ALL cookies (no filtering)
             $all_cookies[] = [
                 'name' => $cookie_name,
+                'value' => $cookie_value,
                 'category' => $category,
                 'category_display' => $this->get_category_display_name($category),
                 'reason' => $this->get_cookie_reason_by_category($cookie_name, $category)
@@ -986,6 +1082,34 @@ class WP_CCM {
             }
             return strcmp($a['category'], $b['category']);
         });
+        
+        // Get existing cookies for comparison
+        $existing_cookies = wpccm_get_cookies_from_db();
+        $existing_names = array_column($existing_cookies, 'name');
+        
+        // Track new and updated cookies
+        $new_cookies = [];
+        $updated_cookies = [];
+        foreach ($all_cookies as $cookie) {
+            if (!in_array($cookie['name'], $existing_names)) {
+                $new_cookies[] = $cookie;
+            } else {
+                $updated_cookies[] = $cookie;
+            }
+        }
+        
+        // Save cookies to database immediately with values
+        wpccm_save_cookies_to_db($all_cookies);
+        
+        // Save manual sync history
+        wpccm_save_sync_history(
+            'manual',
+            count($all_cookies),
+            count($new_cookies),
+            count($updated_cookies),
+            $new_cookies, // Only save new cookies data
+            'success'
+        );
         
         error_log('WPCCM Debug: Sending response with ' . count($all_cookies) . ' cookies');
         wp_send_json_success($all_cookies);
@@ -1295,6 +1419,16 @@ if (is_admin()) {
     new WP_CCM_Admin();
 }
 
+// Schedule automatic cookie sync
+add_action('wp', 'wpccm_schedule_cookie_sync');
+add_action('wpccm_auto_cookie_sync', 'wpccm_perform_auto_cookie_sync');
+
+// Hook for plugin activation to schedule the cron
+register_activation_hook(__FILE__, 'wpccm_activate_cookie_sync');
+
+// Hook for plugin deactivation to clear the cron
+register_deactivation_hook(__FILE__, 'wpccm_deactivate_cookie_sync');
+
 // Initialize new modular components
 add_action('init', function() {
     // error_log('WPCCM: Initializing modular components');
@@ -1329,8 +1463,9 @@ add_action('wp_loaded', function() {
             if (!empty($license_key)) {
                 // בדיקה שהרישיון באמת תקין
                 $dashboard = WP_CCM_Dashboard::get_instance();
+                $test_result = $dashboard->test_connection_silent();
                
-                if ($dashboard->test_connection_silent()) {
+                if ($test_result && isset($test_result['success']) && $test_result['success']) {
                     $GLOBALS['wpccm_instance'] = new WP_CCM();
                     
                     error_log('WPCCM Debug - Plugin loaded successfully');
@@ -1385,8 +1520,636 @@ function wpccm_create_database_tables() {
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql);
     
+    // Create cookies table
+    $cookies_table = $wpdb->prefix . 'ck_cookies';
+    
+    $cookies_sql = "CREATE TABLE $cookies_table (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        name varchar(255) NOT NULL,
+        value text NULL,
+        category varchar(50) NOT NULL DEFAULT 'others',
+        description text NULL,
+        purpose text NULL,
+        expiry varchar(100) NULL,
+        is_active tinyint(1) NOT NULL DEFAULT 1,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_name (name),
+        KEY category (category),
+        KEY is_active (is_active)
+    ) $charset_collate;";
+    
+    dbDelta($cookies_sql);
+    
+    // Create sync history table
+    $sync_history_table = $wpdb->prefix . 'ck_sync_history';
+    $sync_history_sql = "CREATE TABLE $sync_history_table (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        sync_type varchar(50) NOT NULL DEFAULT 'auto',
+        sync_time datetime DEFAULT CURRENT_TIMESTAMP,
+        total_cookies_found int(10) NOT NULL DEFAULT 0,
+        new_cookies_added int(10) NOT NULL DEFAULT 0,
+        updated_cookies int(10) NOT NULL DEFAULT 0,
+        cookies_data longtext NULL,
+        status varchar(20) NOT NULL DEFAULT 'success',
+        error_message text NULL,
+        execution_time float NULL,
+        user_id bigint(20) NULL,
+        PRIMARY KEY (id),
+        KEY sync_type (sync_type),
+        KEY sync_time (sync_time),
+        KEY status (status)
+    ) $charset_collate;";
+    
+    dbDelta($sync_history_sql);
+    
+    // Create categories table
+    $categories_table = $wpdb->prefix . 'ck_categories';
+    $categories_sql = "CREATE TABLE $categories_table (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        category_key varchar(50) NOT NULL,
+        display_name varchar(255) NOT NULL,
+        description text NULL,
+        color varchar(7) NOT NULL DEFAULT '#666666',
+        icon varchar(50) NULL,
+        sort_order int(10) NOT NULL DEFAULT 0,
+        is_active tinyint(1) NOT NULL DEFAULT 1,
+        is_essential tinyint(1) NOT NULL DEFAULT 0,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_category_key (category_key),
+        KEY is_active (is_active),
+        KEY sort_order (sort_order)
+    ) $charset_collate;";
+    
+    dbDelta($categories_sql);
+    
+    // Migrate existing cookies data
+    wpccm_migrate_cookies_data();
+    
+    // Create default categories
+    wpccm_create_default_categories();
+    
     // Update database version
-    update_option('wpccm_db_version', '1.0');
+    update_option('wpccm_db_version', '1.4');
+}
+
+/**
+ * Migrate existing cookies data from wp_options to database table
+ */
+function wpccm_migrate_cookies_data() {
+    // Check if migration already done
+    if (get_option('wpccm_cookies_migrated', false)) {
+        return;
+    }
+    
+    $opts = get_option('wpccm_options', []);
+    $existing_cookies = isset($opts['purge']['cookies']) ? $opts['purge']['cookies'] : [];
+    
+    if (!empty($existing_cookies)) {
+        wpccm_save_cookies_to_db($existing_cookies);
+        
+        // Mark migration as completed
+        update_option('wpccm_cookies_migrated', true);
+        
+        error_log('WPCCM: Migrated ' . count($existing_cookies) . ' cookies to database table');
+    }
+}
+
+/**
+ * Schedule automatic cookie sync every hour at the next round hour
+ */
+function wpccm_schedule_cookie_sync() {
+    // Clear any existing schedule first
+    $timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wpccm_auto_cookie_sync');
+    }
+    
+    // Calculate next round hour
+    $current_time = current_time('timestamp');
+    $next_hour = strtotime(date('Y-m-d H:00:00', $current_time) . ' +1 hour');
+    
+    // Schedule at next round hour
+    wp_schedule_event($next_hour, 'hourly', 'wpccm_auto_cookie_sync');
+    
+    wpccm_debug_log('Scheduled automatic cookie sync', [
+        'current_time' => date('Y-m-d H:i:s', $current_time),
+        'next_run' => date('Y-m-d H:i:s', $next_hour)
+    ]);
+}
+
+/**
+ * Activate cookie sync cron on plugin activation
+ */
+function wpccm_activate_cookie_sync() {
+    wpccm_schedule_cookie_sync();
+    wpccm_debug_log('Cookie sync cron activated');
+}
+
+/**
+ * Deactivate cookie sync cron on plugin deactivation
+ */
+function wpccm_deactivate_cookie_sync() {
+    $timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wpccm_auto_cookie_sync');
+        wpccm_debug_log('Cookie sync cron deactivated');
+    }
+}
+
+/**
+ * Perform automatic cookie sync in background
+ */
+function wpccm_perform_auto_cookie_sync() {
+    $start_time = microtime(true);
+    wpccm_debug_log('Starting automatic cookie sync');
+    
+    // Check if plugin is properly activated and licensed
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        wpccm_debug_log('Auto sync skipped - plugin not activated');
+        wpccm_save_sync_history('auto', 0, 0, 0, null, 'skipped', 'Plugin not activated');
+        return;
+    }
+    
+    try {
+        // Get existing cookies count for comparison
+        $existing_cookies = wpccm_get_cookies_from_db();
+        $existing_count = count($existing_cookies);
+        $existing_names = array_column($existing_cookies, 'name');
+        
+        // Get cookies from the current site
+        $current_cookies = wpccm_get_current_site_cookies();
+        
+        if (empty($current_cookies)) {
+            $execution_time = microtime(true) - $start_time;
+            wpccm_debug_log('Auto sync - no cookies found on site');
+            wpccm_save_sync_history('auto', 0, 0, 0, null, 'success', null, $execution_time);
+            return;
+        }
+        
+        wpccm_debug_log('Auto sync found cookies', ['count' => count($current_cookies)]);
+        
+        // Process and categorize cookies
+        $processed_cookies = [];
+        $new_cookies = [];
+        $updated_cookies = [];
+        
+        foreach ($current_cookies as $cookie_data) {
+            if (!isset($cookie_data['name']) || empty($cookie_data['name'])) {
+                continue;
+            }
+            
+            $cookie_name = sanitize_text_field($cookie_data['name']);
+            $cookie_value = sanitize_textarea_field($cookie_data['value'] ?? '');
+            
+            // Use existing categorization logic
+            $category = wpccm_categorize_cookie_name($cookie_name);
+            
+            $processed_cookie = [
+                'name' => $cookie_name,
+                'value' => $cookie_value,
+                'category' => $category,
+                'category_display' => wpccm_get_category_display_name($category),
+                'reason' => wpccm_get_cookie_reason_by_category($cookie_name, $category)
+            ];
+            
+            $processed_cookies[] = $processed_cookie;
+            
+            // Track if this is a new cookie or updated
+            if (!in_array($cookie_name, $existing_names)) {
+                $new_cookies[] = $processed_cookie;
+            } else {
+                $updated_cookies[] = $processed_cookie;
+            }
+        }
+        
+        if (!empty($processed_cookies)) {
+            // Save to database
+            wpccm_save_cookies_to_db($processed_cookies);
+            
+            $execution_time = microtime(true) - $start_time;
+            
+            // Save history
+            wpccm_save_sync_history(
+                'auto',
+                count($processed_cookies),
+                count($new_cookies),
+                count($updated_cookies),
+                $new_cookies, // Only save new cookies data to keep history manageable
+                'success',
+                null,
+                $execution_time
+            );
+            
+            wpccm_debug_log('Auto sync completed successfully', [
+                'total_cookies' => count($processed_cookies),
+                'new_cookies' => count($new_cookies),
+                'updated_cookies' => count($updated_cookies),
+                'execution_time' => $execution_time
+            ]);
+        }
+        
+    } catch (Exception $e) {
+        $execution_time = microtime(true) - $start_time;
+        $error_message = $e->getMessage();
+        
+        wpccm_debug_log('Auto sync error: ' . $error_message);
+        error_log('WPCCM Auto Sync Error: ' . $error_message);
+        
+        // Save error to history
+        wpccm_save_sync_history(
+            'auto',
+            0,
+            0,
+            0,
+            null,
+            'error',
+            $error_message,
+            $execution_time
+        );
+    }
+}
+
+/**
+ * Get current site cookies (simplified version for background sync)
+ */
+function wpccm_get_current_site_cookies() {
+    $cookies = [];
+    
+    // Try to get cookies from WordPress cookies if available
+    if (!empty($_COOKIE)) {
+        foreach ($_COOKIE as $name => $value) {
+            // Skip WordPress admin cookies and session cookies
+            if (strpos($name, 'wordpress_') === 0 || 
+                strpos($name, 'wp-') === 0 || 
+                $name === 'PHPSESSID' ||
+                strpos($name, 'comment_') === 0) {
+                continue;
+            }
+            
+            $cookies[] = [
+                'name' => $name,
+                'value' => $value
+            ];
+        }
+    }
+    
+    return $cookies;
+}
+
+/**
+ * Helper functions for background sync
+ */
+function wpccm_categorize_cookie_name($cookie_name) {
+    $cookie_name_lower = strtolower($cookie_name);
+    
+    // Necessary patterns
+    if (preg_match('/(session|csrf|security|essential|required|auth|login|consent_necessary)/i', $cookie_name_lower)) {
+        return 'necessary';
+    }
+    
+    // Functional patterns  
+    if (preg_match('/(wp-|wordpress|preference|language|currency|cart|wishlist|compare)/i', $cookie_name_lower)) {
+        return 'functional';
+    }
+    
+    // Performance patterns
+    if (preg_match('/(cache|cdn|speed|performance|optimization)/i', $cookie_name_lower)) {
+        return 'performance';
+    }
+    
+    // Analytics patterns
+    if (preg_match('/(google.*analytics|gtag|gtm|_ga|_gid|_gat|analytics|mixpanel|segment|hotjar|matomo|piwik|tracking|statistics)/i', $cookie_name_lower)) {
+        return 'analytics';
+    }
+    
+    // Advertisement patterns
+    if (preg_match('/(facebook|fb|_fbp|_fbc|doubleclick|adsystem|googlesyndication|ads|advertisement|marketing|retargeting)/i', $cookie_name_lower)) {
+        return 'advertisement';
+    }
+    
+    // Default to others
+    return 'others';
+}
+
+function wpccm_get_category_display_name($category_key) {
+    $category = wpccm_get_category_by_key($category_key);
+    
+    if ($category) {
+        return $category['display_name'];
+    }
+    
+    // Fallback for backward compatibility
+    $names = [
+        'necessary' => 'נחוץ',
+        'functional' => 'פונקציונלי', 
+        'performance' => 'ביצועים',
+        'analytics' => 'אנליטיקה',
+        'advertisement' => 'פרסום',
+        'others' => 'אחרים'
+    ];
+    
+    return isset($names[$category_key]) ? $names[$category_key] : $names['others'];
+}
+
+function wpccm_get_cookie_reason_by_category($cookie_name, $category) {
+    switch ($category) {
+        case 'necessary':
+            return 'חיוני לתפקוד בסיסי של האתר';
+        case 'functional':
+            return 'משפר את חוויית המשתמש';
+        case 'performance':
+            return 'עוזר לשיפור ביצועי האתר';
+        case 'analytics':
+            return 'עוזר להבין את השימוש באתר';
+        case 'advertisement':
+            return 'משמש להצגת פרסומות מותאמות';
+        default:
+            return 'פונקציונליות אחרת של האתר';
+    }
+}
+
+/**
+ * Create default categories
+ */
+function wpccm_create_default_categories() {
+    global $wpdb;
+    
+    $categories_table = $wpdb->prefix . 'ck_categories';
+    
+    // Check if categories already exist
+    $existing_count = $wpdb->get_var("SELECT COUNT(*) FROM $categories_table");
+    if ($existing_count > 0) {
+        return; // Categories already exist
+    }
+    
+    $default_categories = [
+        [
+            'category_key' => 'necessary',
+            'display_name' => 'נחוץ',
+            'description' => 'עוגיות הכרחיות לפעולת האתר הבסיסית',
+            'color' => '#d63384',
+            'icon' => '🔒',
+            'sort_order' => 1,
+            'is_essential' => 1
+        ],
+        [
+            'category_key' => 'functional',
+            'display_name' => 'פונקציונלי',
+            'description' => 'עוגיות המשפרות את חוויית המשתמש',
+            'color' => '#0073aa',
+            'icon' => '⚙️',
+            'sort_order' => 2,
+            'is_essential' => 0
+        ],
+        [
+            'category_key' => 'performance',
+            'display_name' => 'ביצועים',
+            'description' => 'עוגיות לשיפור ביצועי האתר',
+            'color' => '#00a32a',
+            'icon' => '📈',
+            'sort_order' => 3,
+            'is_essential' => 0
+        ],
+        [
+            'category_key' => 'analytics',
+            'display_name' => 'אנליטיקה',
+            'description' => 'עוגיות למדידת תנועה וניתוח התנהגות משתמשים',
+            'color' => '#dba617',
+            'icon' => '📊',
+            'sort_order' => 4,
+            'is_essential' => 0
+        ],
+        [
+            'category_key' => 'advertisement',
+            'display_name' => 'פרסום',
+            'description' => 'עוגיות למטרות פרסום ושיווק מותאם אישית',
+            'color' => '#8c8f94',
+            'icon' => '📢',
+            'sort_order' => 5,
+            'is_essential' => 0
+        ],
+        [
+            'category_key' => 'others',
+            'display_name' => 'אחרים',
+            'description' => 'עוגיות שלא נכללות בקטגוריות אחרות',
+            'color' => '#666666',
+            'icon' => '📦',
+            'sort_order' => 6,
+            'is_essential' => 0
+        ]
+    ];
+    
+    foreach ($default_categories as $category) {
+        $wpdb->insert(
+            $categories_table,
+            [
+                'category_key' => $category['category_key'],
+                'display_name' => $category['display_name'],
+                'description' => $category['description'],
+                'color' => $category['color'],
+                'icon' => $category['icon'],
+                'sort_order' => $category['sort_order'],
+                'is_active' => 1,
+                'is_essential' => $category['is_essential']
+            ],
+            ['%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d']
+        );
+    }
+    
+    wpccm_debug_log('Default categories created', ['count' => count($default_categories)]);
+}
+
+/**
+ * Get all active categories from database
+ */
+function wpccm_get_categories($active_only = true) {
+    global $wpdb;
+    
+    $categories_table = $wpdb->prefix . 'ck_categories';
+    
+    $where_clause = $active_only ? "WHERE is_active = 1" : "";
+    
+    $categories = $wpdb->get_results(
+        "SELECT * FROM $categories_table $where_clause ORDER BY sort_order ASC, display_name ASC",
+        ARRAY_A
+    );
+    
+    return $categories ?: [];
+}
+
+/**
+ * Get category by key
+ */
+function wpccm_get_category_by_key($category_key) {
+    global $wpdb;
+    
+    $categories_table = $wpdb->prefix . 'ck_categories';
+    
+    $category = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $categories_table WHERE category_key = %s AND is_active = 1",
+        $category_key
+    ), ARRAY_A);
+    
+    return $category ?: null;
+}
+
+/**
+ * Save sync history to database
+ */
+function wpccm_save_sync_history($sync_type, $total_found, $new_added, $updated, $cookies_data = null, $status = 'success', $error_message = null, $execution_time = null) {
+    global $wpdb;
+    
+    $sync_history_table = $wpdb->prefix . 'ck_sync_history';
+    
+    $data = [
+        'sync_type' => sanitize_text_field($sync_type),
+        'sync_time' => current_time('mysql'),
+        'total_cookies_found' => (int) $total_found,
+        'new_cookies_added' => (int) $new_added,
+        'updated_cookies' => (int) $updated,
+        'cookies_data' => $cookies_data ? json_encode($cookies_data) : null,
+        'status' => sanitize_text_field($status),
+        'error_message' => $error_message ? sanitize_textarea_field($error_message) : null,
+        'execution_time' => $execution_time ? (float) $execution_time : null,
+        'user_id' => get_current_user_id() ?: null
+    ];
+    
+    $formats = ['%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%f', '%d'];
+    
+    $result = $wpdb->insert($sync_history_table, $data, $formats);
+    
+    wpccm_debug_log('Sync history saved', [
+        'result' => $result,
+        'sync_type' => $sync_type,
+        'total_found' => $total_found,
+        'new_added' => $new_added,
+        'updated' => $updated,
+        'status' => $status
+    ]);
+    
+    return $result;
+}
+
+/**
+ * Get sync history from database
+ */
+function wpccm_get_sync_history($limit = 20) {
+    global $wpdb;
+    
+    $sync_history_table = $wpdb->prefix . 'ck_sync_history';
+    
+    $results = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $sync_history_table ORDER BY sync_time DESC LIMIT %d",
+        $limit
+    ), ARRAY_A);
+    
+    return $results ?: [];
+}
+
+/**
+ * Debug logging function for WPCCM
+ * Set WPCCM_DEBUG to true to enable logging
+ */
+function wpccm_debug_log($message, $data = null) {
+    if (!defined('WPCCM_DEBUG') || !WPCCM_DEBUG) {
+        return;
+    }
+    
+    $log_message = "[" . date('Y-m-d H:i:s') . "] WPCCM Debug: $message";
+    if ($data !== null) {
+        $log_message .= "\n" . print_r($data, true);
+    }
+    $log_message .= "\n\n";
+    
+    file_put_contents(__DIR__ . '/wpccm-debug.log', $log_message, FILE_APPEND | LOCK_EX);
+    error_log("WPCCM Debug: $message");
+}
+
+/**
+ * Save cookies to database table
+ */
+function wpccm_save_cookies_to_db($cookies_data) {
+    global $wpdb;
+    
+    wpccm_debug_log('wpccm_save_cookies_to_db called', $cookies_data);
+    
+    $cookies_table = $wpdb->prefix . 'ck_cookies';
+    
+    // First, deactivate all existing cookies
+    $wpdb->update(
+        $cookies_table,
+        ['is_active' => 0],
+        [],
+        ['%d']
+    );
+    
+    // Insert or update each cookie
+    foreach ($cookies_data as $cookie) {
+        if (empty($cookie['name'])) continue;
+        
+        $name = sanitize_text_field($cookie['name']);
+        $category = sanitize_text_field($cookie['category']) ?: 'others';
+        $value = isset($cookie['value']) ? sanitize_textarea_field($cookie['value']) : '';
+        
+        wpccm_debug_log("Processing cookie: $name", ['value' => $value, 'category' => $category]);
+        
+        
+        // Check if cookie exists
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT id FROM $cookies_table WHERE name = %s",
+            $name
+        ));
+        
+        if ($existing) {
+            // Update existing cookie
+            $wpdb->update(
+                $cookies_table,
+                [
+                    'value' => $value,
+                    'category' => $category,
+                    'is_active' => 1,
+                    'updated_at' => current_time('mysql')
+                ],
+                ['id' => $existing->id],
+                ['%s', '%s', '%d', '%s'],
+                ['%d']
+            );
+        } else {
+            // Insert new cookie
+            $wpdb->insert(
+                $cookies_table,
+                [
+                    'name' => $name,
+                    'value' => $value,
+                    'category' => $category,
+                    'is_active' => 1,
+                    'created_at' => current_time('mysql'),
+                    'updated_at' => current_time('mysql')
+                ],
+                ['%s', '%s', '%s', '%d', '%s', '%s']
+            );
+        }
+    }
+}
+
+/**
+ * Get cookies from database table
+ */
+function wpccm_get_cookies_from_db() {
+    global $wpdb;
+    
+    $cookies_table = $wpdb->prefix . 'ck_cookies';
+    
+    $results = $wpdb->get_results(
+        "SELECT name, value, category FROM $cookies_table WHERE is_active = 1 ORDER BY category, name",
+        ARRAY_A
+    );
+    
+    return $results ?: [];
 }
 
 /**
