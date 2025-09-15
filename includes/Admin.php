@@ -45,6 +45,10 @@ class WP_CCM_Admin {
         add_action('wp_ajax_wpccm_delete_category', [$this, 'ajax_delete_category']);
         add_action('wp_ajax_wpccm_check_categories_table', [$this, 'ajax_check_categories_table']);
         
+        // Script sync management
+        add_action('wp_ajax_wpccm_sync_scripts', [$this, 'ajax_sync_scripts']);
+        add_action('wp_ajax_wpccm_update_script_category', [$this, 'ajax_update_script_category']);
+        
         add_action('admin_notices', [$this, 'show_activation_notice']);
     }
     
@@ -559,8 +563,8 @@ class WP_CCM_Admin {
                     
                     <!-- Auto sync controls -->
                     <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ סינכרון אוטומטי של עוגיות</h3>
-                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת יכולה לסרוק ולעדכן עוגיות באופן אוטומטי כל שעה עגולה ברקע, כך שתמיד תהיה לך רשימה מעודכנת של עוגיות באתר.</p>
+                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ סינכרון אוטומטי של עוגיות וסקריפטים</h3>
+                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת יכולה לסרוק ולעדכן עוגיות וסקריפטים באופן אוטומטי כל שעה עגולה ברקע, כך שתמיד תהיה לך רשימה מעודכנת של כל הרכיבים באתר.</p>
                         
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
                             <button type="button" class="button" id="wpccm-toggle-auto-sync-btn">⏸️ טוען...</button>
@@ -572,9 +576,10 @@ class WP_CCM_Admin {
                             <strong>💡 איך זה עובד:</strong>
                             <ul style="margin: 5px 0 0 20px; padding: 0;">
                                 <li>הסינכרון רץ אוטומטית כל שעה עגולה (09:00, 10:00, 11:00...)</li>
-                                <li>המערכת סורקת את האתר ומוצאת עוגיות חדשות</li>
-                                <li>עוגיות חדשות נוספות אוטומטית לטבלה במיפוי העוגיות</li>
-                                <li>ניתן להפעיל/לכבות את התכונה בכל עת</li>
+                                <li>המערכת סורקת את האתר ומוצאת <strong>עוגיות וסקריפטים חדשים</strong></li>
+                                <li><strong>עוגיות חדשות</strong> נוספות אוטומטית לטבלה במיפוי העוגיות</li>
+                                <li><strong>סקריפטים חדשים</strong> נוספים אוטומטית לטבלה בסינכרון הסקריפטים</li>
+                                <li>ניתן להפעיל/לכבות את שני הסינכרונים יחד בכפתור אחד</li>
                             </ul>
                         </div>
                     </div>
@@ -778,19 +783,36 @@ class WP_CCM_Admin {
                 
                 if (data.enabled) {
                     button.html('⏸️ השבת סינכרון').removeClass('button-primary').addClass('button-secondary');
+                    
+                    let statusText = '🟢 פעיל';
                     if (data.next_run_formatted) {
-                        status.html('🟢 פעיל - הרצה הבאה: ' + data.next_run_formatted);
-                        
-                        // // Show message if sync was stuck and rescheduled
-                        // if (data.was_stuck) {
-                        //     showAutoSyncMessage('⚠️ הסינכרון היה תקוע - תוזמן מחדש לשעה הבאה', 'warning');
-                        // }
-                    } else {
-                        status.html('🟢 פעיל');
+                        statusText += ' - הרצה הבאה: ' + data.next_run_formatted;
+                    }
+                    
+                    // Add details about both sync types if available
+                    if (data.next_cookie_run_formatted && data.next_script_run_formatted) {
+                        statusText += '<br><small style="color: #666;">עוגיות: ' + data.next_cookie_run_formatted + ' | סקריפטים: ' + data.next_script_run_formatted + '</small>';
+                    }
+                    
+                    status.html(statusText);
+                    
+                    // Show message if sync was stuck and rescheduled
+                    if (data.was_stuck) {
+                        showAutoSyncMessage('⚠️ הסינכרון היה תקוע - תוזמן מחדש לשעה הבאה', 'warning');
                     }
                 } else {
                     button.html('▶️ הפעל סינכרון').removeClass('button-secondary').addClass('button-primary');
-                    status.html('🔴 כבוי');
+                    
+                    let statusText = '🔴 כבוי';
+                    
+                    // Show partial status if only one is enabled
+                    if (data.cookies_enabled && !data.scripts_enabled) {
+                        statusText = '🟡 חלקי - רק עוגיות פעיל';
+                    } else if (!data.cookies_enabled && data.scripts_enabled) {
+                        statusText = '🟡 חלקי - רק סקריפטים פעיל';
+                    }
+                    
+                    status.html(statusText);
                 }
             }
             
@@ -922,7 +944,7 @@ class WP_CCM_Admin {
                     // Update preview immediately (will be called after function is defined)
                     setTimeout(function() {
                         if (typeof updatePreviewDefault === 'function') {
-                            updatePreviewDefault();
+                    updatePreviewDefault();
                         }
                     }, 100);
                     
@@ -1028,7 +1050,7 @@ class WP_CCM_Admin {
                     }
                 });
             });
-            
+
             function updatePreviewDefault() {
                 // console.log("WPCCM: updatePreview555555");
                 // Get text color from the only color field that exists
@@ -1338,7 +1360,7 @@ class WP_CCM_Admin {
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
                 <a href="#cookies" class="nav-tab nav-tab-active" data-tab="cookies">עוגיות</a>
-                <a href="#scripts" class="nav-tab" data-tab="scripts">סכריפטים</a>
+                <a href="#script-sync" class="nav-tab" data-tab="script-sync">סקריפטים</a>
             </nav>
             
             <form method="post" action="options.php">
@@ -1355,15 +1377,15 @@ class WP_CCM_Admin {
                     ?>
                     <!-- Auto-save enabled - no manual save button needed -->
                 </div>
-                <!-- Scripts Tab Content -->
-                <div id="scripts" class="wpccm-tab-content">
+                <!-- Script Sync Tab Content -->
+                <div id="script-sync" class="wpccm-tab-content">
                     <?php 
                     try {
-                        $this->render_mapping_tab(); 
+                        $this->render_script_sync_tab(); 
                     } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סכריפטים: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סכריפטים: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
                     }
                     ?>
                 </div>
@@ -4413,11 +4435,11 @@ class WP_CCM_Admin {
             echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
             echo '<button type="button" class="button button-small" id="cancel-edit-license" style="margin-right: 5px;">ביטול</button>';
             echo '</div>';
-            echo '</div>';
-            
+        echo '</div>';
+        
             // JavaScript לטיפול בעריכה
-            echo '<script>
-            jQuery(document).ready(function($) {
+        echo '<script>
+        jQuery(document).ready(function($) {
                 $("#edit-license-key").click(function() {
                     $(".license-status").hide();
                     $(".license-input-container").show();
@@ -4431,7 +4453,7 @@ class WP_CCM_Admin {
                 });
             });
             </script>';
-        } else {
+                        } else {
             // הצגת שדה רגיל כאשר אין רישיון תקף
             echo '<div class="license-field-container">';
             
@@ -5002,7 +5024,7 @@ class WP_CCM_Admin {
     }
     
     /**
-     * AJAX handler for toggling auto sync
+     * AJAX handler for toggling auto sync (both cookies and scripts)
      */
     public function ajax_toggle_auto_sync() {
         if (!current_user_can('manage_options')) {
@@ -5018,31 +5040,45 @@ class WP_CCM_Admin {
         $enable = isset($_POST['enable']) ? (bool) $_POST['enable'] : false;
         
         if ($enable) {
-            // Enable auto sync
+            // Enable auto sync for both cookies and scripts
             wpccm_schedule_cookie_sync();
+            wpccm_schedule_script_sync();
             update_option('wpccm_auto_sync_enabled', true);
-            $message = 'סינכרון אוטומטי הופעל - יתבצע כל שעה עגולה';
+            update_option('wpccm_auto_script_sync_enabled', true);
+            $message = 'סינכרון אוטומטי הופעל (עוגיות וסקריפטים) - יתבצע כל שעה עגולה';
         } else {
-            // Disable auto sync
-            $timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
-            if ($timestamp) {
-                wp_unschedule_event($timestamp, 'wpccm_auto_cookie_sync');
+            // Disable auto sync for both cookies and scripts
+            $cookie_timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
+            if ($cookie_timestamp) {
+                wp_unschedule_event($cookie_timestamp, 'wpccm_auto_cookie_sync');
             }
+            
+            $script_timestamp = wp_next_scheduled('wpccm_auto_script_sync');
+            if ($script_timestamp) {
+                wp_unschedule_event($script_timestamp, 'wpccm_auto_script_sync');
+            }
+            
             update_option('wpccm_auto_sync_enabled', false);
-            $message = 'סינכרון אוטומטי בוטל';
+            update_option('wpccm_auto_script_sync_enabled', false);
+            $message = 'סינכרון אוטומטי בוטל (עוגיות וסקריפטים)';
         }
         
-        wpccm_debug_log('Auto sync toggled', ['enabled' => $enable]);
+        wpccm_debug_log('Auto sync toggled', [
+            'enabled' => $enable,
+            'cookies_enabled' => $enable,
+            'scripts_enabled' => $enable
+        ]);
         
         wp_send_json_success([
             'enabled' => $enable,
             'message' => $message,
-            'next_run' => $enable ? wp_next_scheduled('wpccm_auto_cookie_sync') : null
+            'next_cookie_run' => $enable ? wp_next_scheduled('wpccm_auto_cookie_sync') : null,
+            'next_script_run' => $enable ? wp_next_scheduled('wpccm_auto_script_sync') : null
         ]);
     }
     
     /**
-     * AJAX handler for getting auto sync status
+     * AJAX handler for getting auto sync status (both cookies and scripts)
      */
     public function ajax_get_auto_sync_status() {
         if (!current_user_can('manage_options')) {
@@ -5050,27 +5086,62 @@ class WP_CCM_Admin {
             return;
         }
         
-        $enabled = get_option('wpccm_auto_sync_enabled', false);
-        $next_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+        $cookies_enabled = get_option('wpccm_auto_sync_enabled', false);
+        $scripts_enabled = get_option('wpccm_auto_script_sync_enabled', false);
+        $enabled = $cookies_enabled && $scripts_enabled; // Both must be enabled
+        
+        $next_cookie_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+        $next_script_run = wp_next_scheduled('wpccm_auto_script_sync');
         $current_time = current_time('timestamp');
         
         // Check if sync is stuck (next run is in the past)
         $is_stuck = false;
-        if ($enabled && $next_run && $next_run < $current_time) {
+        $stuck_items = [];
+        
+        if ($cookies_enabled && $next_cookie_run && $next_cookie_run < $current_time) {
             $is_stuck = true;
+            $stuck_items[] = 'cookies';
             // Reschedule if stuck
             wpccm_schedule_cookie_sync();
-            $next_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+            $next_cookie_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+        }
+        
+        if ($scripts_enabled && $next_script_run && $next_script_run < $current_time) {
+            $is_stuck = true;
+            $stuck_items[] = 'scripts';
+            // Reschedule if stuck
+            wpccm_schedule_script_sync();
+            $next_script_run = wp_next_scheduled('wpccm_auto_script_sync');
+        }
+        
+        if ($is_stuck) {
             wpccm_debug_log('Auto sync was stuck - rescheduled', [
-                'old_time' => date('Y-m-d H:i:s', $next_run),
-                'new_time' => date('Y-m-d H:i:s', wp_next_scheduled('wpccm_auto_cookie_sync'))
+                'stuck_items' => $stuck_items,
+                'cookie_next_run' => $next_cookie_run ? date('Y-m-d H:i:s', $next_cookie_run) : null,
+                'script_next_run' => $next_script_run ? date('Y-m-d H:i:s', $next_script_run) : null
             ]);
+        }
+        
+        // Use the earliest next run time for display
+        $next_run = null;
+        if ($next_cookie_run && $next_script_run) {
+            $next_run = min($next_cookie_run, $next_script_run);
+        } elseif ($next_cookie_run) {
+            $next_run = $next_cookie_run;
+        } elseif ($next_script_run) {
+            $next_run = $next_script_run;
         }
         
         wp_send_json_success([
             'enabled' => $enabled,
+            'cookies_enabled' => $cookies_enabled,
+            'scripts_enabled' => $scripts_enabled,
             'next_run' => $next_run,
             'next_run_formatted' => $next_run ? date('Y-m-d H:i:s', $next_run) : null,
+            'next_cookie_run' => $next_cookie_run,
+            'next_cookie_run_formatted' => $next_cookie_run ? date('Y-m-d H:i:s', $next_cookie_run) : null,
+            'next_script_run' => $next_script_run,
+            'next_script_run_formatted' => $next_script_run ? date('Y-m-d H:i:s', $next_script_run) : null,
             'current_time' => $current_time,
             'current_time_formatted' => date('Y-m-d H:i:s', $current_time),
             'was_stuck' => $is_stuck
@@ -5078,7 +5149,7 @@ class WP_CCM_Admin {
     }
     
     /**
-     * AJAX handler for running manual auto sync (for testing)
+     * AJAX handler for running manual auto sync (for testing both cookies and scripts)
      */
     public function ajax_run_manual_auto_sync() {
         if (!current_user_can('manage_options')) {
@@ -5091,15 +5162,572 @@ class WP_CCM_Admin {
             return;
         }
         
-        // Run the auto sync function manually
-        wpccm_perform_auto_cookie_sync();
-        
-        wp_send_json_success([
-            'message' => 'סינכרון אוטומטי הופעל ידנית - בדוק את הטבלה לתוצאות',
-            'run_time' => current_time('Y-m-d H:i:s')
-        ]);
+        try {
+            $results = [];
+            
+            // Run cookie sync
+            if (get_option('wpccm_auto_sync_enabled', false)) {
+                wpccm_perform_auto_cookie_sync();
+                $results[] = 'עוגיות';
+            }
+            
+            // Run script sync
+            if (get_option('wpccm_auto_script_sync_enabled', false)) {
+                wpccm_perform_auto_script_sync();
+                $results[] = 'סקריפטים';
+            }
+            
+            if (empty($results)) {
+                wp_send_json_success([
+                    'message' => 'אין סינכרון אוטומטי מופעל - הפעל תחילה את הסינכרון',
+                    'run_time' => current_time('Y-m-d H:i:s')
+                ]);
+            } else {
+                wp_send_json_success([
+                    'message' => 'סינכרון הופעל ידנית עבור: ' . implode(' ו', $results) . ' - בדוק את הטבלאות לתוצאות',
+                    'run_time' => current_time('Y-m-d H:i:s'),
+                    'synced_items' => $results
+                ]);
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error('שגיאה בהרצת סינכרון ידני: ' . $e->getMessage());
+        }
     }
     
+    /**
+     * Render script sync tab
+     */
+    private function render_script_sync_tab() {
+        ?>
+        <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
+            <h3 style="margin: 0 0 10px 0; color: #1d2327;">🔍 סינכרון סקריפטים</h3>
+            <p style="margin: 0 0 15px 0; color: #50575e;">סרוק את האתר כדי למצוא את כל הסקריפטים הפעילים ולקטלג אותם לפי קטגוריות.</p>
+            
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <button type="button" class="button button-primary" id="wpccm-sync-scripts-btn">🔄 סנכרן סקריפטים</button>
+                <span id="wpccm-scripts-sync-status" style="color: #50575e; font-size: 13px; font-weight: 500;"></span>
+            </div>
+        </div>
+
+        <!-- Scripts Table -->
+        <div id="wpccm-scripts-table-container">
+            <?php $this->render_scripts_table(); ?>
+        </div>
+
+        <!-- Scripts Sync History -->
+        <div style="margin-top: 30px;">
+            <h3>📊 היסטוריית סינכרון סקריפטים</h3>
+            <?php $this->render_scripts_sync_history_table(); ?>
+        </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            // Sync scripts
+            $('#wpccm-sync-scripts-btn').on('click', function() {
+                const button = $(this);
+                const originalText = button.text();
+                const status = $('#wpccm-scripts-sync-status');
+                
+                button.text('⏳ סורק...').prop('disabled', true);
+                status.text('מתחיל סריקת סקריפטים...');
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_sync_scripts',
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success) {
+                        status.html('✅ ' + response.data.message);
+                        // Refresh the scripts table
+                        $('#wpccm-scripts-table-container').load(location.href + ' #wpccm-scripts-table-container > *');
+                        // Refresh history table
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        status.html('❌ שגיאה: ' + (response.data || 'Unknown error'));
+                    }
+                }).fail(function() {
+                    status.html('❌ שגיאה בסינכרון סקריפטים');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render scripts table
+     */
+    private function render_scripts_table() {
+        $scripts = wpccm_get_scripts_from_db();
+        $categories = wpccm_get_categories();
+        
+        ?>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">URL/סוג סקריפט</th>
+                    <th style="width: 15%;">סוג</th>
+                    <th style="width: 20%;">קטגוריה</th>
+                    <th style="width: 15%;">נצפה לאחרונה</th>
+                    <th style="width: 10%;">פעולות</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($scripts)): ?>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
+                            🔍 אין סקריפטים בטבלה. לחץ על "סנכרן סקריפטים" כדי להתחיל.
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($scripts as $script): ?>
+                        <tr data-script-id="<?php echo $script['id']; ?>">
+                            <td>
+                                <div style="font-weight: 500;">
+                                    <?php if ($script['script_type'] === 'external'): ?>
+                                        <a href="<?php echo esc_url($script['script_url']); ?>" target="_blank" title="פתח בטאב חדש">
+                                            <?php echo esc_html($script['script_url']); ?>
+                                        </a>
+                                    <?php else: ?>
+                                        <span style="color: #666;">סקריפט פנימי</span>
+                                        <div style="font-size: 11px; color: #999; margin-top: 2px;">
+                                            <?php echo substr(esc_html($script['script_content']), 0, 100) . '...'; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="script-type-badge script-type-<?php echo $script['script_type']; ?>">
+                                    <?php echo $script['script_type'] === 'external' ? '🔗 חיצוני' : '📝 פנימי'; ?>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="category-badge category-<?php echo $script['category']; ?>">
+                                    <?php echo $this->get_category_display_name($script['category']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php echo date('d/m/Y H:i', strtotime($script['last_seen'])); ?>
+                            </td>
+                            <td>
+                                <button type="button" class="button button-small edit-script-category" 
+                                        data-script-id="<?php echo $script['id']; ?>"
+                                        data-current-category="<?php echo $script['category']; ?>"
+                                        title="ערוך קטגוריה">
+                                    ✏️ ערוך
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+
+        <!-- Edit Category Modal -->
+        <div id="edit-script-category-modal" style="display: none;">
+            <div class="modal-content">
+                <h3>ערוך קטגוריית סקריפט</h3>
+                <form id="edit-script-category-form">
+                    <input type="hidden" id="edit-script-id" name="script_id" value="">
+                    <label for="edit-script-category">קטגוריה:</label>
+                    <select id="edit-script-category" name="category" required>
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo esc_attr($category['category_key']); ?>">
+                                <?php echo esc_html($category['display_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="modal-buttons">
+                        <button type="button" id="save-script-category" class="button button-primary">שמור</button>
+                        <button type="button" id="cancel-script-edit" class="button">ביטול</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <style>
+        .script-type-badge {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .script-type-external {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .script-type-inline {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        #edit-script-category-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+        }
+        #edit-script-category-modal .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            min-width: 400px;
+        }
+        .modal-buttons {
+            margin-top: 15px;
+            text-align: right;
+        }
+        .modal-buttons button {
+            margin-left: 10px;
+        }
+        </style>
+
+        <script>
+        jQuery(document).ready(function($) {
+            // Edit script category
+            $(document).on('click', '.edit-script-category', function() {
+                const scriptId = $(this).data('script-id');
+                const currentCategory = $(this).data('current-category');
+                
+                $('#edit-script-id').val(scriptId);
+                $('#edit-script-category').val(currentCategory);
+                $('#edit-script-category-modal').show();
+            });
+
+            // Cancel edit
+            $('#cancel-script-edit').on('click', function() {
+                $('#edit-script-category-modal').hide();
+            });
+
+            // Save script category
+            $('#save-script-category').on('click', function() {
+                const scriptId = $('#edit-script-id').val();
+                const category = $('#edit-script-category').val();
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_update_script_category',
+                    script_id: scriptId,
+                    category: category,
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success) {
+                        $('#edit-script-category-modal').hide();
+                        // Refresh the table
+                        $('#wpccm-scripts-table-container').load(location.href + ' #wpccm-scripts-table-container > *');
+                    } else {
+                        alert('שגיאה: ' + (response.data || 'Unknown error'));
+                    }
+                }).fail(function() {
+                    alert('שגיאה בעדכון קטגוריית הסקריפט');
+                });
+            });
+
+            // View script sync details
+            $(document).on('click', '.view-script-sync-details', function() {
+                const syncId = $(this).data('sync-id');
+                const button = $(this);
+                const originalText = button.text();
+                
+                button.text('⏳ טוען...').prop('disabled', true);
+                
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_sync_details',
+                    sync_id: syncId,
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success && response.data.cookies_data) {
+                        showScriptSyncDetailsModal(response.data.cookies_data, response.data.sync_time);
+                    } else {
+                        alert('לא ניתן לטעון פרטי סינכרון');
+                    }
+                }).fail(function() {
+                    alert('שגיאה בטעינת פרטי סינכרון');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+
+            function showScriptSyncDetailsModal(scriptsData, syncTime) {
+                let modalHtml = '<div id="script-sync-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">';
+                modalHtml += '<div style="background: white; padding: 20px; border-radius: 8px; max-width: 800px; max-height: 80%; overflow-y: auto; margin: 20px;">';
+                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 פרטי סינכרון סקריפטים - ' + syncTime + '</h3>';
+                modalHtml += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">';
+                modalHtml += '<table style="width: 100%; border-collapse: collapse;">';
+                modalHtml += '<thead style="background: #f9f9f9; position: sticky; top: 0;"><tr>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">URL/סוג</th>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">סוג</th>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">קטגוריה</th>';
+                modalHtml += '</tr></thead><tbody>';
+                
+                if (Array.isArray(scriptsData)) {
+                    scriptsData.forEach(function(script) {
+                        modalHtml += '<tr>';
+                        modalHtml += '<td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px;">';
+                        if (script.type === 'external') {
+                            modalHtml += '<a href="' + script.url + '" target="_blank" style="color: #0073aa;">' + script.url + '</a>';
+                        } else {
+                            modalHtml += '<span style="color: #666;">סקריפט פנימי</span>';
+                            if (script.content) {
+                                modalHtml += '<div style="font-size: 10px; color: #999; margin-top: 2px;">' + script.content.substring(0, 100) + '...</div>';
+                            }
+                        }
+                        modalHtml += '</td>';
+                        modalHtml += '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
+                        modalHtml += script.type === 'external' ? '🔗 חיצוני' : '📝 פנימי';
+                        modalHtml += '</td>';
+                        modalHtml += '<td style="padding: 8px; border-bottom: 1px solid #eee;">' + getScriptCategoryBadge(script.category) + '</td>';
+                        modalHtml += '</tr>';
+                    });
+                } else {
+                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">אין נתונים להצגה</td></tr>';
+                }
+                
+                modalHtml += '</tbody></table>';
+                modalHtml += '</div>';
+                modalHtml += '<div style="margin-top: 15px; text-align: center;">';
+                modalHtml += '<button type="button" class="button button-primary" onclick="closeScriptSyncDetailsModal()">סגור</button>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+                
+                $('body').append(modalHtml);
+            }
+
+            function getScriptCategoryBadge(category) {
+                const categories = <?php 
+                $categories = wpccm_get_categories();
+                $categories_js = [];
+                foreach ($categories as $cat) {
+                    $categories_js[$cat['category_key']] = [
+                        'name' => $cat['display_name'],
+                        'color' => $cat['color'],
+                        'icon' => $cat['icon'] ?? ''
+                    ];
+                }
+                echo json_encode($categories_js);
+                ?>;
+                
+                const cat = categories[category] || categories['others'] || { name: 'אחרים', color: '#666', icon: '' };
+                const icon = cat.icon ? cat.icon + ' ' : '';
+                return '<span style="background: ' + cat.color + '; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">' + icon + cat.name + '</span>';
+            }
+
+            // Close script sync modal function (global)
+            window.closeScriptSyncDetailsModal = function() {
+                $('#script-sync-details-modal').remove();
+            };
+
+            // Close modal on background click
+            $(document).on('click', '#script-sync-details-modal', function(e) {
+                if (e.target === this) {
+                    closeScriptSyncDetailsModal();
+                }
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render scripts sync history table
+     */
+    private function render_scripts_sync_history_table() {
+        $history = wpccm_get_sync_history(10);
+        
+        // Filter only script sync history (we'll add this later)
+        $script_history = array_filter($history, function($entry) {
+            return strpos($entry['sync_type'], 'script') !== false;
+        });
+        
+        ?>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">זמן סינכרון</th>
+                    <th style="width: 15%;">סוג</th>
+                    <th style="width: 15%;">סך הכל נמצא</th>
+                    <th style="width: 15%;">חדשים</th>
+                    <th style="width: 15%;">מעודכנים</th>
+                    <th style="width: 10%;">סטטוס</th>
+                    <th style="width: 10%;">פעולות</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($script_history)): ?>
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
+                            📊 אין היסטוריית סינכרון עדיין. בצע סינכרון ראשון כדי לראות נתונים.
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($script_history as $entry): ?>
+                        <tr>
+                            <td><?php echo date('d/m/Y H:i:s', strtotime($entry['sync_time'])); ?></td>
+                            <td><?php echo $entry['sync_type'] === 'auto_script' ? '🤖 אוטומטי' : '👤 ידני'; ?></td>
+                            <td><?php echo $entry['total_cookies_found']; ?></td>
+                            <td><?php echo $entry['new_cookies_added']; ?></td>
+                            <td><?php echo $entry['updated_cookies']; ?></td>
+                            <td><?php echo $this->get_sync_status_display($entry['status']); ?></td>
+                            <td>
+                                <?php if (!empty($entry['cookies_data'])): ?>
+                                    <?php 
+                                    $data = json_decode($entry['cookies_data'], true);
+                                    $count = is_array($data) ? count($data) : 0;
+                                    ?>
+                                    <button type="button" class="button button-small view-script-sync-details" 
+                                            data-sync-id="<?php echo $entry['id']; ?>"
+                                            title="צפה בפרטי הסקריפטים החדשים">
+                                        👁️ צפה (<?php echo $count; ?>)
+                                    </button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        <?php
+    }
+
+    /**
+     * AJAX handler for syncing scripts
+     */
+    public function ajax_sync_scripts() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        try {
+            $start_time = microtime(true);
+            
+            // Get scripts from site
+            $scripts = wpccm_get_current_site_scripts();
+            
+            if (empty($scripts)) {
+                wp_send_json_success([
+                    'message' => 'לא נמצאו סקריפטים באתר',
+                    'total_scripts' => 0,
+                    'new_scripts' => 0,
+                    'updated_scripts' => 0
+                ]);
+                return;
+            }
+            
+            // Save to database
+            $result = wpccm_save_scripts_to_db($scripts);
+            
+            $execution_time = microtime(true) - $start_time;
+            
+            // Save to sync history (we'll modify the existing function to handle scripts)
+            wpccm_save_sync_history(
+                'manual_script',
+                count($scripts),
+                $result['new'],
+                $result['updated'],
+                array_slice($scripts, 0, 10), // Only save first 10 for history
+                'success',
+                null,
+                $execution_time
+            );
+            
+            wp_send_json_success([
+                'message' => sprintf(
+                    'נמצאו %d סקריפטים (%d חדשים, %d מעודכנים)',
+                    count($scripts),
+                    $result['new'],
+                    $result['updated']
+                ),
+                'total_scripts' => count($scripts),
+                'new_scripts' => $result['new'],
+                'updated_scripts' => $result['updated']
+            ]);
+            
+        } catch (Exception $e) {
+            wpccm_debug_log('Script sync error: ' . $e->getMessage());
+            wp_send_json_error('שגיאה בסינכרון: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX handler for updating script category
+     */
+    public function ajax_update_script_category() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        $script_id = intval($_POST['script_id']);
+        $category = sanitize_text_field($_POST['category']);
+        
+        global $wpdb;
+        $scripts_table = $wpdb->prefix . 'ck_scripts';
+        
+        // Get script details first
+        $script = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $scripts_table WHERE id = %d",
+            $script_id
+        ));
+        
+        if (!$script) {
+            wp_send_json_error('סקריפט לא נמצא');
+            return;
+        }
+        
+        // Update in new system
+        $result = $wpdb->update(
+            $scripts_table,
+            ['category' => $category],
+            ['id' => $script_id],
+            ['%s'],
+            ['%d']
+        );
+        
+        if ($result !== false) {
+            // IMPORTANT: Also update legacy mapping system for blocking to work
+            if ($script->script_type === 'external' && !empty($script->script_url)) {
+                $parsed = parse_url($script->script_url);
+                $domain = isset($parsed['host']) ? $parsed['host'] : false;
+                if ($domain) {
+                    $script_domain_map = get_option('cc_script_domain_map', []);
+                    $script_domain_map[$domain] = $category;
+                    update_option('cc_script_domain_map', $script_domain_map);
+                    
+                    wpccm_debug_log('Updated script category and legacy mapping', [
+                        'script_id' => $script_id,
+                        'domain' => $domain,
+                        'category' => $category
+                    ]);
+                }
+            }
+            
+            wp_send_json_success('קטגוריית הסקריפט עודכנה בהצלחה');
+        } else {
+            wp_send_json_error('שגיאה בעדכון קטגוריית הסקריפט');
+        }
+    }
+
     /**
      * AJAX handler for getting sync details
      */

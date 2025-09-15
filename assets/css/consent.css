@@ -742,12 +742,12 @@ body.rtl .wpccm-top-actions {
 }
 
 .wpccm-modal.dark-theme .wpccm-btn-save-accept {
-    background-color: #0073aa !important;
+    background-color: #00000000 !important;
     color: #ffffff !important;
 }
 
 .wpccm-modal.dark-theme .wpccm-btn-save-accept:hover {
-    background-color: #005a87 !important;
+    background-color: #00000000 !important;
 }
 
 .wpccm-modal.dark-theme .wpccm-deletion-option {

@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.32
+ * Version: 1.0.33
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -18,12 +18,12 @@ if (!defined('ABSPATH')) {
 if (file_exists(__DIR__ . '/wpccm-debug-config.php')) {
     require_once __DIR__ . '/wpccm-debug-config.php';
 }
-define('WPCCM_VERSION', '1.0.32');
+define('WPCCM_VERSION', '1.0.33');
 
 // Dashboard API Configuration
 define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
 // define('WPCCM_DASHBOARD_API_URL', 'http://localhost:8000/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.32');
+define('WPCCM_DASHBOARD_VERSION', '1.0.33');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
@@ -329,6 +329,9 @@ class WP_CCM {
         add_action('wp_ajax_nopriv_wpccm_get_current_cookies_by_category', [$this, 'ajax_get_current_cookies_by_category']);
         add_action('wp_ajax_wpccm_get_current_non_essential_cookies', [$this, 'ajax_get_current_non_essential_cookies']);
         
+        // Debug AJAX handler
+        add_action('wp_ajax_wpccm_debug_script_mapping', [$this, 'ajax_debug_script_mapping']);
+        
         // Consent logging
         add_action('wp_ajax_wpccm_log_consent', [$this, 'ajax_log_consent']);
         add_action('wp_ajax_nopriv_wpccm_log_consent', [$this, 'ajax_log_consent']);
@@ -336,6 +339,10 @@ class WP_CCM {
         // Data deletion requests
         add_action('wp_ajax_wpccm_submit_data_deletion_request', [$this, 'ajax_submit_data_deletion_request']);
         add_action('wp_ajax_nopriv_wpccm_submit_data_deletion_request', [$this, 'ajax_submit_data_deletion_request']);
+        
+        // Get user IP
+        add_action('wp_ajax_wpccm_get_user_ip', [$this, 'ajax_get_user_ip']);
+        add_action('wp_ajax_nopriv_wpccm_get_user_ip', [$this, 'ajax_get_user_ip']);
     }
 
     public function enqueue_front_assets() {
@@ -529,6 +536,11 @@ class WP_CCM {
      * Handles must be mapped to categories in settings.
      */
     public function maybe_defer_script_by_consent($tag, $handle, $src) {
+        // var_dump("maybe_defer_script_by_consentmaybe_defer_script_by_consentmaybe_defer_script_by_consent");
+        // var_dump($tag);
+        // var_dump($handle);
+        // var_dump($src);
+        // die();
         // Don't process admin scripts
         if (is_admin()) {
             return $tag;
@@ -905,10 +917,68 @@ class WP_CCM {
         
         $categories_with_cookies = [];
         
-        // Get cookies from the purge list (configured by site admin)
-        $opts = WP_CCM_Consent::get_options();
-        $purge_cookies = isset($opts['purge']['cookies']) ? $opts['purge']['cookies'] : [];
-        error_log('WPCCM: Purge cookies: ' . print_r($purge_cookies, true));
+        // First, get cookies and scripts from the database
+        $db_cookies = wpccm_get_cookies_from_db();
+        $db_scripts = wpccm_get_scripts_from_db();
+        error_log('WPCCM: DB cookies count: ' . count($db_cookies));
+        error_log('WPCCM: DB scripts count: ' . count($db_scripts));
+        error_log('WPCCM: DB cookies: ' . print_r($db_cookies, true));
+        error_log('WPCCM: DB scripts: ' . print_r($db_scripts, true));
+        
+        // If we have cookies or scripts from database, use only those
+        if (!empty($db_cookies) || !empty($db_scripts)) {
+            $categories_with_data = [];
+            
+            // Get all categories for response
+            $categories = WP_CCM_Consent::get_categories_with_details();
+            foreach ($categories as $category) {
+                $category_key = $category['key'];
+                $categories_with_data[$category_key] = [
+                    'cookies' => [],
+                    'scripts' => []
+                ];
+            }
+            
+            // Organize DB cookies by category
+            foreach ($db_cookies as $cookie) {
+                $category_key = $cookie['category'];
+                if (isset($categories_with_data[$category_key]) && !in_array($cookie['name'], $categories_with_data[$category_key]['cookies'])) {
+                    $categories_with_data[$category_key]['cookies'][] = $cookie['name'];
+                }
+            }
+            
+            // Organize DB scripts by category
+            foreach ($db_scripts as $script) {
+                $category_key = $script['category'];
+                // Extract script name from URL
+                $script_name = $this->extract_script_name_from_url($script['script_url']);
+                if (isset($categories_with_data[$category_key]) && !in_array($script_name, $categories_with_data[$category_key]['scripts'])) {
+                    $categories_with_data[$category_key]['scripts'][] = $script_name;
+                }
+            }
+            
+            error_log('WPCCM: Using DB data only: ' . print_r($categories_with_data, true));
+            wp_send_json_success($categories_with_data);
+            return;
+        }
+        
+        // No DB data found - return empty categories (don't fallback to configuration)
+        error_log('WPCCM: No DB data found, returning empty categories');
+        
+        // Get all categories and return them empty
+        $categories = WP_CCM_Consent::get_categories_with_details();
+        $categories_with_data = [];
+        foreach ($categories as $category) {
+            $category_key = $category['key'];
+            $categories_with_data[$category_key] = [
+                'cookies' => [],
+                'scripts' => []
+            ];
+        }
+        
+        error_log('WPCCM: Returning empty categories: ' . print_r($categories_with_data, true));
+        wp_send_json_success($categories_with_data);
+        return;
         
         // Get cookie mapping from script mapping
         $cookie_mapping = isset($opts['cookie_mapping']) && is_array($opts['cookie_mapping']) ? $opts['cookie_mapping'] : [];
@@ -978,6 +1048,29 @@ class WP_CCM {
         
         error_log('WPCCM: Final categories_with_cookies: ' . print_r($categories_with_cookies, true));
         wp_send_json_success($categories_with_cookies);
+    }
+    
+    /**
+     * Extract script name from URL
+     * Examples:
+     * - "http://localhost:8888/wp_plagin/wp-includes/js/dist/script-modules/block-library/navigation/view.min.js?ver=61572d447d60c0aa5240" 
+     *   → "view.min.js?ver=61572d447d60c0aa5240"
+     */
+    private function extract_script_name_from_url($url) {
+        // Parse the URL to get the path
+        $parsed = parse_url($url);
+        $path = isset($parsed['path']) ? $parsed['path'] : '';
+        
+        // Get the filename from the path
+        $filename = basename($path);
+        
+        // If there's a query string, add it back
+        if (isset($parsed['query']) && !empty($parsed['query'])) {
+            $filename .= '?' . $parsed['query'];
+        }
+        
+        // If no filename found, return the full URL
+        return !empty($filename) ? $filename : $url;
     }
 
     private function categorize_cookie_name($cookie_name) {
@@ -1367,6 +1460,86 @@ class WP_CCM {
             wp_send_json_error('Failed to log consent');
         }
     }
+    
+    /**
+     * AJAX handler for getting user IP address
+     */
+    public function ajax_get_user_ip() {
+        // Verify nonce for security (optional for IP detection)
+        if (isset($_POST['nonce']) && !wp_verify_nonce($_POST['nonce'], 'wpccm_ajax')) {
+            error_log('WPCCM: Nonce verification failed for IP request, but continuing...');
+        }
+        
+        $user_ip = $this->get_real_user_ip();
+        wp_send_json_success(['ip' => $user_ip]);
+    }
+    
+    /**
+     * Get real user IP address
+     */
+    private function get_real_user_ip() {
+        // Check for shared internet/proxy
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            return $_SERVER['HTTP_CLIENT_IP'];
+        }
+        // Check for IP passed from remote address
+        elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+            return trim($ips[0]);
+        }
+        // Check for IP passed from remote address (CloudFlare)
+        elseif (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            return $_SERVER['HTTP_CF_CONNECTING_IP'];
+        }
+        // Check for IP passed from remote address (other proxies)
+        elseif (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+            return $_SERVER['HTTP_X_REAL_IP'];
+        }
+        // Return normal IP
+        elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+            return $_SERVER['REMOTE_ADDR'];
+        }
+        
+        return '127.0.0.1'; // fallback
+    }
+
+    /**
+     * Debug AJAX handler for script mapping
+     */
+    public function ajax_debug_script_mapping() {
+        if (!current_user_can('manage_options')) {
+            wp_die('No access');
+        }
+        
+        $script_domain_map = get_option('cc_script_domain_map', []);
+        $script_handle_map = get_option('cc_script_handle_map', []);
+        
+        global $wpdb;
+        $scripts_table = $wpdb->prefix . 'ck_scripts';
+        $scripts = $wpdb->get_results("SELECT * FROM $scripts_table WHERE is_active = 1", ARRAY_A);
+        
+        // REBUILD the domain mapping from current scripts
+        $new_domain_map = [];
+        foreach ($scripts as $script) {
+            if ($script['script_type'] === 'external' && !empty($script['script_url'])) {
+                $domain = wpccm_extract_domain_from_url($script['script_url']);
+                if ($domain) {
+                    $new_domain_map[$domain] = $script['category'];
+                }
+            }
+        }
+        
+        // Update the mapping
+        update_option('cc_script_domain_map', $new_domain_map);
+        
+        wp_send_json_success([
+            'script_domain_map_old' => $script_domain_map,
+            'script_domain_map_new' => $new_domain_map,
+            'script_handle_map' => $script_handle_map,
+            'scripts_in_db' => $scripts,
+            'message' => 'Domain mapping rebuilt from database!'
+        ]);
+    }
 
     /**
      * בדיקה שהפלאגין מחובר לדשבורד
@@ -1423,16 +1596,20 @@ if (is_admin()) {
 add_action('wp', 'wpccm_schedule_cookie_sync');
 add_action('wpccm_auto_cookie_sync', 'wpccm_perform_auto_cookie_sync');
 
+// Schedule automatic script sync
+add_action('wp', 'wpccm_schedule_script_sync');
+add_action('wpccm_auto_script_sync', 'wpccm_perform_auto_script_sync');
+
 // Hook for plugin activation to schedule the cron
 register_activation_hook(__FILE__, 'wpccm_activate_cookie_sync');
+register_activation_hook(__FILE__, 'wpccm_activate_script_sync');
 
 // Hook for plugin deactivation to clear the cron
 register_deactivation_hook(__FILE__, 'wpccm_deactivate_cookie_sync');
+register_deactivation_hook(__FILE__, 'wpccm_deactivate_script_sync');
 
 // Initialize new modular components
 add_action('init', function() {
-    // error_log('WPCCM: Initializing modular components');
-    
     // Initialize header filtering
     add_action('shutdown', 'wpccm_filter_set_cookie_headers');
     add_action('wp_footer', 'wpccm_filter_set_cookie_headers');
@@ -1447,8 +1624,6 @@ add_action('init', function() {
     
     // Initialize script enqueuing
     add_action('wp_enqueue_scripts', 'wpccm_conditional_enqueue');
-    
-    // error_log('WPCCM: Modular components initialized');
 });
 
 // Initialize main plugin for frontend and AJAX
@@ -1586,14 +1761,45 @@ function wpccm_create_database_tables() {
     
     dbDelta($categories_sql);
     
+    // Create scripts table
+    $scripts_table = $wpdb->prefix . 'ck_scripts';
+    $scripts_sql = "CREATE TABLE $scripts_table (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        script_url varchar(2048) NOT NULL,
+        script_type varchar(50) NOT NULL DEFAULT 'external',
+        script_content longtext NULL,
+        script_hash varchar(64) NULL,
+        category varchar(50) NOT NULL DEFAULT 'others',
+        is_active tinyint(1) NOT NULL DEFAULT 1,
+        first_detected datetime DEFAULT CURRENT_TIMESTAMP,
+        last_seen datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        detection_count int(10) NOT NULL DEFAULT 1,
+        notes text NULL,
+        PRIMARY KEY (id),
+        KEY script_url (script_url(255)),
+        KEY category (category),
+        KEY is_active (is_active),
+        KEY last_seen (last_seen)
+    ) $charset_collate;";
+    
+    dbDelta($scripts_sql);
+    
     // Migrate existing cookies data
     wpccm_migrate_cookies_data();
     
     // Create default categories
     wpccm_create_default_categories();
     
+    // Enable auto sync for both cookies and scripts on first activation
+    if (!get_option('wpccm_auto_sync_enabled', false)) {
+        update_option('wpccm_auto_sync_enabled', true);
+    }
+    if (!get_option('wpccm_auto_script_sync_enabled', false)) {
+        update_option('wpccm_auto_script_sync_enabled', true);
+    }
+    
     // Update database version
-    update_option('wpccm_db_version', '1.4');
+    update_option('wpccm_db_version', '1.5');
 }
 
 /**
@@ -1657,6 +1863,157 @@ function wpccm_deactivate_cookie_sync() {
     if ($timestamp) {
         wp_unschedule_event($timestamp, 'wpccm_auto_cookie_sync');
         wpccm_debug_log('Cookie sync cron deactivated');
+    }
+}
+
+/**
+ * Schedule automatic script sync every hour at the next round hour
+ */
+function wpccm_schedule_script_sync() {
+    // Only schedule if auto sync is enabled
+    if (!get_option('wpccm_auto_script_sync_enabled', false)) {
+        return;
+    }
+    
+    // Clear any existing schedule first
+    $timestamp = wp_next_scheduled('wpccm_auto_script_sync');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wpccm_auto_script_sync');
+    }
+    
+    // Calculate next round hour
+    $current_time = current_time('timestamp');
+    $next_hour = strtotime(date('Y-m-d H:00:00', $current_time) . ' +1 hour');
+    
+    // Schedule at next round hour
+    wp_schedule_event($next_hour, 'hourly', 'wpccm_auto_script_sync');
+    
+    wpccm_debug_log('Scheduled automatic script sync', [
+        'current_time' => date('Y-m-d H:i:s', $current_time),
+        'next_run' => date('Y-m-d H:i:s', $next_hour)
+    ]);
+}
+
+/**
+ * Activate script sync cron on plugin activation
+ */
+function wpccm_activate_script_sync() {
+    update_option('wpccm_auto_script_sync_enabled', true);
+    wpccm_schedule_script_sync();
+    wpccm_debug_log('Script sync cron activated');
+}
+
+/**
+ * Deactivate script sync cron on plugin deactivation
+ */
+function wpccm_deactivate_script_sync() {
+    $timestamp = wp_next_scheduled('wpccm_auto_script_sync');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'wpccm_auto_script_sync');
+        wpccm_debug_log('Script sync cron deactivated');
+    }
+}
+
+/**
+ * Perform automatic script sync in background
+ */
+function wpccm_perform_auto_script_sync() {
+    $start_time = microtime(true);
+    wpccm_debug_log('Starting automatic script sync');
+    
+    // Check if plugin is properly activated and licensed
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        wpccm_debug_log('Auto script sync skipped - plugin not activated');
+        wpccm_save_sync_history('auto_script', 0, 0, 0, null, 'skipped', 'Plugin not activated');
+        return;
+    }
+    
+    try {
+        // Get existing scripts count for comparison
+        $existing_scripts = wpccm_get_scripts_from_db();
+        $existing_count = count($existing_scripts);
+        $existing_urls = array_column($existing_scripts, 'script_url');
+        
+        // Get scripts from the current site
+        $current_scripts = wpccm_get_current_site_scripts();
+        
+        if (empty($current_scripts)) {
+            $execution_time = microtime(true) - $start_time;
+            wpccm_debug_log('Auto script sync - no scripts found on site');
+            wpccm_save_sync_history('auto_script', 0, 0, 0, null, 'success', null, $execution_time);
+            return;
+        }
+        
+        wpccm_debug_log('Auto script sync found scripts', ['count' => count($current_scripts)]);
+        
+        // Process and categorize scripts
+        $processed_scripts = [];
+        $new_scripts = [];
+        $updated_scripts = [];
+        
+        foreach ($current_scripts as $script_data) {
+            $processed_script = [
+                'url' => $script_data['url'],
+                'type' => $script_data['type'],
+                'content' => $script_data['content'],
+                'hash' => $script_data['hash'],
+                'category' => $script_data['category']
+            ];
+            
+            $processed_scripts[] = $processed_script;
+            
+            // Check if this is a new script
+            if (!in_array($script_data['url'], $existing_urls)) {
+                $new_scripts[] = $processed_script;
+            } else {
+                $updated_scripts[] = $processed_script;
+            }
+        }
+        
+        if (!empty($processed_scripts)) {
+            // Save to database
+            $result = wpccm_save_scripts_to_db($processed_scripts);
+            
+            $execution_time = microtime(true) - $start_time;
+            
+            // Save history
+            wpccm_save_sync_history(
+                'auto_script',
+                count($processed_scripts),
+                $result['new'],
+                $result['updated'],
+                array_slice($new_scripts, 0, 10), // Only save first 10 new scripts for history
+                'success',
+                null,
+                $execution_time
+            );
+            
+            wpccm_debug_log('Auto script sync completed successfully', [
+                'total_scripts' => count($processed_scripts),
+                'new_scripts' => $result['new'],
+                'updated_scripts' => $result['updated'],
+                'execution_time' => $execution_time
+            ]);
+        }
+        
+    } catch (Exception $e) {
+        $execution_time = microtime(true) - $start_time;
+        $error_message = $e->getMessage();
+        
+        wpccm_debug_log('Auto script sync error: ' . $error_message);
+        error_log('WPCCM Auto Script Sync Error: ' . $error_message);
+        
+        // Save error to history
+        wpccm_save_sync_history(
+            'auto_script',
+            0,
+            0,
+            0,
+            null,
+            'error',
+            $error_message,
+            $execution_time
+        );
     }
 }
 
@@ -2070,6 +2427,297 @@ function wpccm_debug_log($message, $data = null) {
 }
 
 /**
+ * Save scripts to database
+ */
+function wpccm_save_scripts_to_db($scripts_data) {
+    global $wpdb;
+    
+    wpccm_debug_log('wpccm_save_scripts_to_db called', $scripts_data);
+    
+    $scripts_table = $wpdb->prefix . 'ck_scripts';
+    
+    // First, mark all existing scripts as inactive
+    $wpdb->update(
+        $scripts_table,
+        ['is_active' => 0],
+        [],
+        ['%d']
+    );
+    
+    $new_count = 0;
+    $updated_count = 0;
+    
+    // Initialize mappings for legacy blocking system
+    $script_domain_map = get_option('cc_script_domain_map', []);
+    
+    foreach ($scripts_data as $script_data) {
+        $script_url = sanitize_text_field($script_data['url']);
+        $script_type = sanitize_text_field($script_data['type']);
+        $script_content = isset($script_data['content']) ? $script_data['content'] : '';
+        $script_hash = isset($script_data['hash']) ? sanitize_text_field($script_data['hash']) : md5($script_url . $script_content);
+        $category = sanitize_text_field($script_data['category']);
+        
+        // Check if script already exists
+        $existing_script = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $scripts_table WHERE script_url = %s OR script_hash = %s",
+            $script_url,
+            $script_hash
+        ));
+        
+        if ($existing_script) {
+            // Update existing script
+            $wpdb->update(
+                $scripts_table,
+                [
+                    'script_type' => $script_type,
+                    'script_content' => $script_content,
+                    'category' => $category,
+                    'is_active' => 1,
+                    'last_seen' => current_time('mysql'),
+                    'detection_count' => $existing_script->detection_count + 1
+                ],
+                ['id' => $existing_script->id],
+                ['%s', '%s', '%s', '%d', '%s', '%d'],
+                ['%d']
+            );
+            $updated_count++;
+        } else {
+            // Insert new script
+            $wpdb->insert(
+                $scripts_table,
+                [
+                    'script_url' => $script_url,
+                    'script_type' => $script_type,
+                    'script_content' => $script_content,
+                    'script_hash' => $script_hash,
+                    'category' => $category,
+                    'is_active' => 1,
+                    'first_detected' => current_time('mysql'),
+                    'last_seen' => current_time('mysql'),
+                    'detection_count' => 1
+                ],
+                ['%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d']
+            );
+            $new_count++;
+        }
+        
+        // IMPORTANT: Update the legacy mapping system for blocking to work
+        if ($script_type === 'external' && !empty($script_url)) {
+            // Extract domain for domain mapping
+            $domain = wpccm_extract_domain_from_url($script_url);
+            if ($domain) {
+                $script_domain_map[$domain] = $category;
+            }
+        }
+    }
+    
+    // Update the legacy mapping options that the blocking system uses
+    update_option('cc_script_domain_map', $script_domain_map);
+    
+    wpccm_debug_log('Scripts saved to database and legacy mappings updated', [
+        'total_scripts' => count($scripts_data),
+        'new_scripts' => $new_count,
+        'updated_scripts' => $updated_count,
+        'domain_mappings' => count($script_domain_map)
+    ]);
+    
+    return ['new' => $new_count, 'updated' => $updated_count];
+}
+
+/**
+ * Extract domain from URL for legacy mapping system
+ */
+function wpccm_extract_domain_from_url($url) {
+    $parsed = parse_url($url);
+    if (isset($parsed['host'])) {
+        return $parsed['host'];
+    }
+    return false;
+}
+
+/**
+ * Get scripts from database
+ */
+function wpccm_get_scripts_from_db() {
+    global $wpdb;
+    
+    $scripts_table = $wpdb->prefix . 'ck_scripts';
+    
+    $results = $wpdb->get_results(
+        "SELECT script_url, category FROM $scripts_table WHERE is_active = 1 ORDER BY category, script_url",
+        ARRAY_A
+    );
+    
+    return $results ?: [];
+}
+
+/**
+ * Get current site scripts (scan the frontend)
+ */
+function wpccm_get_current_site_scripts() {
+    $scripts = [];
+    
+    wpccm_debug_log('Starting script scan', ['site_url' => home_url()]);
+    
+    // Get the site's homepage content
+    $response = wp_remote_get(home_url());
+    
+    if (is_wp_error($response)) {
+        wpccm_debug_log('Failed to fetch site content for script scanning', ['error' => $response->get_error_message()]);
+        return $scripts;
+    }
+    
+    $body = wp_remote_retrieve_body($response);
+    
+    wpccm_debug_log('Received response', ['body_length' => strlen($body)]);
+    
+    if (empty($body)) {
+        wpccm_debug_log('Empty body received when scanning for scripts');
+        return $scripts;
+    }
+    
+    // Parse HTML to find scripts
+    $dom = new DOMDocument();
+    @$dom->loadHTML($body);
+    $script_tags = $dom->getElementsByTagName('script');
+    
+    wpccm_debug_log('Found script tags', ['count' => $script_tags->length]);
+    
+    foreach ($script_tags as $script_tag) {
+        $src = $script_tag->getAttribute('src');
+        $content = $script_tag->textContent;
+        $id = $script_tag->getAttribute('id');
+        
+        if (!empty($src)) {
+            // External script
+            $scripts[] = [
+                'url' => $src,
+                'type' => 'external',
+                'content' => '',
+                'hash' => md5($src),
+                'category' => wpccm_categorize_script($src, '')
+            ];
+        } elseif (!empty(trim($content))) {
+            // Inline script
+            $content_hash = md5(trim($content));
+            $scripts[] = [
+                'url' => 'inline_' . $content_hash,
+                'type' => 'inline',
+                'content' => trim($content),
+                'hash' => $content_hash,
+                'category' => wpccm_categorize_script('', trim($content))
+            ];
+        }
+    }
+    
+    wpccm_debug_log('Scripts found on site', ['count' => count($scripts)]);
+    
+    return $scripts;
+}
+
+/**
+ * Guess script handle from src URL and id
+ */
+function wpccm_guess_handle_from_src($src, $id) {
+    // If there's an ID, use it
+    if (!empty($id)) {
+        return str_replace('-js', '', $id);
+    }
+    
+    // Try to guess from URL
+    $filename = basename(parse_url($src, PHP_URL_PATH), '.js');
+    $filename = str_replace(['.min', '.js'], '', $filename);
+    
+    return $filename;
+}
+
+/**
+ * Guess script handle from content and id
+ */
+function wpccm_guess_handle_from_content($content, $id) {
+    // If there's an ID, use it to guess the handle
+    if (!empty($id)) {
+        // wp-block-template-skip-link-js-after -> wp-block-template-skip-link-js
+        return str_replace('-after', '', str_replace('-extra', '', $id));
+    }
+    
+    // Look for specific patterns in content
+    if (strpos($content, 'skipLinkTarget') !== false) {
+        return 'wp-block-template-skip-link-js-after';
+    }
+    
+    if (preg_match('/var\s+(\w+Data)\s*=/', $content, $matches)) {
+        $varName = $matches[1];
+        // wpccmJanitorData -> wpccm-cookie-janitor-js
+        if (strpos($varName, 'wpccm') === 0) {
+            return strtolower(preg_replace('/([A-Z])/', '-$1', lcfirst($varName)));
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Categorize script based on URL or content
+ */
+function wpccm_categorize_script($url, $content) {
+    $url_lower = strtolower($url);
+    $content_lower = strtolower($content);
+    
+    // NECESSARY: Our own plugin scripts (always allow)
+    if (strpos($url_lower, 'wp-cookie-consent-manager') !== false ||
+        strpos($content_lower, 'wpccm') !== false ||
+        strpos($content_lower, 'cookie consent') !== false ||
+        strpos($content_lower, 'wpccmjanitordata') !== false ||
+        strpos($content_lower, 'wpccmconsentdata') !== false) {
+        return 'necessary';
+    }
+    
+    // NECESSARY: Essential WordPress and consent-related scripts
+    if (strpos($url_lower, 'wp-includes') !== false ||
+        strpos($url_lower, 'wp-admin') !== false ||
+        strpos($url_lower, 'jquery') !== false ||
+        strpos($content_lower, 'consent') !== false) {
+        return 'necessary';
+    }
+    
+    // Analytics scripts
+    if (strpos($url_lower, 'google-analytics') !== false ||
+        strpos($url_lower, 'googletagmanager') !== false ||
+        strpos($url_lower, 'gtag') !== false ||
+        strpos($content_lower, 'ga(') !== false ||
+        strpos($content_lower, 'gtag(') !== false) {
+        return 'analytics';
+    }
+    
+    // Advertisement scripts
+    if (strpos($url_lower, 'doubleclick') !== false ||
+        strpos($url_lower, 'googlesyndication') !== false ||
+        strpos($url_lower, 'facebook.net') !== false ||
+        strpos($url_lower, 'ads') !== false) {
+        return 'advertisement';
+    }
+    
+    // Performance/CDN scripts
+    if (strpos($url_lower, 'cdn.') !== false ||
+        strpos($url_lower, 'cloudflare') !== false ||
+        strpos($url_lower, 'jquery') !== false) {
+        return 'performance';
+    }
+    
+    // Functional scripts
+    if (strpos($url_lower, 'chat') !== false ||
+        strpos($url_lower, 'support') !== false ||
+        strpos($content_lower, 'localstorage') !== false ||
+        strpos($content_lower, 'sessionstorage') !== false) {
+        return 'functional';
+    }
+    
+    // Default to others
+    return 'others';
+}
+
+/**
  * Save cookies to database table
  */
 function wpccm_save_cookies_to_db($cookies_data) {
@@ -2151,6 +2799,7 @@ function wpccm_get_cookies_from_db() {
     
     return $results ?: [];
 }
+
 
 /**
  * Log consent action to database

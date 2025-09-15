@@ -111,17 +111,55 @@ function wpccm_filter_enqueued_script_tag($tag, $handle, $src) {
  * @return string Modified script data
  */
 function wpccm_filter_inline_script($data, $handle) {
-    // Get script handle mapping from options
-    $script_handle_map = get_option('cc_script_handle_map', []);
+    error_log("WPCCM: Inline filter called - handle: $handle");
     
-    // Check if this handle is mapped to a consent category
-    if (isset($script_handle_map[$handle]) && !empty($script_handle_map[$handle])) {
-        $category = sanitize_text_field($script_handle_map[$handle]);
+    // Check if plugin is activated
+    if (!WP_CCM_Consent::is_plugin_activated()) {
+        return $data;
+    }
+    
+    // Essential WordPress handles that should NEVER be blocked
+    $essential_handles = [
+        'jquery', 'jquery-core', 'jquery-migrate', 'wp-hooks', 'wp-i18n', 
+        'wp-polyfill', 'wp-dom-ready', 'wp-element', 'wp-escape-html',
+        'wp-util', 'wp-sanitize', 'wp-url', 'wp-api-fetch'
+    ];
+    
+    // Essential WordPress handle patterns (VERY SPECIFIC)
+    $essential_patterns = [
+        '/^jquery/', '/^admin-/', '/^dashboard/', 
+        '/^customize-/', '/^media-/', '/^editor-/',
+        '/^wp-(hooks|i18n|polyfill|dom-ready|element|escape-html|util|sanitize|url|api-fetch)/'
+    ];
+    
+    // Check if this is an essential handle
+    $is_essential = in_array($handle, $essential_handles);
+    
+    // Check essential patterns
+    if (!$is_essential) {
+        foreach ($essential_patterns as $pattern) {
+            if (preg_match($pattern, $handle)) {
+                $is_essential = true;
+                break;
+            }
+        }
+    }
+    
+    // Check if content contains our own plugin code (should be essential)
+    if (!$is_essential && strpos($data, 'wpccm') !== false) {
+        $is_essential = true;
+    }
+    
+    // If NOT essential, check consent
+    if (!$is_essential) {
+        $state = WP_CCM_Consent::get_state();
         
-        // Only process if category is valid
-        if (wpccm_is_valid_consent_category($category)) {
-            // Convert inline script to consent-controlled
-            $data = wpccm_convert_inline_to_consent_script($data, $category);
+        // Check if 'others' category is allowed (default for unknown scripts)
+        $allowed = !empty($state['others']) && $state['others'] === true;
+        
+        if (!$allowed) {
+            // Block by returning empty content
+            return '';
         }
     }
     
@@ -155,14 +193,12 @@ function wpccm_convert_to_consent_script($tag, $src, $category) {
  * @return string Modified script data
  */
 function wpccm_convert_inline_to_consent_script($data, $category) {
-    // Wrap inline script in consent-controlled container
-    $new_data = sprintf(
-        '<script type="text/plain" data-cc="%s">%s</script>',
-        esc_attr($category),
-        $data
-    );
+    // For inline scripts, we can't change the type since wp_add_inline_script 
+    // only returns the content, not the full script tag.
+    // The blocking should happen at the script tag level, not content level.
     
-    return $new_data;
+    // Return empty content to effectively "block" the inline script
+    return '';
 }
 
 /**
@@ -184,30 +220,7 @@ function wpccm_is_valid_consent_category($category) {
     return in_array($category, $valid_categories, true);
 }
 
-/**
- * Extract domain from URL
- * 
- * @param string $url The URL to extract domain from
- * @return string|false Domain name or false on failure
- */
-function wpccm_extract_domain_from_url($url) {
-    if (empty($url)) {
-        return false;
-    }
-    
-    // Skip data URLs
-    if (strpos($url, 'data:') === 0) {
-        return false;
-    }
-    
-    // Parse URL
-    $parsed = parse_url($url);
-    if (!$parsed || !isset($parsed['host'])) {
-        return false;
-    }
-    
-    return $parsed['host'];
-}
+// wpccm_extract_domain_from_url function is now defined in wp-cookie-consent-manager.php
 
 /**
  * Add filters for script tag modification
@@ -216,8 +229,7 @@ function wpccm_add_script_filters() {
     // Filter script tags
     add_filter('script_loader_tag', 'wpccm_filter_script_tag', 10, 3);
     
-    // Filter inline scripts
-    add_filter('wp_add_inline_script', 'wpccm_filter_inline_script', 10, 2);
+    // Note: inline script filter is registered in wp-cookie-consent-manager.php
 }
 
 // Initialize filters
