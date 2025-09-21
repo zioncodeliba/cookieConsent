@@ -1,4 +1,5 @@
-(function() {
+
+(function(window) {
 
     function initTableManager() {
         if (typeof jQuery === 'undefined') {
@@ -1607,28 +1608,26 @@
         return div.innerHTML;
     }
     
-    // Manual force scan option for debugging
-    window.wpccmForceScan = function() {
-        $('#wpccm-scan-live-handles').trigger('click');
-    };
-    
-    // Make initTableManager available globally
-    window.initTableManager = initTableManager;
-
-    
         }); // End jQuery document ready
 
 
     } // End initTableManager function
     
-    // Initialize when DOM is ready
+    const wpccmModule = window.WPCCM || (window.WPCCM = {});
+    wpccmModule.TableManager = {
+        init: initTableManager,
+        forceScan: function() {
+            if (typeof jQuery === 'undefined') {
+                return;
+            }
+            jQuery('#wpccm-scan-live-handles').trigger('click');
+        }
+    };
 
     if (document.readyState === 'loading') {
-
         document.addEventListener('DOMContentLoaded', initTableManager);
     } else {
-
         initTableManager();
     }
 
-})(); // End IIFE
+})(window);

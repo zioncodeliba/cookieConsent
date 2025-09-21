@@ -11,6 +11,17 @@ function getCookie(name) {
     return result;
 }
 
+function getDefaultConsentState() {
+    return {
+        necessary: true,
+        functional: false,
+        performance: false,
+        analytics: false,
+        advertisement: false,
+        others: false
+    };
+}
+
 function setCookie(name, value, days) {
     var expires = '';
     if (days) {
@@ -68,10 +79,10 @@ function deleteCookie(name) {
     
     var methods = [
         name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
-        name + '=; Path=/wp-plagin/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
-        name + '=; Path=/wp-plagin/wp-admin; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
-        name + '=; Path=/wp-plagin/wp-content/plugins; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
-        name + '=; Path=/wp-plagin/wp-content/plugins/wp-cookie-consent-manager; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        name + '=; Path=/wp-plagin_gpt5/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+        name + '=; Path=/wp-plagin_gpt5/wp-admin; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+        name + '=; Path=/wp-plagin_gpt5/wp-content/plugins; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
+        name + '=; Path=/wp-plagin_gpt5/wp-content/plugins/wp-cookie-consent-manager; Expires=Thu, 01 Jan 1970 00:00:01 GMT;'
     ];
     
     for (var i = 0; i < methods.length; i++) {
@@ -88,6 +99,19 @@ function deleteCookie(name) {
         //     }
         // }, 100, i);
     }
+}
+
+function ensureConsentCookies(state) {
+    if (!state || typeof state !== 'object') {
+        return;
+    }
+
+    var days = 180;
+
+    Object.keys(state).forEach(function(key) {
+        var cookieName = 'consent_' + key;
+        setCookie(cookieName, state[key] ? '1' : '0', days);
+    });
 }
 
 function deleteCookieViaServer(name) {
@@ -151,11 +175,183 @@ function currentState() {
         if (cat.required) {
             state[cat.key] = true; // Always true for required
         } else {
-            state[cat.key] = getCookie('consent_' + cat.key) === '1';
+            var cookieValue = getCookie('consent_' + cat.key);
+            if (cookieValue === null && typeof localStorage !== 'undefined') {
+                try {
+                    var persistedState = JSON.parse(localStorage.getItem('wpccm_consent_state') || '{}');
+                    if (typeof persistedState[cat.key] !== 'undefined') {
+                        cookieValue = persistedState[cat.key] ? '1' : '0';
+                    }
+                } catch (e) {}
+            }
+
+            state[cat.key] = cookieValue === '1';
         }
     });
-    
+
     return state;
+}
+
+
+function normalizeConsentForStore(state) {
+    var baselineKeys = ['necessary', 'functional', 'performance', 'analytics', 'advertisement', 'others'];
+    var normalized = {};
+
+    baselineKeys.forEach(function(key) {
+        if (key === 'necessary') {
+            normalized[key] = true;
+            return;
+        }
+
+        var value = false;
+        if (typeof state[key] !== 'undefined') {
+            value = state[key] === true || state[key] === '1' || state[key] === 'true';
+        }
+
+        normalized[key] = value;
+    });
+
+    return normalized;
+}
+
+
+function applyConsentStateToDom(state) {
+    if (!state || typeof state !== 'object') {
+        return;
+    }
+
+    var normalized = normalizeConsentForStore(state);
+
+    try {
+        var scriptNodes = document.querySelectorAll('script[data-cc]');
+
+        scriptNodes.forEach(function(placeholder) {
+            var category = placeholder.getAttribute('data-cc');
+            if (!category) {
+                return;
+            }
+
+            var allowed = !!normalized[category];
+            var isPlaceholder = placeholder.getAttribute('type') === 'text/plain' ||
+                                placeholder.hasAttribute('data-src') ||
+                                placeholder.getAttribute('data-inline-blocked') === '1';
+
+            if (allowed) {
+                if (!isPlaceholder) {
+                    // Already active script, nothing to do
+                    return;
+                }
+
+                var newScript = document.createElement('script');
+
+                Array.from(placeholder.attributes).forEach(function(attr) {
+                    var name = attr.name;
+                    var value = attr.value;
+
+                    if (name === 'type' ||
+                        name === 'data-cc-blocked' ||
+                        name === 'data-inline-blocked' ||
+                        name === 'data-cc-processed') {
+                        return;
+                    }
+
+                    if (name === 'data-src') {
+                        if (value) {
+                            newScript.src = value;
+                        }
+                        return;
+                    }
+
+                    if (name === 'style') {
+                        return;
+                    }
+
+                    newScript.setAttribute(name, value);
+                });
+
+                if (!newScript.src) {
+                    newScript.text = placeholder.text || placeholder.textContent || '';
+                }
+
+                newScript.setAttribute('data-cc', category);
+                newScript.removeAttribute('data-cc-blocked');
+                newScript.removeAttribute('data-inline-blocked');
+                newScript.setAttribute('data-cc-processed', '1');
+                newScript.removeAttribute('style');
+                newScript.style.display = '';
+
+                placeholder.parentNode.replaceChild(newScript, placeholder);
+            } else {
+                // Block script by converting to placeholder
+                if (placeholder.getAttribute('type') !== 'text/plain') {
+                    var currentSrc = placeholder.getAttribute('src');
+                    if (currentSrc) {
+                        placeholder.setAttribute('data-src', currentSrc);
+                        placeholder.removeAttribute('src');
+                    }
+                    placeholder.setAttribute('type', 'text/plain');
+                }
+
+                placeholder.setAttribute('data-cc-blocked', 'true');
+                if (!placeholder.hasAttribute('data-inline-blocked') && !placeholder.hasAttribute('data-src')) {
+                    placeholder.setAttribute('data-inline-blocked', '1');
+                }
+                placeholder.style.display = 'none';
+            }
+        });
+
+        var iframeNodes = document.querySelectorAll('iframe[data-cc]');
+
+        iframeNodes.forEach(function(iframe) {
+            var category = iframe.getAttribute('data-cc');
+            if (!category) {
+                return;
+            }
+
+            var allowed = !!normalized[category];
+
+            if (allowed) {
+                if (iframe.getAttribute('data-cc-blocked') === 'true') {
+                    var storedSrc = iframe.getAttribute('data-src');
+                    if (storedSrc) {
+                        iframe.src = storedSrc;
+                    }
+                    iframe.removeAttribute('data-cc-blocked');
+                    iframe.style.display = '';
+                }
+            } else {
+                if (!iframe.hasAttribute('data-src')) {
+                    iframe.setAttribute('data-src', iframe.src || '');
+                }
+                iframe.src = '';
+                iframe.setAttribute('data-cc-blocked', 'true');
+                iframe.style.display = 'none';
+            }
+        });
+    } catch (e) {
+        console.warn('WPCCM: Failed to apply consent state to DOM', e);
+    }
+}
+
+
+function applyPendingConsentState() {
+    var pendingState = getDefaultConsentState();
+
+    ensureConsentCookies(pendingState);
+
+    if (typeof localStorage !== 'undefined') {
+        try {
+            localStorage.setItem('wpccm_consent_state', JSON.stringify(pendingState));
+            localStorage.removeItem('wpccm_consent_resolved');
+        } catch (e) {}
+    }
+
+    // Ensure main consent cookies indicating resolution are cleared
+    deleteCookie('wpccm_consent_resolved');
+    deleteCookie('wpccm_resolved');
+    deleteCookie('wpccm_simple');
+
+    applyConsentStateToDom(pendingState);
 }
 
 
@@ -168,7 +364,7 @@ function storeNewState(state) {
     Object.keys(state).forEach(function(key) {
         setCookie('consent_' + key, state[key] ? '1' : '0', days);
     });
-    
+
     // Set main consent cookie to indicate user has made a choice
     console.log('WPCCM: Setting consent resolved cookie');
     setCookie('wpccm_consent_resolved', '1', days);
@@ -176,6 +372,16 @@ function storeNewState(state) {
     // Also set a simpler cookie as backup
     setCookie('wpccm_resolved', '1', days);
     
+    // Persist consent state to localStorage for additional reliability
+    if (typeof localStorage !== 'undefined') {
+        try {
+            localStorage.setItem('wpccm_consent_resolved', '1');
+            localStorage.setItem('wpccm_consent_state', JSON.stringify(state));
+        } catch (e) {
+            console.warn('WPCCM: Failed to persist consent state to localStorage', e);
+        }
+    }
+
     // Try direct cookie setting as last resort
     try {
         document.cookie = 'wpccm_simple=1; path=/; max-age=' + (days * 24 * 60 * 60);
@@ -192,6 +398,32 @@ function storeNewState(state) {
         console.log('WPCCM: Simple cookie verification:', simpleCookie);
         console.log('WPCCM: All cookies:', document.cookie);
     }, 200);
+
+    // Synchronize with consent store for real-time script handling
+    var normalizedConsent = normalizeConsentForStore(state);
+
+    applyConsentStateToDom(normalizedConsent);
+
+    if (typeof window !== 'undefined' && typeof window.setConsent === 'function') {
+        try {
+            window.setConsent(normalizedConsent);
+        } catch (e) {
+            console.warn('WPCCM: Failed to update consent store via setConsent', e);
+        }
+    } else {
+        try {
+            var consentEvent = new CustomEvent('cc:changed', {
+                detail: { preferences: normalizedConsent }
+            });
+            document.dispatchEvent(consentEvent);
+
+            if (typeof window !== 'undefined' && window.ccLoader && typeof window.ccLoader.rehydrateAllElements === 'function') {
+                window.ccLoader.rehydrateAllElements();
+            }
+        } catch (e) {
+            console.warn('WPCCM: Failed to dispatch consent change event fallback', e);
+        }
+    }
 }
 
 function isResolved(state) {
@@ -199,72 +431,87 @@ function isResolved(state) {
     var hasNewConsentCookie = getCookie('wpccm_consent_resolved') === '1';
     var hasSimpleConsentCookie = getCookie('wpccm_resolved') === '1';
     var hasDirectCookie = getCookie('wpccm_simple') === '1';
+    var hasLocalStorageFlag = false;
+
+    if (typeof localStorage !== 'undefined') {
+        try {
+            var lsFlag = localStorage.getItem('wpccm_consent_resolved');
+            hasLocalStorageFlag = lsFlag === '1' || lsFlag === 'true';
+        } catch (e) {}
+    }
     
     // For backward compatibility, also check if old wpccm_consent cookie exists
     var hasOldConsentCookie = getCookie('wpccm_consent') !== null;
     
-    var resolved = hasNewConsentCookie || hasSimpleConsentCookie || hasDirectCookie || hasOldConsentCookie;
-    console.log('WPCCM: isResolved check - new:', hasNewConsentCookie, 'simple:', hasSimpleConsentCookie, 'direct:', hasDirectCookie, 'old:', hasOldConsentCookie, 'resolved:', resolved);
+    var resolved = hasNewConsentCookie || hasSimpleConsentCookie || hasDirectCookie || hasOldConsentCookie || hasLocalStorageFlag;
+    console.log('WPCCM: isResolved check - new:', hasNewConsentCookie, 'simple:', hasSimpleConsentCookie, 'direct:', hasDirectCookie, 'old:', hasOldConsentCookie, 'localStorage:', hasLocalStorageFlag, 'resolved:', resolved);
     
     return resolved;
 }
 
 function activateDeferredScripts() {
-    var scripts = document.querySelectorAll('script[type="text/plain"][data-consent]');
-    var state = currentState();
+    // var scripts = document.querySelectorAll('script[type="text/plain"][data-consent]');
+    // var state = currentState();
     
-    scripts.forEach(function(script) {
-        var category = script.getAttribute('data-consent');
-        if (state[category]) {
-            var newScript = document.createElement('script');
+    // scripts.forEach(function(script) {
+    //     var category = script.getAttribute('data-consent');
+    //     if (state[category]) {
+    //         var newScript = document.createElement('script');
             
-            // Copy attributes
-            Array.from(script.attributes).forEach(function(attr) {
-                if (attr.name !== 'type' && attr.name !== 'data-consent') {
-                    newScript.setAttribute(attr.name, attr.value);
-                }
-            });
+    //         // Copy attributes
+    //         Array.from(script.attributes).forEach(function(attr) {
+    //             if (attr.name !== 'type' && attr.name !== 'data-consent') {
+    //                 newScript.setAttribute(attr.name, attr.value);
+    //             }
+    //         });
             
-            // Handle src vs inline
-            var dataSrc = script.getAttribute('data-src');
-            if (dataSrc) {
-                newScript.src = dataSrc;
-            } else {
-                newScript.innerHTML = script.innerHTML;
-            }
+    //         // Handle src vs inline
+    //         var dataSrc = script.getAttribute('data-src');
+    //         if (dataSrc) {
+    //             newScript.src = dataSrc;
+    //         } else {
+    //             newScript.innerHTML = script.innerHTML;
+    //         }
             
-            script.parentNode.replaceChild(newScript, script);
-        }
-    });
+    //         script.parentNode.replaceChild(newScript, script);
+    //     }
+    // });
 }
 
 function purgeOnReject() {
-    var options = {};
-    if (typeof WPCCM !== 'undefined' && WPCCM && WPCCM.options) {
-        options = WPCCM.options;
-    }
-    var cookiesToPurge = (options.purge && options.purge.cookies) || [{name:'_ga'}, {name:'_ga_*'}, {name:'_gid'}, {name:'_fbp'}, {name:'_hjSessionUser'}];
+    console.log('WPCCM: purgeOnReject() called - deleting cookies from rejected categories');
 
-    cookiesToPurge.forEach(function(cookieName) {
-        console.log('Purging cookie:', cookieName);
+    // Use the same smart cookie deletion logic as in purgeNonEssentialCookies
+    if (typeof WPCCM !== 'undefined' && WPCCM.cookies && Array.isArray(WPCCM.cookies)) {
+        var userConsentState = currentState();
 
-        if (cookieName.name.includes('*')) {
-            // Handle wildcard cookies
-            var prefix = cookieName.replace('*', '');
-            var cookies = document.cookie.split(';');
-            cookies.forEach(function(cookie) {
-                var name = cookie.split('=')[0].trim();
-                if (name.startsWith(prefix)) {
-                    console.log('Purging cookie:', name);
-                    // deleteCookie(name);
-                    // deleteCookieViaServer(name);
+        WPCCM.cookies.forEach(function(cookieInfo) {
+            var cookieName = cookieInfo.name || cookieInfo.cookie_name;
+            var cookieCategory = cookieInfo.category || 'others';
+
+            // Only delete cookies from categories that user has NOT approved
+            // Skip 'necessary' category as it's always approved
+            if (cookieCategory !== 'necessary' && !userConsentState[cookieCategory]) {
+                console.log('WPCCM: Deleting cookie from rejected category:', cookieName, 'category:', cookieCategory);
+
+                // Handle wildcard cookies (e.g., woocommerce_*)
+                if (cookieName && cookieName.includes('*')) {
+                    var prefix = cookieName.replace('*', '');
+                    var cookies = document.cookie.split(';');
+                    cookies.forEach(function(cookie) {
+                        var name = cookie.split('=')[0].trim();
+                        if (name.startsWith(prefix)) {
+                            console.log('WPCCM: Purging wildcard cookie:', name);
+                            deleteCookie(name);
+                        }
+                    });
+                } else if (cookieName) {
+                    console.log('WPCCM: Purging cookie:', cookieName);
+                    deleteCookie(cookieName);
                 }
-            });
-        } else {
-            deleteCookie(cookieName.name);
-            // deleteCookieViaServer(cookieName.name);
-        }
-    });
+            }
+        });
+    }
     
     // Clear localStorage items
     try { 
@@ -302,7 +549,18 @@ function generateCategoryToggles(texts, cookiesByCategory, designSettings) {
         }
         
         // Check current consent state for this category
-        var currentConsent = getCookie('consent_' + cat.key) === 'true';
+        var storedConsentValue = getCookie('consent_' + cat.key);
+
+        if ((!storedConsentValue || storedConsentValue === null) && typeof localStorage !== 'undefined') {
+            try {
+                var persisted = JSON.parse(localStorage.getItem('wpccm_consent_state') || '{}');
+                if (typeof persisted[cat.key] !== 'undefined') {
+                    storedConsentValue = persisted[cat.key] ? '1' : '0';
+                }
+            } catch (e) {}
+        }
+
+        var currentConsent = storedConsentValue === '1' || storedConsentValue === 'true';
         var isChecked = cat.required || currentConsent;
         
         var checked = isChecked ? 'checked' : '';
@@ -363,13 +621,22 @@ function generateCategoryToggles(texts, cookiesByCategory, designSettings) {
         }
         
         cookiesHtml = contentHtml;
-        
+
+        var baseTextColor = (designSettings && designSettings.textColor) ? designSettings.textColor : '#333333';
+        var isTextWhite = baseTextColor === '#ffffff' || baseTextColor === '#fff' || baseTextColor === '#FFFFFF';
+        var arrowBackground = isTextWhite ? 'rgba(255,255,255,0.1)' : '#f1f3f5';
+        var arrowColor = isTextWhite ? '#ffffff' : baseTextColor;
+
         html += '<div class="wpccm-category" data-category="' + cat.key + '">' +
-            '<div class="wpccm-category-header">' +
-            '<div class="wpccm-category-info">' +
-            '<h4>' + escapeHtml(cat.name) + '</h4>' +
-            '<p>' + escapeHtml(cat.description) + '</p>' +
+            '<div class="wpccm-category-header" style="display: flex; align-items: center; gap: 12px; justify-content: space-between;">' +
+            '<button type="button" class="wpccm-category-summary" aria-expanded="false" style="flex: 1; display: flex; align-items: center; gap: 10px; flex-direction: row-reverse; background: none; border: none; padding: 0; color: inherit; cursor: pointer; text-align: right;">' +
+            
+            '<div class="wpccm-category-text" style="flex: 1; text-align: right;">' +
+            '<h4 style="margin: 0;">' + escapeHtml(cat.name) + '</h4>' +
+            '<p style="margin: 4px 0 0; font-size: 12px;">' + escapeHtml(cat.description) + '</p>' +
             '</div>' +
+            '<span class="wpccm-category-arrow" aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: ' + arrowBackground + '; color: ' + arrowColor + '; font-size: 14px; transition: transform 0.2s ease;">▾</span>' +
+            '</button>' +
             '<div class="wpccm-category-toggle">' +
             '<span class="wpccm-toggle-status">' + statusText + '</span>' +
             '<label class="wpccm-switch">' +
@@ -431,7 +698,7 @@ function renderBanner(){
     if (typeof WPCCM === 'undefined') {
         return;
     }
-    
+
     var o = (WPCCM && WPCCM.options) ? WPCCM.options : {};
     var b = o.banner || {};
     var texts = (WPCCM && WPCCM.texts) ? WPCCM.texts : {};
@@ -644,56 +911,108 @@ function renderBanner(){
         // Add improved styling to categories
         var categoryElements = modal.querySelectorAll('.wpccm-category');
         categoryElements.forEach(function(category) {
-            category.style.cssText += 'border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 8px; background: #fff; transition: all 0.2s ease; cursor: pointer;';
-            
-            // Add hover effect to category header
-            category.addEventListener('mouseenter', function() {
-                category.style.borderColor = '#007cba';
-                category.style.boxShadow = '0 2px 8px rgba(0,123,186,0.1)';
-            });
-            
-            category.addEventListener('mouseleave', function() {
-                category.style.borderColor = '#e9ecef';
-                category.style.boxShadow = 'none';
-            });
+            category.style.cssText += 'border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 8px; background: #fff; transition: all 0.2s ease; cursor: default;';
         });
         
-        // Add hover effects for category details
+        // Toggle category details on click instead of hover
         var categories = modal.querySelectorAll('.wpccm-category');
         categories.forEach(function(category) {
             var details = category.querySelector('.wpccm-category-details');
-            var header = category.querySelector('.wpccm-category-header');
-            
-            if (details && header) {
-                var hoverTimeout;
-                
-                // Show details on hover
-                category.addEventListener('mouseenter', function() {
-                    if (hoverTimeout) {
-                        clearTimeout(hoverTimeout);
-                    }
-                    details.style.display = 'block';
-                    details.style.opacity = '0';
-                    details.style.transform = 'translateY(-10px)';
-                    details.style.transition = 'all 0.3s ease';
-                    
-                    setTimeout(function() {
-                        details.style.opacity = '1';
-                        details.style.transform = 'translateY(0)';
-                    }, 10);
-                });
-                
-                // Hide details on leave with delay
-                category.addEventListener('mouseleave', function() {
-                    hoverTimeout = setTimeout(function() {
-                        details.style.opacity = '0';
-                        details.style.transform = 'translateY(-10px)';
-                        setTimeout(function() {
-                            details.style.display = 'none';
-                        }, 300);
-                    }, 200);
-                });
+            var summaryButton = category.querySelector('.wpccm-category-summary');
+            var arrow = category.querySelector('.wpccm-category-arrow');
+
+            if (!details || !summaryButton) {
+                return;
             }
+
+            var openClass = 'wpccm-open';
+
+            var openDetails = function() {
+                category.classList.add(openClass);
+                details.style.display = 'block';
+                details.style.opacity = '0';
+                details.style.transform = 'translateY(-10px)';
+                details.style.transition = 'all 0.3s ease';
+
+                requestAnimationFrame(function() {
+                    details.style.opacity = '1';
+                    details.style.transform = 'translateY(0)';
+                });
+
+                summaryButton.setAttribute('aria-expanded', 'true');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(180deg)';
+                }
+
+                category.style.borderColor = '#007cba';
+                category.style.boxShadow = '0 2px 8px rgba(0,123,186,0.15)';
+            };
+
+            var closeDetails = function() {
+                category.classList.remove(openClass);
+                summaryButton.setAttribute('aria-expanded', 'false');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+
+                details.style.opacity = '0';
+                details.style.transform = 'translateY(-10px)';
+                setTimeout(function() {
+                    if (!category.classList.contains(openClass)) {
+                        details.style.display = 'none';
+                    }
+                }, 200);
+
+                category.style.borderColor = '#e9ecef';
+                category.style.boxShadow = 'none';
+            };
+
+            // Ensure details start collapsed
+            closeDetails();
+
+            summaryButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                if (category.classList.contains(openClass)) {
+                    closeDetails();
+                } else {
+                    openDetails();
+                }
+            });
+
+            summaryButton.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    summaryButton.click();
+                }
+            });
+
+            summaryButton.addEventListener('focus', function() {
+                if (!category.classList.contains(openClass)) {
+                    category.style.borderColor = '#007cba';
+                    category.style.boxShadow = '0 2px 8px rgba(0,123,186,0.1)';
+                }
+            });
+
+            summaryButton.addEventListener('blur', function() {
+                if (!category.classList.contains(openClass)) {
+                    category.style.borderColor = '#e9ecef';
+                    category.style.boxShadow = 'none';
+                }
+            });
+
+            category.addEventListener('mouseenter', function() {
+                if (!category.classList.contains(openClass)) {
+                    category.style.borderColor = '#007cba';
+                    category.style.boxShadow = '0 2px 8px rgba(0,123,186,0.1)';
+                }
+            });
+
+            category.addEventListener('mouseleave', function() {
+                if (!category.classList.contains(openClass)) {
+                    category.style.borderColor = '#e9ecef';
+                    category.style.boxShadow = 'none';
+                }
+            });
         });
     });
 }
@@ -947,9 +1266,6 @@ function rejectAll() {
     // Block all non-essential scripts from running
     blockNonEssentialScripts();
     
-    // Set up continuous monitoring to prevent new cookies
-    setupCookieMonitoring();
-    
     hideBanner();
 }
 
@@ -961,7 +1277,7 @@ function purgeNonEssentialCookies() {
     // Essential cookies that should never be deleted
     var essentialCookies = [
         'wpccm_consent', 'wpccm_consent_resolved', 'wpccm_resolved', 'wpccm_simple', 
-        'consent_necessary', 
+        'consent_necessary', 'consent_',
         'PHPSESSID', 'wordpress_*', 'wp-*', 'woocommerce_cart_hash',
         'woocommerce_items_in_cart', 'wp_woocommerce_session_*'
     ];
@@ -990,21 +1306,25 @@ function purgeNonEssentialCookies() {
         }
     });
     
-    // Get all non-essential cookies from WPCCM configuration
-    if (typeof WPCCM !== 'undefined' && WPCCM.options && WPCCM.options.purge && WPCCM.options.purge.cookies) {
-        var cookies = WPCCM.options.purge.cookies;
-        
-        cookies.forEach(function(cookieInfo) {
-            var cookieName = typeof cookieInfo === 'string' ? cookieInfo : cookieInfo.name;
-            var cookieCategory = typeof cookieInfo === 'object' ? cookieInfo.category : 'others';
-            
-            // Only delete non-necessary cookies
-            if (cookieCategory !== 'necessary') {
+    // Delete cookies from database that are not in approved categories
+    // This follows the same logic as script blocking
+    if (typeof WPCCM !== 'undefined' && WPCCM.cookies && Array.isArray(WPCCM.cookies)) {
+        var userConsentState = currentState();
+
+        WPCCM.cookies.forEach(function(cookieInfo) {
+            var cookieName = cookieInfo.name || cookieInfo.cookie_name;
+            var cookieCategory = cookieInfo.category || 'others';
+
+            // Only delete cookies from categories that user has NOT approved
+            // Skip 'necessary' category as it's always approved
+            if (cookieCategory !== 'necessary' && !userConsentState[cookieCategory]) {
+                console.log('WPCCM: Deleting cookie from unapproved category:', cookieName, 'category:', cookieCategory);
+
                 // Handle wildcard cookies (e.g., woocommerce_*)
-                if (cookieName.includes('*')) {
+                if (cookieName && cookieName.includes('*')) {
                     var prefix = cookieName.replace('*', '');
                     var currentCookies = document.cookie.split(";");
-                    
+
                     currentCookies.forEach(function(cookie) {
                         var cookieNameOnly = cookie.split("=")[0].trim();
                         if (cookieNameOnly.startsWith(prefix) && !isEssential(cookieNameOnly)) {
@@ -1014,7 +1334,7 @@ function purgeNonEssentialCookies() {
                             }
                         }
                     });
-                } else if (!isEssential(cookieName)) {
+                } else if (cookieName && !isEssential(cookieName)) {
                     // Delete exact cookie name
                     deleteCookie(cookieName);
                     if (deletedCookies.indexOf(cookieName) === -1) {
@@ -1059,12 +1379,28 @@ function blockNonEssentialScripts() {
 }
 
 function setupCookieMonitoring() {
-    
-    // Monitor for new cookies every 5 seconds
+    if (window.wpccmCookieMonitor) {
+        clearInterval(window.wpccmCookieMonitor);
+        window.wpccmCookieMonitor = null;
+        console.log('🔁 WPCCM Cookie Monitor: אתחול מחדש של המעקב אחר עוגיות.');
+    }
+
+    if (window.wpccmAutoSyncTimer) {
+        clearInterval(window.wpccmAutoSyncTimer);
+        window.wpccmAutoSyncTimer = null;
+        console.log('🔁 WPCCM Auto Sync: מנקה טיימר קודם לפני יצירת חדש.');
+    }
+
+    if (!document || typeof document.cookie === 'undefined') {
+        console.warn('WPCCM Cookie Monitor: לא ניתן להתחיל מעקב ללא document.cookie');
+        return;
+    }
+
+    // Monitor for new cookies every 60 seconds
     var cookieMonitor = setInterval(function() {
         var currentCookies = document.cookie.split(";");
         var newCookies = [];
-        
+
         currentCookies.forEach(function(cookie) {
             var cookieName = cookie.split("=")[0].trim();
             
@@ -1081,12 +1417,196 @@ function setupCookieMonitoring() {
     
     // Store the monitor so we can stop it later if needed
     window.wpccmCookieMonitor = cookieMonitor;
+    console.log('🛰️ WPCCM Cookie Monitor: המעקב פועל - מרווח 60 שניות.');
+
+    // Auto sync timer based on admin settings
+    if (typeof window.WPCCM !== 'undefined' && window.WPCCM.ajaxUrl) {
+        var syncInterval = parseInt(window.WPCCM.syncIntervalMinutes, 10);
+        if (isNaN(syncInterval) || syncInterval < 1) {
+            syncInterval = 60;
+        }
+        console.log('⏱️ WPCCM Auto Sync: תדירות שנבחרה באדמין (דקות):', syncInterval);
+        var syncIntervalMs = syncInterval * 60 * 1000; // Convert to milliseconds
+
+        // Calculate next run time
+        var nextRunTime = new Date(Date.now() + syncIntervalMs);
+
+        console.log('🔄 WPCCM Auto Sync: מערכת סינכרון אוטומטי מופעלת');
+        console.log('⏱️ WPCCM Auto Sync: תדירות - כל', syncInterval, 'דקות');
+        console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRunTime.toLocaleString('he-IL'));
+
+        var autoSyncTimer = setInterval(function() {
+            // Check if banner root or floating button is visible (user is on site)
+            var bannerRoot = document.getElementById('wpccm-banner-root');
+            var floatingButton = document.querySelector('.wpccm-floating-button');
+
+            console.log('🔍 WPCCM Auto Sync: בדיקת אלמנטים - banner root:', !!bannerRoot, 'floating button:', !!floatingButton);
+
+            if (bannerRoot || floatingButton) {
+                var currentTime = new Date();
+                console.log('🚀 WPCCM Auto Sync: מתחיל סינכרון - ' + currentTime.toLocaleString('he-IL'));
+
+                var payload = new URLSearchParams();
+                payload.append('action', 'wpccm_frontend_auto_sync');
+                if (window.WPCCM.nonce) {
+                    payload.append('nonce', window.WPCCM.nonce);
+                }
+
+                fetch(window.WPCCM.ajaxUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    body: payload.toString(),
+                    credentials: 'same-origin'
+                })
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(response) {
+                        var endTime = new Date();
+                        if (response.success) {
+                            console.log('✅ WPCCM Auto Sync: סינכרון הושלם בהצלחה!');
+                            console.log('📊 WPCCM Auto Sync: תוצאות:', response.data);
+
+                            // Calculate next run
+                            var nextRun = new Date(Date.now() + syncIntervalMs);
+                            console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRun.toLocaleString('he-IL'));
+                        } else {
+                            console.log('❌ WPCCM Auto Sync: סינכרון נכשל:', response.data);
+                        }
+                        var duration = endTime.getTime() - currentTime.getTime();
+                        console.log('⏱️ WPCCM Auto Sync: זמן ביצוע:', duration + 'ms');
+                    })
+                    .catch(function(error) {
+                        console.log('❌ WPCCM Auto Sync: שגיאת AJAX - החיבור לשרת נכשל', error);
+                    });
+            } else {
+                console.log('⏸️ WPCCM Auto Sync: מדלג על סינכרון - אין באנר/כפתור צף באתר');
+            }
+        }, syncIntervalMs);
+
+        // Store the timer so we can stop it later if needed
+        window.wpccmAutoSyncTimer = autoSyncTimer;
+
+        // Log timer info for debugging
+        console.log('📝 WPCCM Auto Sync: Timer ID:', autoSyncTimer);
+        console.log('🔧 WPCCM Auto Sync: ניתן לעצור עם: clearInterval(window.wpccmAutoSyncTimer)');
+    } else {
+        console.log('❌ WPCCM Auto Sync: הגדרות לא נמצאו - הסינכרון לא יופעל');
+        console.log('🔍 WPCCM Auto Sync: Debug - window.WPCCM:', typeof window.WPCCM);
+        if (typeof window.WPCCM !== 'undefined') {
+            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM object:', window.WPCCM);
+            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.ajaxUrl:', window.WPCCM.ajaxUrl);
+            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.syncIntervalMinutes:', window.WPCCM.syncIntervalMinutes);
+        }
+    }
+}
+
+function setupFormConsentEnforcement() {
+    if (typeof window.WPCCM === 'undefined') {
+        return;
+    }
+
+    var consentText = (WPCCM.texts && WPCCM.texts.forms_policy_label) ? WPCCM.texts.forms_policy_label : 'I confirm that I accept the cookie policy.';
+    var requiredMessage = (WPCCM.texts && WPCCM.texts.forms_policy_required) ? WPCCM.texts.forms_policy_required : 'You must accept the cookie policy before submitting.';
+
+    function enforce() {
+        var forms = document.querySelectorAll('form');
+
+        if (!forms || !forms.length) {
+            return;
+        }
+
+        forms.forEach(function(form) {
+            if (form.dataset && form.dataset.wpccmConsentEnforced === '1') {
+                return;
+            }
+
+            // Skip WordPress search/login forms by heuristic
+            var isSearchForm = form.classList.contains('search-form') ||
+                form.id === 'adminbar-search' ||
+                form.querySelector('input[type="search"]') ||
+                form.querySelector('input[name="s"]');
+
+            if (isSearchForm || form.id === 'loginform') {
+                form.dataset.wpccmConsentEnforced = '1';
+                return;
+            }
+
+            if (form.hasAttribute('data-wpccm-ignore-consent')) {
+                form.dataset.wpccmConsentEnforced = '1';
+                return;
+            }
+
+            if (form.querySelector('input[name="wpccm_consent_policy"]')) {
+                form.dataset.wpccmConsentEnforced = '1';
+                return;
+            }
+
+            // Create wrapper
+            var wrapper = document.createElement('div');
+            wrapper.className = 'wpccm-form-consent';
+            wrapper.style.marginTop = '12px';
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'flex-start';
+            wrapper.style.gap = '8px';
+
+            var checkboxId = 'wpccm-consent-' + Math.random().toString(36).substring(2, 10);
+
+            var checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.required = true;
+            checkbox.id = checkboxId;
+            checkbox.name = 'wpccm_consent_policy';
+            checkbox.value = '1';
+            checkbox.style.marginTop = '4px';
+
+            var label = document.createElement('label');
+            label.setAttribute('for', checkboxId);
+            label.textContent = consentText;
+            label.style.fontSize = '13px';
+            label.style.color = '#333';
+
+            checkbox.addEventListener('invalid', function() {
+                checkbox.setCustomValidity(requiredMessage);
+            });
+
+            checkbox.addEventListener('change', function() {
+                if (checkbox.checked) {
+                    checkbox.setCustomValidity('');
+                }
+            });
+
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(label);
+
+            if (form.querySelector('.wpccm-form-consent')) {
+                form.dataset.wpccmConsentEnforced = '1';
+                return;
+            }
+
+            if (form.lastElementChild && form.lastElementChild.tagName && form.lastElementChild.tagName.toLowerCase() === 'p') {
+                form.lastElementChild.insertAdjacentElement('afterend', wrapper);
+            } else {
+                form.appendChild(wrapper);
+            }
+
+            form.dataset.wpccmConsentEnforced = '1';
+        });
+    }
+
+    enforce();
+
+    if (!window.wpccmFormsMonitor) {
+        window.wpccmFormsMonitor = setInterval(enforce, 5000);
+    }
 }
 
 function isEssentialCookie(cookieName) {
     var essentialCookies = [
         'wpccm_consent', 'wpccm_consent_resolved', 'wpccm_resolved', 'wpccm_simple',
-        'consent_necessary', 
+        'consent_necessary', 'consent_',
         'PHPSESSID', 'wordpress_', 'wp-', 'woocommerce_cart_hash',
         'woocommerce_items_in_cart', 'wp_woocommerce_session_'
     ];
@@ -1131,9 +1651,15 @@ function saveChoices() {
             newState[cat.key] = true;
         }
     });
-    
+
     storeNewState(newState);
-    
+
+    // Persist the latest toggle labels inline
+    var statusTexts = (typeof WPCCM !== 'undefined' && WPCCM.texts) ? WPCCM.texts : {};
+    checkboxes.forEach(function(checkbox) {
+        updateToggleStatus(checkbox, statusTexts);
+    });
+
     // Purge cookies if some categories are rejected
     var hasRejected = Object.keys(newState).some(function(key) {
         var category = categories.find(function(cat) { return cat.key === key; });
@@ -1226,8 +1752,11 @@ function init(){
 
     var s = currentState();
 
+    setupCookieMonitoring();
+
     
     if (!isResolved(s)) {
+        applyPendingConsentState();
 
         renderBanner();
     } else {
@@ -1279,6 +1808,12 @@ window.WPCCM_API = {
         categories.forEach(function(cat) {
             deleteCookie('consent_' + cat);
         });
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.removeItem('wpccm_consent_state');
+                localStorage.removeItem('wpccm_consent_resolved');
+            } catch (e) {}
+        }
         location.reload();
     },
     checkCookies: function() {
@@ -1402,15 +1937,19 @@ function createFloatingButton() {
     // Apply dynamic styling based on theme
     var dynamicStyle = '';
     
-    // Position the button based on settings
+    // Position the button based on settings and add position-specific class
     if (designSettings.floatingPosition === 'top-right') {
         dynamicStyle += 'top: 20px; right: 20px; ';
+        button.className += ' position-top-right';
     } else if (designSettings.floatingPosition === 'top-left') {
         dynamicStyle += 'top: 20px; left: 20px; ';
+        button.className += ' position-top-left';
     } else if (designSettings.floatingPosition === 'bottom-right') {
         dynamicStyle += 'bottom: 20px; right: 20px; ';
+        button.className += ' position-bottom-right';
     } else if (designSettings.floatingPosition === 'bottom-left') {
         dynamicStyle += 'bottom: 20px; left: 20px; ';
+        button.className += ' position-bottom-left';
     }
     
     // Add dynamic background color based on theme
@@ -1511,8 +2050,20 @@ function expandButton(button, originalContent, textColor) {
     });
     
     // Animate expansion
+    // Check if button is positioned on the right side
+    var isRightPositioned = button.className.includes('position-top-right') || button.className.includes('position-bottom-right');
+
+    // Set common styles first
     button.style.width = 'auto';
     button.style.minWidth = '200px';
+    button.style.maxWidth = '400px'; // Prevent excessive expansion
+
+    // For right-positioned buttons, we'll calculate the actual width after content is set
+    if (isRightPositioned) {
+        // We'll adjust position after the content is rendered
+        button.setAttribute('data-needs-right-adjustment', 'true');
+    }
+
     button.style.height = '50px';
     button.style.borderRadius = '25px';
     button.style.padding = '0 15px';
@@ -1524,6 +2075,24 @@ function expandButton(button, originalContent, textColor) {
     // Update content
     setTimeout(function() {
         button.innerHTML = expandedContent;
+
+        // If this is a right-positioned button, adjust its position after content is set
+        if (button.getAttribute('data-needs-right-adjustment') === 'true') {
+            // Force a reflow to get accurate measurements
+            button.offsetHeight;
+
+            // Get the actual width of the button now that content is loaded
+            var actualWidth = button.offsetWidth;
+            var originalWidth = 60; // Original button width
+
+            // Only expand by the difference, not the full width
+            var expandedDistance = actualWidth - originalWidth;
+
+            // Move the button left by only the expanded amount
+            button.style.marginLeft = '-' + expandedDistance + 'px';
+
+            button.removeAttribute('data-needs-right-adjustment');
+        }
     }, 100);
 }
 
@@ -1538,6 +2107,9 @@ function contractButton(button, originalContent, originalWidth, originalHeight, 
     button.style.gap = '0';
     button.style.transform = 'scale(1)';
     button.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    // Reset margin and width constraints for right-positioned buttons
+    button.style.marginLeft = '0';
+    button.style.maxWidth = 'none';
     
     // Restore original content
     setTimeout(function() {
@@ -1573,7 +2145,15 @@ function editCookieSettings() {
     deleteCookie('wpccm_consent_resolved');
     deleteCookie('wpccm_resolved');
     deleteCookie('wpccm_simple');
-    
+    if (typeof localStorage !== 'undefined') {
+        try {
+            localStorage.removeItem('wpccm_consent_state');
+            localStorage.removeItem('wpccm_consent_resolved');
+        } catch (e) {}
+    }
+
+    applyPendingConsentState();
+
     // Re-render the banner
     renderBanner();
 }
@@ -1669,6 +2249,10 @@ function safeInit() {
         setTimeout(function() {
             initFloatingButton();
         }, 1000);
+
+        setTimeout(function() {
+            setupFormConsentEnforcement();
+        }, 500);
     }
 })();
 

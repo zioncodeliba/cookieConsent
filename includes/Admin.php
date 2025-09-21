@@ -1,17 +1,27 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+require_once __DIR__ . '/Admin/Assets.php';
+require_once __DIR__ . '/Admin/Debug.php';
+require_once __DIR__ . '/Admin/Ajax/Consent.php';
+require_once __DIR__ . '/Admin/Pages/Deletion.php';
+require_once __DIR__ . '/Admin/Pages/History.php';
+
 class WP_CCM_Admin {
+    private $deletion_page;
+    private $history_page;
     
     public function __construct() {
+        $this->deletion_page = new WP_CCM_Admin_Page_Deletion();
+        $this->history_page  = new WP_CCM_Admin_Page_History();
+
         add_action('admin_menu', [$this, 'add_menu']);
         add_action('admin_init', [$this, 'settings_init']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+        (new WP_CCM_Admin_Assets())->register();
+        (new WP_CCM_Admin_Debug())->register();
+        (new WP_CCM_Admin_Ajax_Consent())->register();
         
         // AJAX handlers for management page
-        add_action('wp_ajax_wpccm_get_consent_stats', [$this, 'ajax_get_consent_stats']);
-        add_action('wp_ajax_wpccm_get_consent_history', [$this, 'ajax_get_consent_history']);
-        add_action('wp_ajax_wpccm_export_consent_history', [$this, 'ajax_export_consent_history']);
         add_action('wp_ajax_wpccm_delete_data_manually', [$this, 'ajax_delete_data_manually']);
         
         // AJAX handlers for advanced scanner (moved from deleted CC_Detect_Page class)
@@ -20,8 +30,7 @@ class WP_CCM_Admin {
         add_action('wp_ajax_cc_detect_delete_mapping', [$this, 'ajax_cc_detect_delete_mapping']);
         add_action('wp_ajax_cc_detect_get_registered_scripts', [$this, 'ajax_cc_detect_get_registered_scripts']);
 
-        add_action('wp_ajax_wpccm_get_debug_log', [$this, 'ajax_get_debug_log']);
-        
+
         
         // AJAX handler for saving general settings
         add_action('wp_ajax_wpccm_save_general_settings', [$this, 'ajax_save_general_settings']);
@@ -38,6 +47,12 @@ class WP_CCM_Admin {
         add_action('wp_ajax_wpccm_get_auto_sync_status', [$this, 'ajax_get_auto_sync_status']);
         add_action('wp_ajax_wpccm_run_manual_auto_sync', [$this, 'ajax_run_manual_auto_sync']);
         add_action('wp_ajax_wpccm_get_sync_details', [$this, 'ajax_get_sync_details']);
+        add_action('wp_ajax_wpccm_force_reschedule', [$this, 'ajax_force_reschedule']);
+        add_action('wp_ajax_wpccm_change_sync_interval', [$this, 'ajax_change_sync_interval']);
+
+        // Frontend auto sync (no admin permissions required)
+        add_action('wp_ajax_wpccm_frontend_auto_sync', [$this, 'ajax_frontend_auto_sync']);
+        add_action('wp_ajax_nopriv_wpccm_frontend_auto_sync', [$this, 'ajax_frontend_auto_sync']);
         
         // Category management
         add_action('wp_ajax_wpccm_get_category', [$this, 'ajax_get_category']);
@@ -48,6 +63,7 @@ class WP_CCM_Admin {
         // Script sync management
         add_action('wp_ajax_wpccm_sync_scripts', [$this, 'ajax_sync_scripts']);
         add_action('wp_ajax_wpccm_update_script_category', [$this, 'ajax_update_script_category']);
+        add_action('wp_ajax_wpccm_sync_forms', [$this, 'ajax_sync_forms']);
         
         add_action('admin_notices', [$this, 'show_activation_notice']);
     }
@@ -84,8 +100,8 @@ class WP_CCM_Admin {
         // Settings submenu
         add_submenu_page(
             'wpccm',
-            wpccm_text('symc_cookie_and_script'),
-            wpccm_text('symc_cookie_and_script'),
+            wpccm_text('sync_services'),
+            wpccm_text('sync_services'),
             'manage_options',
             'wpccm-sync',
             [$this, 'render_page_sync']
@@ -108,7 +124,7 @@ class WP_CCM_Admin {
             'ניהול מחיקה',
             'manage_options',
             'wpccm-deletion',
-            [$this, 'render_deletion_page']
+            [$this->deletion_page, 'render']
         );
         
         // NEW: Activity History submenu
@@ -118,63 +134,49 @@ class WP_CCM_Admin {
             'היסטוריית פעילות',
             'manage_options',
             'wpccm-history',
-            [$this, 'render_history_page']
+            [$this->history_page, 'render']
         );
-
         
-        // Dashboard Integration is now part of General Settings
-        
-
-        
-        // Cookie scanner/viewer submenu
-        add_submenu_page(
-            'options-general.php',
-            wpccm_text('cookie_scanner'),
-            wpccm_text('cookie_scanner'),
-            'manage_options',
-            'wpccm-scanner',
-            [$this, 'render_scanner_page']
-        );
     }
     
-    public function enqueue_admin_assets($hook) {
-        // Only load on our plugin pages
-        $plugin_pages = [
-            'settings_page_wpccm', 
-            'settings_page_wpccm-scanner', 
-            'settings_page_wpccm-management', 
-            'settings_page_wpccm-deletion', 
-            'settings_page_wpccm-history',
-            'cookie-consent_page_wpccm-advanced-scanner'
-        ];
+    // public function enqueue_admin_assets($hook) {
+    //     // Only load on our plugin pages
+    //     $plugin_pages = [
+    //         'settings_page_wpccm', 
+    //         'settings_page_wpccm-scanner', 
+    //         'settings_page_wpccm-management', 
+    //         'settings_page_wpccm-deletion', 
+    //         'settings_page_wpccm-history',
+    //         'cookie-consent_page_wpccm-advanced-scanner'
+    //     ];
         
-        if (!in_array($hook, $plugin_pages)) {
-            return;
-        }
+    //     if (!in_array($hook, $plugin_pages)) {
+    //         return;
+    //     }
         
-        // Enqueue jQuery first
-        wp_enqueue_script('jquery');
+    //     // Enqueue jQuery first
+    //     wp_enqueue_script('jquery');
         
-        // Enqueue CSS for admin tables
-        wp_enqueue_style('wpccm-admin', WPCCM_URL . 'assets/css/consent.css', [], WPCCM_VERSION);
+    //     // Enqueue CSS for admin tables
+    //     wp_enqueue_style('wpccm-admin', WPCCM_URL . 'assets/css/consent.css', [], WPCCM_VERSION);
 
-        // Enqueue Chart.js for statistics
-        wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
+    //     // Enqueue Chart.js for statistics
+    //     wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true);
         
-        // Localize script to provide ajaxurl and nonce
-        wp_localize_script('jquery', 'wpccm_ajax', [
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('wpccm_admin_nonce')
-        ]);
+    //     // Localize script to provide ajaxurl and nonce
+    //     wp_localize_script('jquery', 'wpccm_ajax', [
+    //         'ajaxurl' => admin_url('admin-ajax.php'),
+    //         'nonce' => wp_create_nonce('wpccm_admin_nonce')
+    //     ]);
         
-        // Debug: Log the current hook
-        error_log('WPCCM: Current hook: ' . $hook);
+    //     // Debug: Log the current hook
+    //     error_log('WPCCM: Current hook: ' . $hook);
         
-        // For advanced scanner page, log debug info
-        if ($hook === 'cookie-consent_page_wpccm-advanced-scanner') {
-            error_log('WPCCM: Advanced scanner page loaded');
-        }
-    }
+    //     // For advanced scanner page, log debug info
+    //     if ($hook === 'cookie-consent_page_wpccm-advanced-scanner') {
+    //         error_log('WPCCM: Advanced scanner page loaded');
+    //     }
+    // }
     
     public function settings_init() {
         register_setting('wpccm_group', 'wpccm_options', [$this, 'sanitize_options']);
@@ -542,7 +544,7 @@ class WP_CCM_Admin {
     public function render_page() {
         ?>
         <div class="wrap">
-            <h1><?php echo wpccm_text('cookie_consent_manager'); ?></h1>
+            <h1><?php echo wpccm_text('sync_services'); ?></h1>
             
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
@@ -564,23 +566,41 @@ class WP_CCM_Admin {
                     <!-- Auto sync controls -->
                     <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
                         <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ סינכרון אוטומטי של עוגיות וסקריפטים</h3>
-                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת יכולה לסרוק ולעדכן עוגיות וסקריפטים באופן אוטומטי כל שעה עגולה ברקע, כך שתמיד תהיה לך רשימה מעודכנת של כל הרכיבים באתר.</p>
+                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת סורקת ומעדכנת עוגיות וסקריפטים באופן אוטומטי ברקע לפי התדירות שתבחר, כך שתמיד תהיה לך רשימה מעודכנת של כל הרכיבים באתר.</p>
                         
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                            <button type="button" class="button" id="wpccm-toggle-auto-sync-btn">⏸️ טוען...</button>
-                            <button type="button" class="button button-secondary" id="wpccm-test-auto-sync-btn" title="הרץ סינכרון אוטומטי עכשיו לבדיקה">🧪 בדוק עכשיו</button>
+                            <label for="wpccm-sync-interval" style="font-weight: 500; color: #1d2327;">⏱️ תדירות סינכרון:</label>
+                            <?php
+                            $current_interval = (int) get_option('wpccm_sync_interval_minutes', 60);
+                            $interval_options = [
+                                1 => 'כל דקה',
+                                2 => 'כל 2 דקות',
+                                3 => 'כל 3 דקות',
+                                5 => 'כל 5 דקות',
+                                10 => 'כל 10 דקות',
+                                15 => 'כל 15 דקות',
+                                20 => 'כל 20 דקות',
+                                30 => 'כל 30 דקות',
+                                45 => 'כל 45 דקות',
+                                60 => 'כל 60 דקות (שעה)'
+                            ];
+                            ?>
+                            <select id="wpccm-sync-interval" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px;">
+                                <?php foreach ($interval_options as $value => $label) : ?>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($current_interval, $value); ?>><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
                             <span id="wpccm-auto-sync-status" style="color: #50575e; font-size: 13px; font-weight: 500;"></span>
                         </div>
                         
                         <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 3px; font-size: 12px; color: #666;">
                             <strong>💡 איך זה עובד:</strong>
                             <ul style="margin: 5px 0 0 20px; padding: 0;">
-                                <li>הסינכרון רץ אוטומטית כל שעה עגולה (09:00, 10:00, 11:00...)</li>
+                                <li>הסינכרון רץ אוטומטית לפי התדירות שנבחרת</li>
                                 <li>המערכת סורקת את האתר ומוצאת <strong>עוגיות וסקריפטים חדשים</strong></li>
                                 <li><strong>עוגיות חדשות</strong> נוספות אוטומטית לטבלה במיפוי העוגיות</li>
                                 <li><strong>סקריפטים חדשים</strong> נוספים אוטומטית לטבלה בסינכרון הסקריפטים</li>
-                                <li>ניתן להפעיל/לכבות את שני הסינכרונים יחד בכפתור אחד</li>
-                            </ul>
+                                </ul>
                         </div>
                     </div>
                     
@@ -706,120 +726,87 @@ class WP_CCM_Admin {
             // Auto sync functionality
             loadAutoSyncStatus();
             
-            // Toggle auto sync
-            $('#wpccm-toggle-auto-sync-btn').on('click', function() {
-                const button = $(this);
-                const originalText = button.text();
-                button.text('⏳ מעדכן...').prop('disabled', true);
-                
-                // Get current status and toggle
+            // Sync interval dropdown change handler
+            $('#wpccm-sync-interval').on('change', function() {
+                const minutes = parseInt($(this).val());
+                const dropdown = $(this);
+                const originalSelection = dropdown.val();
+
+                dropdown.prop('disabled', true);
+                showAutoSyncMessage('מתזמן מחדש סינכרון ל-' + minutes + ' דקות...', 'info');
+
                 $.post(ajaxurl, {
-                    action: 'wpccm_get_auto_sync_status'
-                }).done(function(response) {
-                    if (response.success) {
-                        const newStatus = !response.data.enabled;
-                        
-                        // Toggle the status
-                        $.post(ajaxurl, {
-                            action: 'wpccm_toggle_auto_sync',
-                            enable: newStatus,
-                            _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
-                        }).done(function(toggleResponse) {
-                            if (toggleResponse.success) {
-                                updateAutoSyncUI(toggleResponse.data);
-                                showAutoSyncMessage(toggleResponse.data.message, 'success');
-                            } else {
-                                showAutoSyncMessage('שגיאה: ' + (toggleResponse.data || 'Unknown error'), 'error');
-                            }
-                        }).fail(function() {
-                            showAutoSyncMessage('שגיאה בעדכון הגדרות סינכרון אוטומטי', 'error');
-                        }).always(function() {
-                            button.text(originalText).prop('disabled', false);
-                        });
-                    }
-                });
-            });
-            
-            // Test auto sync
-            $('#wpccm-test-auto-sync-btn').on('click', function() {
-                const button = $(this);
-                const originalText = button.text();
-                button.text('⏳ רץ...').prop('disabled', true);
-                
-                $.post(ajaxurl, {
-                    action: 'wpccm_run_manual_auto_sync',
+                    action: 'wpccm_change_sync_interval',
+                    minutes: minutes,
                     _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
                 }).done(function(response) {
                     if (response.success) {
-                        showAutoSyncMessage(response.data.message + ' - הדף יתרענן תוך 3 שניות', 'success');
-                        // Refresh the page after 3 seconds to show new cookies
+                        showAutoSyncMessage(response.data.message, 'success');
+                        // Refresh status to show new timing
                         setTimeout(function() {
-                            window.location.href = window.location.href.replace(/#.*$/, '') + '#categoriess';
-                            location.reload();
-                        }, 3000);
+                            loadAutoSyncStatus();
+                        }, 1000);
                     } else {
+                        // Revert selection on error
+                        dropdown.val(originalSelection);
                         showAutoSyncMessage('שגיאה: ' + (response.data || 'Unknown error'), 'error');
                     }
                 }).fail(function() {
-                    showAutoSyncMessage('שגיאה בהפעלת סינכרון אוטומטי', 'error');
+                    // Revert selection on error
+                    dropdown.val(originalSelection);
+                    showAutoSyncMessage('שגיאה בשינוי תדירות הסינכרון', 'error');
                 }).always(function() {
-                    button.text(originalText).prop('disabled', false);
+                    dropdown.prop('disabled', false);
                 });
             });
-            
+
             function loadAutoSyncStatus() {
                 $.post(ajaxurl, {
                     action: 'wpccm_get_auto_sync_status'
                 }).done(function(response) {
                     if (response.success) {
+                        console.log('WPCCM Debug: Response data', response.data);
                         updateAutoSyncUI(response.data);
                     }
                 });
             }
             
             function updateAutoSyncUI(data) {
-                const button = $('#wpccm-toggle-auto-sync-btn');
                 const status = $('#wpccm-auto-sync-status');
-                
-                if (data.enabled) {
-                    button.html('⏸️ השבת סינכרון').removeClass('button-primary').addClass('button-secondary');
-                    
-                    let statusText = '🟢 פעיל';
-                    if (data.next_run_formatted) {
-                        statusText += ' - הרצה הבאה: ' + data.next_run_formatted;
-                    }
-                    
-                    // Add details about both sync types if available
-                    if (data.next_cookie_run_formatted && data.next_script_run_formatted) {
-                        statusText += '<br><small style="color: #666;">עוגיות: ' + data.next_cookie_run_formatted + ' | סקריפטים: ' + data.next_script_run_formatted + '</small>';
-                    }
-                    
-                    status.html(statusText);
-                    
-                    // Show message if sync was stuck and rescheduled
-                    if (data.was_stuck) {
-                        showAutoSyncMessage('⚠️ הסינכרון היה תקוע - תוזמן מחדש לשעה הבאה', 'warning');
-                    }
-                } else {
-                    button.html('▶️ הפעל סינכרון').removeClass('button-secondary').addClass('button-primary');
-                    
-                    let statusText = '🔴 כבוי';
-                    
-                    // Show partial status if only one is enabled
-                    if (data.cookies_enabled && !data.scripts_enabled) {
-                        statusText = '🟡 חלקי - רק עוגיות פעיל';
-                    } else if (!data.cookies_enabled && data.scripts_enabled) {
-                        statusText = '🟡 חלקי - רק סקריפטים פעיל';
-                    }
-                    
-                    status.html(statusText);
+                const dropdown = $('#wpccm-sync-interval');
+
+                // Update dropdown to show current interval
+                if (data.interval_minutes) {
+                    dropdown.val(data.interval_minutes);
                 }
+
+                // Show frontend auto-sync status with next run calculation
+                let statusText = '🟢 פעיל - רץ בפרונט';
+
+                // Calculate next run time (approximately)
+                const now = new Date();
+                const nextRun = new Date(now.getTime() + (data.interval_minutes * 60 * 1000));
+                const nextRunFormatted = nextRun.toLocaleString('he-IL', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                statusText += ' - הרצה הבאה: ' + nextRunFormatted;
+                statusText += '<br><small style="color: #666;">הסינכרון רץ אוטומטית בדפדפן של המבקרים כל ' + data.interval_minutes + ' דקות</small>';
+
+                status.html(statusText);
+
+                // Frontend auto-sync is now used - no countdown needed
+
             }
             
             function showAutoSyncMessage(message, type) {
                 const messageDiv = $('<div class="notice notice-' + type + ' is-dismissible" style="margin: 10px 0;"><p>' + message + '</p></div>');
                 $('#wpccm-auto-sync-status').parent().append(messageDiv);
-                
+
                 // Auto remove after 5 seconds
                 setTimeout(function() {
                     messageDiv.fadeOut(function() {
@@ -827,6 +814,8 @@ class WP_CCM_Admin {
                     });
                 }, 5000);
             }
+
+            // Frontend auto-sync is now used - no countdown timer needed
             
             // Save general settings via AJAX
             $('#save-general-settings').on('click', function() {
@@ -1355,12 +1344,13 @@ class WP_CCM_Admin {
     public function render_page_sync() {
         ?>
         <div class="wrap">
-            <h1><?php echo wpccm_text('cookie_consent_manager'); ?></h1>
+            <h1><?php echo wpccm_text('sync_services'); ?></h1>
             
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
                 <a href="#cookies" class="nav-tab nav-tab-active" data-tab="cookies">עוגיות</a>
                 <a href="#script-sync" class="nav-tab" data-tab="script-sync">סקריפטים</a>
+                <a href="#forms-sync" class="nav-tab" data-tab="forms-sync"><?php echo wpccm_text('forms_sync'); ?></a>
             </nav>
             
             <form method="post" action="options.php">
@@ -1386,6 +1376,18 @@ class WP_CCM_Admin {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
                     } catch (Error $e) {
                         echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
+                    }
+                    ?>
+                </div>
+
+                <div id="forms-sync" class="wpccm-tab-content">
+                    <?php 
+                    try {
+                        $this->render_forms_sync_tab();
+                    } catch (Exception $e) {
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון טפסים: ' . $e->getMessage() . '</p></div>';
+                    } catch (Error $e) {
+                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון טפסים: ' . $e->getMessage() . '</p></div>';
                     }
                     ?>
                 </div>
@@ -1563,145 +1565,7 @@ class WP_CCM_Admin {
         
         echo '</tr>';
     }
-
-    /**
-     * Render advanced scanner section
-     */
-    private function render_advanced_scanner_section() {
-        // Get current mappings
-        $script_mappings = get_option('cc_script_handle_map', array()); 
-        $domain_mappings = get_option('cc_script_domain_map', array());
-        $all_script_mappings = array_merge($script_mappings, $domain_mappings);
-        
-
-
-        $categories = array(
-            'necessary' => 'הכרחיות',
-            'functional' => 'פונקציונליות',
-            'performance' => 'ביצועים',
-            'analytics' => 'אנליטיקס',
-            'marketing' => 'שיווק',
-            'others' => 'אחרות'
-        );
-
-        // error_log('WPCCM Debug: About to include advanced-scanner-page.php');
-        include WPCCM_PATH . 'admin/views/advanced-scanner-page.php';
-        // error_log('WPCCM Debug: advanced-scanner-page.php included successfully');
-    }
     
-    /**
-     * Render categories management tab content
-     */
-    private function render_mapping_tab() {
-        // Include the advanced scanner content
-        $this->render_advanced_scanner_section();
-        
-        echo '<hr style="margin: 40px 0;">';
-        
-        // Load handle-mapper script directly
-        echo '<script src="' . WPCCM_URL . 'assets/js/handle-mapper.js"></script>';
-        echo '<script>
-        jQuery(document).ready(function($) {
-            // Set up WPCCM_MAPPER data
-            window.WPCCM_MAPPER = {
-                ajaxUrl: "' . admin_url('admin-ajax.php') . '",
-                nonce: "' . wp_create_nonce('wpccm_handle_mapping') . '",
-                texts: {
-                    loading: "' . wpccm_text('loading') . '"
-                }
-            };
-            //console.log("WPCCM Debug: WPCCM_MAPPER initialized:", window.WPCCM_MAPPER);
-        });
-        </script>';
-        
-        $opts = WP_CCM_Consent::get_options();
-        $map = isset($opts['map']) && is_array($opts['map']) ? $opts['map'] : [];
-        
-        // echo '<div id="wpccm-handle-mapping-table">';
-        
-        // // Explanation box
-        // echo '<div class="wpccm-explanation-box" style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
-        // echo '<h4 style="margin: 0 0 8px 0; color: #0073aa;">ℹ️ מיפוי סקריפטים קלאסי</h4>';
-        // echo '<p style="margin: 0; color: #555;">השיטה הקלאסית למיפוי סקריפטים - רלוונטית לסקריפטים שנרשמו ב-WordPress.</p>';
-        // echo '</div>';
-        
-        // echo '<button type="button" class="button button-primary" id="wpccm-scan-live-handles">'.wpccm_text('scan_live_handles').'</button>';
-        // echo '<button type="button" class="button button-primary" id="wpccm-scan-handles" style="margin-left: 10px;">'.wpccm_text('scan_handles').'</button>';
-        // echo '<button type="button" class="button" id="wpccm-add-handle" style="margin-left: 10px;">'.wpccm_text('add_handle').'</button>';
-        // echo '<button type="button" class="button" id="wpccm-sync-to-purge" style="margin-left: 10px; background: #00a32a; color: white;" title="'.esc_attr(wpccm_text('sync_to_purge_help')).'">'.wpccm_text('sync_to_purge').'</button>';
-        // echo '<button type="button" class="button button-secondary" id="wpccm-clear-all-handles" style="margin-left: 10px; color: #d63384;" title="'.esc_attr(wpccm_text('confirm_clear_all_handles')).'">'.wpccm_text('clear_all_handles').'</button>';
-        
-        // echo '<div class="wpccm-table-container" style="margin-top: 15px; max-height: 400px; overflow-y: auto; border: 1px solid #c3c4c7; border-radius: 4px; background: #fff;">';
-        // echo '<table class="widefat fixed striped" id="wpccm-handles-table" style="margin: 0; border: none;">';
-        // echo '<thead><tr>';
-        // echo '<th>'.wpccm_text('handle').'</th>';
-        // echo '<th>'.wpccm_text('script_file').'</th>';
-        // echo '<th>'.wpccm_text('related_cookies').'</th>';
-        // echo '<th>'.wpccm_text('category').'</th>';
-        // echo '<th style="width: 100px;">'.wpccm_text('actions').'</th>';
-        // echo '</tr></thead><tbody>';
-        
-        // foreach ($map as $handle => $category) {
-        //     $suggested_cookies = $this->get_related_cookies_for_handle($handle);
-        //     $saved_cookies = $this->get_saved_cookies_for_handle($handle);
-        //     $cookies_value = !empty($saved_cookies) ? $saved_cookies : $suggested_cookies;
-            
-        //     $saved_src = $this->get_saved_src_for_handle($handle);
-        //     $src_display = !empty($saved_src) ? 
-        //         '<span class="script-src-display" style="color: #666; font-size: 12px;" title="'.esc_attr($saved_src).'">'.esc_html(basename(parse_url($saved_src, PHP_URL_PATH))).'</span>' :
-        //         '<span class="script-src-display" style="color: #999; font-size: 12px; font-style: italic;">לא נמצאו עוגיות קשורות</span>';
-            
-        //     echo '<tr>';
-        //     echo '<td><input type="text" class="handle-input" value="'.esc_attr($handle).'" /></td>';
-        //     echo '<td>'.$src_display.'</td>';
-        //     echo '<td>';
-        //     echo '<div class="cookies-input-container">';
-        //     echo '<select class="cookies-dropdown" multiple style="width: 100%; font-size: 12px; min-height: 60px;">';
-            
-        //     // Get cookies from purge list
-        //     $purge_cookies = isset($opts['purge']['cookies']) ? $opts['purge']['cookies'] : [];
-        //     $selected_cookies = !empty($saved_cookies) ? array_map('trim', explode(',', $saved_cookies)) : [];
-            
-        //     foreach ($purge_cookies as $purge_cookie) {
-        //         // Handle both old string format and new object format
-        //         if (is_array($purge_cookie) && isset($purge_cookie['name'])) {
-        //             $cookie_name = trim($purge_cookie['name']);
-        //         } else {
-        //             $cookie_name = trim($purge_cookie);
-        //         }
-                
-        //         if (!empty($cookie_name)) {
-        //             $selected = in_array($cookie_name, $selected_cookies) ? ' selected' : '';
-        //             echo '<option value="'.esc_attr($cookie_name).'"'.$selected.'>'.esc_html($cookie_name).'</option>';
-        //         }
-        //     }
-        //     echo '</select>';
-        //     echo '<input type="text" class="cookies-input-manual" value="'.esc_attr($cookies_value).'" placeholder="'.esc_attr(wpccm_text('enter_cookies_separated')).'" style="width: 100%; font-size: 12px; margin-top: 5px;" title="'.esc_attr(wpccm_text('cookies_input_help')).'" />';
-        //     echo '<div class="cookies-input-help" style="font-size: 11px; color: #666; margin-top: 3px;">';
-        //     echo 'בחר מהרשימה או הזן ידנית';
-        //     echo '</div>';
-        //     echo '</div>';
-        //     echo '</td>';
-        //     echo '<td>'.$this->render_category_select($category).'</td>';
-        //     echo '<td><button type="button" class="button remove-handle">'.wpccm_text('remove').'</button></td>';
-        //     echo '</tr>';
-        // }
-        
-        // echo '</tbody></table>';
-        // echo '</div>'; // Close table container
-        // echo '</div>'; // Close main container
-        
-        // // Hidden input to store the actual data
-        // $encoded_map = json_encode($map);
-        // echo '<input type="hidden" name="wpccm_options[map]" id="wpccm-map-data" value="'.esc_attr($encoded_map).'" />';
-        
-        // // Hidden fields for cookies and script sources
-        // $cookie_mapping = isset($opts['cookie_mapping']) && is_array($opts['cookie_mapping']) ? $opts['cookie_mapping'] : [];
-        // $script_sources = isset($opts['script_sources']) && is_array($opts['script_sources']) ? $opts['script_sources'] : [];
-        
-        // echo '<input type="hidden" name="wpccm_options[cookie_mapping]" id="wpccm-cookie-mapping-data" value="'.esc_attr(json_encode($cookie_mapping)).'" />';
-        // echo '<input type="hidden" name="wpccm_options[script_sources]" id="wpccm-script-sources-data" value="'.esc_attr(json_encode($script_sources)).'" />';
-    }
 
     private function render_design_tab() {
         $opts = WP_CCM_Consent::get_options();
@@ -2569,36 +2433,6 @@ class WP_CCM_Admin {
         $this->enqueue_new_categories_js();
     }
     
-    
-    public function render_scanner_page() {
-        echo '<div class="wrap">';
-        echo '<h1>'.wpccm_text('cookie_scanner').'</h1>';
-        
-        // Tabs
-        echo '<h2 class="nav-tab-wrapper">';
-        echo '<a href="#current-cookies" class="nav-tab nav-tab-active" id="tab-current">'.wpccm_text('current_cookies').'</a>';
-        echo '<a href="#cookie-suggestions" class="nav-tab" id="tab-suggestions">'.wpccm_text('cookie_suggestions').'</a>';
-        echo '</h2>';
-        
-        // Current Cookies Tab
-        echo '<div id="current-cookies-content" class="tab-content">';
-        echo '<p>'.wpccm_text('current_cookies_description').'</p>';
-        echo '<button type="button" class="button button-primary" id="refresh-cookies">'.wpccm_text('refresh_cookies').'</button>';
-        echo '<div id="current-cookies-list" style="margin-top: 20px;"></div>';
-        echo '</div>';
-        
-        // Cookie Suggestions Tab
-        echo '<div id="cookie-suggestions-content" class="tab-content" style="display: none;">';
-        echo '<p>'.wpccm_text('scanner_description').'</p>';
-        echo '<button type="button" class="button button-primary" id="scan-suggest-cookies">'.wpccm_text('scan_cookies').'</button>';
-        echo '<div id="cookie-suggestions-list" style="margin-top: 20px;"></div>';
-        echo '</div>';
-        
-        echo '</div>';
-        
-        // Add JavaScript for the scanner
-        $this->enqueue_scanner_js();
-    }
     
     private function enqueue_scanner_js() {
         ?>
@@ -3736,143 +3570,6 @@ class WP_CCM_Admin {
     }
 
     /**
-     * Render deletion requests tab
-     */
-    private function render_deletion_requests_tab() {
-        // Get deletion requests
-        global $wpdb;
-        $deletion_requests_table = $wpdb->prefix . 'wpccm_deletion_requests';
-        
-        // Create table if it doesn't exist
-        $this->create_deletion_requests_table();
-        
-        // Get all deletion requests
-        $requests = $wpdb->get_results("
-            SELECT * FROM $deletion_requests_table 
-            ORDER BY created_at DESC
-        ");
-        
-        // Get settings
-        $opts = WP_CCM_Consent::get_options();
-        $auto_delete = isset($opts['data_deletion']['auto_delete']) ? $opts['data_deletion']['auto_delete'] : false;
-        
-        echo '<div id="wpccm-deletion-requests-table">';
-        
-        // Settings section
-        echo '<div class="wpccm-settings-section" style="margin-bottom: 30px;">';
-        echo '<h3>הגדרות מחיקה אוטומטית</h3>';
-        echo '<table class="form-table">';
-        echo '<tr>';
-        echo '<th scope="row">מחיקה אוטומטית</th>';
-        echo '<td>';
-        echo '<label>';
-        echo '<input type="checkbox" name="wpccm_options[data_deletion][auto_delete]" value="1" ' . ($auto_delete ? 'checked' : '') . ' />';
-        echo ' הפעל מחיקה אוטומטית של נתונים כאשר מתקבלת בקשה';
-        echo '</label>';
-        echo '<p class="description">כאשר מופעל, הנתונים יימחקו מיד כאשר מתקבלת בקשה. אחרת, הבקשות יישמרו לטיפול ידני.</p>';
-        echo '</td>';
-        echo '</tr>';
-        echo '</table>';
-        echo '</div>';
-        
-        // Statistics
-        $total_requests = count($requests);
-        $pending_requests = count(array_filter($requests, function($r) { return $r->status === 'pending'; }));
-        $completed_requests = count(array_filter($requests, function($r) { return $r->status === 'completed'; }));
-        
-        echo '<div class="wpccm-stats-section" style="margin-bottom: 20px;">';
-        echo '<div class="wpccm-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">';
-        echo '<div class="wpccm-stat-box" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; text-align: center;">';
-        echo '<div class="wpccm-stat-number" style="font-size: 24px; font-weight: bold; color: #007cba;">' . $total_requests . '</div>';
-        echo '<div class="wpccm-stat-label" style="color: #6c757d; font-size: 14px;">סה"כ בקשות</div>';
-        echo '</div>';
-        echo '<div class="wpccm-stat-box" style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; text-align: center;">';
-        echo '<div class="wpccm-stat-number" style="font-size: 24px; font-weight: bold; color: #856404;">' . $pending_requests . '</div>';
-        echo '<div class="wpccm-stat-label" style="color: #856404; font-size: 14px;">בקשות ממתינות</div>';
-        echo '</div>';
-        echo '<div class="wpccm-stat-box" style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; text-align: center;">';
-        echo '<div class="wpccm-stat-number" style="font-size: 24px; font-weight: bold; color: #0c5460;">' . $completed_requests . '</div>';
-        echo '<div class="wpccm-stat-label" style="color: #0c5460; font-size: 14px;">בקשות שהושלמו</div>';
-        echo '</div>';
-        echo '</div>';
-        echo '</div>';
-        
-        // Table
-        echo '<div class="wpccm-table-container" style="margin-top: 15px; border: 1px solid #c3c4c7; border-radius: 4px; background: #fff;">';
-        echo '<table class="widefat fixed striped" id="wpccm-deletion-requests-table" style="margin: 0; border: none;">';
-        echo '<thead><tr>';
-        echo '<th>תאריך בקשה</th>';
-        echo '<th>כתובת IP</th>';
-        echo '<th>סוג מחיקה</th>';
-        echo '<th>סטטוס</th>';
-        echo '<th>תאריך מחיקה</th>';
-        echo '<th style="width: 120px;">פעולות</th>';
-        echo '</tr></thead><tbody>';
-        
-        if (empty($requests)) {
-            echo '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #6c757d;">אין בקשות מחיקה</td></tr>';
-        } else {
-            foreach ($requests as $request) {
-                $status_class = $request->status === 'completed' ? 'status-completed' : 'status-pending';
-                $status_text = $request->status === 'completed' ? 'הושלם' : 'ממתין';
-                
-                echo '<tr>';
-                echo '<td>' . esc_html(date('d/m/Y H:i', strtotime($request->created_at))) . '</td>';
-                echo '<td>' . esc_html($request->ip_address) . '</td>';
-                echo '<td>' . esc_html($this->get_deletion_type_text($request->deletion_type)) . '</td>';
-                echo '<td><span class="wpccm-status ' . $status_class . '">' . esc_html($status_text) . '</span></td>';
-                echo '<td>' . ($request->deleted_at ? esc_html(date('d/m/Y H:i', strtotime($request->deleted_at))) : '-') . '</td>';
-                echo '<td>';
-                
-                if ($request->status === 'pending') {
-                    echo '<button type="button" class="button button-primary wpccm-delete-data-btn" data-ip="' . esc_attr($request->ip_address) . '" data-id="' . esc_attr($request->id) . '">מחק נתונים</button>';
-                } else {
-                    echo '<span style="color: #6c757d;">הושלם</span>';
-                }
-                
-                echo '</td>';
-                echo '</tr>';
-            }
-        }
-        
-        echo '</tbody></table>';
-        echo '</div>';
-        echo '</div>';
-        
-        // Add JavaScript for delete functionality
-        echo '<script>
-        jQuery(document).ready(function($) {
-            $(".wpccm-delete-data-btn").on("click", function() {
-                if (confirm("האם אתה בטוח שברצונך למחוק את כל הנתונים עבור כתובת IP זו?")) {
-                    var ip = $(this).data("ip");
-                    var id = $(this).data("id");
-                    var btn = $(this);
-                    
-                    btn.prop("disabled", true).text("מוחק...");
-                    
-                    $.post(ajaxurl, {
-                        action: "wpccm_delete_data_manually",
-                        ip_address: ip,
-                        request_id: id,
-                        nonce: "' . wp_create_nonce('wpccm_delete_data') . '"
-                    }, function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert("שגיאה במחיקת הנתונים: " + (response.data || "שגיאה לא ידועה"));
-                            btn.prop("disabled", false).text("מחק נתונים");
-                        }
-                    }).fail(function() {
-                        alert("שגיאה בתקשורת עם השרת");
-                        btn.prop("disabled", false).text("מחק נתונים");
-                    });
-                }
-            });
-        });
-        </script>';
-    }
-
-    /**
      * Get deletion type text
      */
     private function get_deletion_type_text($type) {
@@ -3881,34 +3578,6 @@ class WP_CCM_Admin {
             'account' => 'נתוני גלישה וחשבון'
         ];
         return $types[$type] ?? $type;
-    }
-
-    /**
-     * Create deletion requests table
-     */
-    private function create_deletion_requests_table() {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'wpccm_deletion_requests';
-        
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        $sql = "CREATE TABLE $table_name (
-            id bigint(20) NOT NULL AUTO_INCREMENT,
-            deletion_type varchar(20) NOT NULL,
-            ip_address varchar(45) NOT NULL,
-            status varchar(20) NOT NULL DEFAULT 'pending',
-            deleted_at datetime NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY deletion_type (deletion_type),
-            KEY ip_address (ip_address),
-            KEY status (status),
-            KEY created_at (created_at)
-        ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($sql);
     }
 
     /**
@@ -3983,20 +3652,6 @@ class WP_CCM_Admin {
             'message' => 'Data deleted successfully',
             'deleted_rows' => $deleted_rows
         ]);
-    }
-
-    /**
-     * Render deletion management page
-     */
-    public function render_deletion_page() {
-        ?>
-        <div class="wrap">
-            <h1>ניהול מחיקת נתונים</h1>
-            <p class="description">ניהול בקשות מחיקת נתונים ממשתמשי האתר</p>
-            
-            <?php $this->render_deletion_requests_tab(); ?>
-        </div>
-        <?php
     }
 
     /**
@@ -4790,64 +4445,6 @@ class WP_CCM_Admin {
         return 'others';
     }
     
-
-    
-    /**
-     * AJAX handler for getting debug log
-     */
-    public function ajax_get_debug_log() {
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
-        }
-        
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
-            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
-        }
-        
-        // Get the error log content
-        $log_content = '';
-        
-        // Try to read WordPress debug log
-        $debug_log_path = WP_CONTENT_DIR . '/debug.log';
-        if (file_exists($debug_log_path) && is_readable($debug_log_path)) {
-            // Read only WPCCM related entries from the last 1000 lines
-            $lines = file($debug_log_path);
-            $wpccm_lines = [];
-            
-            // Get last 1000 lines and filter for WPCCM entries
-            $last_lines = array_slice($lines, -1000);
-            foreach ($last_lines as $line) {
-                if (strpos($line, 'WPCCM:') !== false) {
-                    $wpccm_lines[] = $line;
-                }
-            }
-            
-            if (!empty($wpccm_lines)) {
-                $log_content = implode('', array_slice($wpccm_lines, -50)); // Last 50 WPCCM entries
-            } else {
-                $log_content = "No WPCCM debug entries found in the last 1000 log lines.\n";
-                $log_content .= "Debug log path: " . $debug_log_path . "\n";
-                $log_content .= "WP_DEBUG: " . (defined('WP_DEBUG') && WP_DEBUG ? 'enabled' : 'disabled') . "\n";
-                $log_content .= "WP_DEBUG_LOG: " . (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'enabled' : 'disabled') . "\n";
-            }
-        } else {
-            $log_content = "Debug log file not found or not readable.\n";
-            $log_content .= "Expected path: " . $debug_log_path . "\n";
-            $log_content .= "File exists: " . (file_exists($debug_log_path) ? 'yes' : 'no') . "\n";
-            $log_content .= "File readable: " . (is_readable($debug_log_path) ? 'yes' : 'no') . "\n";
-            $log_content .= "WP_DEBUG: " . (defined('WP_DEBUG') && WP_DEBUG ? 'enabled' : 'disabled') . "\n";
-            $log_content .= "WP_DEBUG_LOG: " . (defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'enabled' : 'disabled') . "\n";
-        }
-        
-        wp_send_json_success([
-            'log' => $log_content,
-            'timestamp' => current_time('mysql')
-        ]);
-    }
-
-    
     /**
      * AJAX handler for saving general settings
      */
@@ -5031,49 +4628,63 @@ class WP_CCM_Admin {
             wp_send_json_error('No access');
             return;
         }
-        
+
         if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
             wp_send_json_error('Security check failed');
             return;
         }
-        
+
         $enable = isset($_POST['enable']) ? (bool) $_POST['enable'] : false;
-        
+
         if ($enable) {
-            // Enable auto sync for both cookies and scripts
-            wpccm_schedule_cookie_sync();
-            wpccm_schedule_script_sync();
+            // Enable sync and run immediately
             update_option('wpccm_auto_sync_enabled', true);
             update_option('wpccm_auto_script_sync_enabled', true);
-            $message = 'סינכרון אוטומטי הופעל (עוגיות וסקריפטים) - יתבצע כל שעה עגולה';
+            update_option('wpccm_auto_form_sync_enabled', true);
+
+            // Clear existing schedules and create new ones
+            wp_clear_scheduled_hook('wpccm_auto_cookie_sync');
+            wp_clear_scheduled_hook('wpccm_auto_script_sync');
+
+            // wpccm_schedule_cookie_sync();
+            // wpccm_schedule_script_sync();
+
+            // Run sync immediately
+            wpccm_perform_auto_cookie_sync();
+            wpccm_perform_auto_script_sync();
+            wpccm_perform_auto_form_sync(true);
+
+            $interval_minutes = get_option('wpccm_sync_interval_minutes', 60);
+            $interval_text = $interval_minutes == 1 ? 'דקה' : $interval_minutes . ' דקות';
+            $message = 'סינכרון אוטומטי הופעל - יתבצע כל ' . $interval_text;
         } else {
-            // Disable auto sync for both cookies and scripts
-            $cookie_timestamp = wp_next_scheduled('wpccm_auto_cookie_sync');
-            if ($cookie_timestamp) {
-                wp_unschedule_event($cookie_timestamp, 'wpccm_auto_cookie_sync');
-            }
-            
-            $script_timestamp = wp_next_scheduled('wpccm_auto_script_sync');
-            if ($script_timestamp) {
-                wp_unschedule_event($script_timestamp, 'wpccm_auto_script_sync');
-            }
-            
+            // Disable sync
+            wp_clear_scheduled_hook('wpccm_auto_cookie_sync');
+            wp_clear_scheduled_hook('wpccm_auto_script_sync');
+
             update_option('wpccm_auto_sync_enabled', false);
             update_option('wpccm_auto_script_sync_enabled', false);
-            $message = 'סינכרון אוטומטי בוטל (עוגיות וסקריפטים)';
+            update_option('wpccm_auto_form_sync_enabled', false);
+            $message = 'סינכרון אוטומטי בוטל';
         }
-        
-        wpccm_debug_log('Auto sync toggled', [
-            'enabled' => $enable,
-            'cookies_enabled' => $enable,
-            'scripts_enabled' => $enable
-        ]);
-        
+
+        $next_cookie_run = $enable ? wp_next_scheduled('wpccm_auto_cookie_sync') : null;
+        $next_script_run = $enable ? wp_next_scheduled('wpccm_auto_script_sync') : null;
+        $next_run = null;
+        if ($next_cookie_run && $next_script_run) {
+            $next_run = min($next_cookie_run, $next_script_run);
+        } elseif ($next_cookie_run) {
+            $next_run = $next_cookie_run;
+        } elseif ($next_script_run) {
+            $next_run = $next_script_run;
+        }
+
         wp_send_json_success([
             'enabled' => $enable,
             'message' => $message,
-            'next_cookie_run' => $enable ? wp_next_scheduled('wpccm_auto_cookie_sync') : null,
-            'next_script_run' => $enable ? wp_next_scheduled('wpccm_auto_script_sync') : null
+            'sync_method' => 'frontend',
+            'interval_minutes' => get_option('wpccm_sync_interval_minutes', 60),
+            'forms_enabled' => get_option('wpccm_auto_form_sync_enabled', false)
         ]);
     }
     
@@ -5085,42 +4696,18 @@ class WP_CCM_Admin {
             wp_send_json_error('No access');
             return;
         }
-        
+
         $cookies_enabled = get_option('wpccm_auto_sync_enabled', false);
         $scripts_enabled = get_option('wpccm_auto_script_sync_enabled', false);
-        $enabled = $cookies_enabled && $scripts_enabled; // Both must be enabled
+        $forms_enabled   = get_option('wpccm_auto_form_sync_enabled', false);
+        $enabled = $cookies_enabled && $scripts_enabled && $forms_enabled;
+
+        // Get current sync interval (default to 60 minutes)
+        $interval_minutes = get_option('wpccm_sync_interval_minutes', 60);
         
         $next_cookie_run = wp_next_scheduled('wpccm_auto_cookie_sync');
         $next_script_run = wp_next_scheduled('wpccm_auto_script_sync');
-        $current_time = current_time('timestamp');
-        
-        // Check if sync is stuck (next run is in the past)
-        $is_stuck = false;
-        $stuck_items = [];
-        
-        if ($cookies_enabled && $next_cookie_run && $next_cookie_run < $current_time) {
-            $is_stuck = true;
-            $stuck_items[] = 'cookies';
-            // Reschedule if stuck
-            wpccm_schedule_cookie_sync();
-            $next_cookie_run = wp_next_scheduled('wpccm_auto_cookie_sync');
-        }
-        
-        if ($scripts_enabled && $next_script_run && $next_script_run < $current_time) {
-            $is_stuck = true;
-            $stuck_items[] = 'scripts';
-            // Reschedule if stuck
-            wpccm_schedule_script_sync();
-            $next_script_run = wp_next_scheduled('wpccm_auto_script_sync');
-        }
-        
-        if ($is_stuck) {
-            wpccm_debug_log('Auto sync was stuck - rescheduled', [
-                'stuck_items' => $stuck_items,
-                'cookie_next_run' => $next_cookie_run ? date('Y-m-d H:i:s', $next_cookie_run) : null,
-                'script_next_run' => $next_script_run ? date('Y-m-d H:i:s', $next_script_run) : null
-            ]);
-        }
+        $current_time = current_time('timestamp', true);
         
         // Use the earliest next run time for display
         $next_run = null;
@@ -5136,15 +4723,9 @@ class WP_CCM_Admin {
             'enabled' => $enabled,
             'cookies_enabled' => $cookies_enabled,
             'scripts_enabled' => $scripts_enabled,
-            'next_run' => $next_run,
-            'next_run_formatted' => $next_run ? date('Y-m-d H:i:s', $next_run) : null,
-            'next_cookie_run' => $next_cookie_run,
-            'next_cookie_run_formatted' => $next_cookie_run ? date('Y-m-d H:i:s', $next_cookie_run) : null,
-            'next_script_run' => $next_script_run,
-            'next_script_run_formatted' => $next_script_run ? date('Y-m-d H:i:s', $next_script_run) : null,
-            'current_time' => $current_time,
-            'current_time_formatted' => date('Y-m-d H:i:s', $current_time),
-            'was_stuck' => $is_stuck
+            'forms_enabled' => $forms_enabled,
+            'interval_minutes' => $interval_minutes,
+            'sync_method' => 'frontend'
         ]);
     }
     
@@ -5175,6 +4756,11 @@ class WP_CCM_Admin {
             if (get_option('wpccm_auto_script_sync_enabled', false)) {
                 wpccm_perform_auto_script_sync();
                 $results[] = 'סקריפטים';
+            }
+
+            if (get_option('wpccm_auto_form_sync_enabled', false)) {
+                wpccm_perform_auto_form_sync(true);
+                $results[] = 'טפסים';
             }
             
             if (empty($results)) {
@@ -5249,6 +4835,64 @@ class WP_CCM_Admin {
                     }
                 }).fail(function() {
                     status.html('❌ שגיאה בסינכרון סקריפטים');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render forms sync tab
+     */
+    private function render_forms_sync_tab() {
+        ?>
+        <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #0073aa;">
+            <h3 style="margin: 0 0 10px 0; color: #1d2327;">📝 <?php echo wpccm_text('forms_sync'); ?></h3>
+            <p style="margin: 0 0 15px 0; color: #50575e;"><?php echo wpccm_text('forms_sync_description'); ?></p>
+
+            <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <button type="button" class="button button-primary" id="wpccm-sync-forms-btn">🔄 <?php echo wpccm_text('forms_sync'); ?></button>
+                <span id="wpccm-forms-sync-status" style="color: #50575e; font-size: 13px; font-weight: 500;"></span>
+            </div>
+        </div>
+
+        <div id="wpccm-forms-table-container">
+            <?php $this->render_forms_table(); ?>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3>📊 <?php echo wpccm_text('forms_sync_history'); ?></h3>
+            <?php $this->render_forms_sync_history_table(); ?>
+        </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('#wpccm-sync-forms-btn').on('click', function() {
+                const button = $(this);
+                const originalText = button.text();
+                const status = $('#wpccm-forms-sync-status');
+
+                button.text('⏳ סורק טפסים...').prop('disabled', true);
+                status.text('מאתר טפסים באתר...');
+
+                $.post(ajaxurl, {
+                    action: 'wpccm_sync_forms',
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success) {
+                        status.html('✅ ' + response.data.message);
+                        $('#wpccm-forms-table-container').load(location.href + ' #wpccm-forms-table-container > *');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        status.html('❌ שגיאה: ' + (response.data || 'Unknown error'));
+                    }
+                }).fail(function() {
+                    status.html('❌ שגיאה בסינכרון טפסים');
                 }).always(function() {
                     button.text(originalText).prop('disabled', false);
                 });
@@ -5538,6 +5182,208 @@ class WP_CCM_Admin {
         <?php
     }
 
+    private function render_forms_table() {
+        $forms = wpccm_get_forms_from_db();
+
+        ?>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">דף</th>
+                    <th style="width: 20%;">מזהה טופס</th>
+                    <th style="width: 25%;">כתובת פעולה</th>
+                    <th style="width: 10%;">שיטה</th>
+                    <th style="width: 10%;">סטטוס</th>
+                    <th style="width: 10%;">נוצר</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($forms)): ?>
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                            <?php echo wpccm_text('forms_no_results'); ?>
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($forms as $form): ?>
+                        <tr>
+                            <td>
+                                <div style="font-weight: 500;">
+                                    <a href="<?php echo esc_url($form['page_url']); ?>" target="_blank"><?php echo esc_html($form['page_title']); ?></a>
+                                </div>
+                                <div style="font-size: 11px; color: #666;">ID דף: <?php echo (int) $form['post_id']; ?></div>
+                            </td>
+                            <td>
+                                <?php if (!empty($form['form_id_attr'])): ?>
+                                    <div>#<?php echo esc_html($form['form_id_attr']); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($form['form_class_attr'])): ?>
+                                    <div class="description">.<?php echo esc_html(str_replace(' ', '.', trim($form['form_class_attr']))); ?></div>
+                                <?php endif; ?>
+                                <?php if (empty($form['form_id_attr']) && empty($form['form_class_attr'])): ?>
+                                    <span style="color:#666; font-size:11px;">ללא מזהה/מחלקה</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($form['form_action'])): ?>
+                                    <code style="font-size: 11px; word-break: break-all;">
+                                        <?php echo esc_html($form['form_action']); ?>
+                                    </code>
+                                <?php else: ?>
+                                    <span style="color:#666; font-size: 11px;">(נשלח לאותו עמוד)</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-transform: uppercase; text-align:center;">
+                                <?php echo esc_html($form['form_method'] ?: 'POST'); ?>
+                            </td>
+                            <td style="text-align:center;">
+                                <?php if ($form['consent_required']): ?>
+                                    <span style="color:#00a32a; font-weight:600;">חובה</span>
+                                <?php else: ?>
+                                    <span style="color:#666;">מושבת</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="font-size:11px; color:#555;">
+                                <?php
+                                    $detected_at = !empty($form['detected_at']) ? date_i18n('d/m/Y', strtotime($form['detected_at'])) : '-';
+                                    $last_seen = !empty($form['last_seen']) ? date_i18n('d/m/Y', strtotime($form['last_seen'])) : '-';
+                                ?>
+                                <?php echo esc_html($detected_at); ?><br>
+                                <span style="color:#888;">עודכן: <?php echo esc_html($last_seen); ?></span>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        <?php
+    }
+
+    private function render_forms_sync_history_table() {
+        $history = wpccm_get_sync_history(25);
+
+        $history = array_values(array_filter($history, function ($entry) {
+            return isset($entry['sync_type']) && in_array($entry['sync_type'], ['auto_forms', 'manual_forms'], true);
+        }));
+
+        $history = array_slice($history, 0, 10);
+
+        if (empty($history)) {
+            echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
+            echo '<div style="font-size: 36px; margin-bottom: 10px;">🗂️</div>';
+            echo '<p style="margin: 0; font-size: 14px;">אין היסטוריית סינכרון טפסים עדיין</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">ההיסטוריה תתעדכן אחרי סינכרון ראשון</p>';
+            echo '</div>';
+            return;
+        }
+
+        echo '<table class="widefat fixed striped">';
+        echo '<thead><tr>';
+        echo '<th style="width: 20%;">זמן</th>';
+        echo '<th style="width: 20%;">סוג</th>';
+        echo '<th style="width: 15%;">סטטוס</th>';
+        echo '<th style="width: 15%;">טפסים שנמצאו</th>';
+        echo '<th style="width: 15%;">טפסים חדשים</th>';
+        echo '<th style="width: 15%;">פרטים</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ($history as $entry) {
+            $sync_time = date('d/m/Y H:i', strtotime($entry['sync_time']));
+            $sync_label = $entry['sync_type'] === 'manual_forms' ? '👤 ידני' : '⏰ אוטומטי';
+            $status = $this->get_sync_status_display($entry['status']);
+
+            echo '<tr>';
+            echo '<td style="padding:10px;">' . esc_html($sync_time) . '</td>';
+            echo '<td style="padding:10px;">' . $sync_label . '</td>';
+            echo '<td style="padding:10px;">' . $status . '</td>';
+            echo '<td style="padding:10px; text-align:center;">' . (int) $entry['total_cookies_found'] . '</td>';
+            echo '<td style="padding:10px; text-align:center;">';
+            if ($entry['new_cookies_added'] > 0) {
+                echo '<strong style="color:#00a32a;">+' . (int) $entry['new_cookies_added'] . '</strong>';
+            } else {
+                echo '<span style="color:#666;">0</span>';
+            }
+            echo '</td>';
+            echo '<td style="padding:10px;">';
+            if (!empty($entry['cookies_data'])) {
+                echo '<button type="button" class="button button-small view-form-sync-details" data-sync-id="' . (int) $entry['id'] . '">👁️ צפה</button>';
+            }
+            echo '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            $(document).on('click', '.view-form-sync-details', function() {
+                const syncId = $(this).data('sync-id');
+                const button = $(this);
+                const originalText = button.text();
+
+                button.text('⏳ טוען...').prop('disabled', true);
+
+                $.post(ajaxurl, {
+                    action: 'wpccm_get_sync_details',
+                    sync_id: syncId,
+                    _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
+                }).done(function(response) {
+                    if (response.success && Array.isArray(response.data.cookies_data)) {
+                        showFormSyncDetailsModal(response.data.cookies_data, response.data.sync_time);
+                    } else {
+                        alert('לא ניתן לטעון פרטי סינכרון');
+                    }
+                }).fail(function() {
+                    alert('שגיאה בטעינת פרטי סינכרון');
+                }).always(function() {
+                    button.text(originalText).prop('disabled', false);
+                });
+            });
+
+            function showFormSyncDetailsModal(formsData, syncTime) {
+                let modalHtml = '<div id="form-sync-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">';
+                modalHtml += '<div style="background: white; padding: 20px; border-radius: 8px; max-width: 700px; max-height: 80%; overflow-y: auto; margin: 20px;">';
+                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📝 טפסים חדשים - ' + syncTime + '</h3>';
+                modalHtml += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">';
+                modalHtml += '<table style="width:100%; border-collapse: collapse;">';
+                modalHtml += '<thead style="background:#f9f9f9;"><tr>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">דף</th>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">מזהה</th>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">פעולה</th>';
+                modalHtml += '</tr></thead><tbody>';
+
+                if (Array.isArray(formsData) && formsData.length) {
+                    formsData.forEach(function(item) {
+                        modalHtml += '<tr>';
+                        modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee;">' + (item.page_title || '-') + '</td>';
+                        modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee;">' + (item.identifier || '-') + '</td>';
+                        modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee; font-size:11px; word-break:break-all;">' + (item.action || '(אותו עמוד)') + '</td>';
+                        modalHtml += '</tr>';
+                    });
+                } else {
+                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">אין נתונים להצגה</td></tr>';
+                }
+
+                modalHtml += '</tbody></table>';
+                modalHtml += '</div>';
+                modalHtml += '<div style="margin-top: 15px; text-align: center;">';
+                modalHtml += '<button type="button" class="button button-primary" onclick="closeFormSyncDetailsModal()">סגור</button>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+                modalHtml += '</div>';
+
+                jQuery('body').append(modalHtml);
+            }
+
+            window.closeFormSyncDetailsModal = function() {
+                jQuery('#form-sync-details-modal').remove();
+            }
+        });
+        </script>
+        <?php
+    }
+
     /**
      * Render scripts sync history table
      */
@@ -5664,6 +5510,28 @@ class WP_CCM_Admin {
         }
     }
 
+    public function ajax_sync_forms() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        try {
+            $result = wpccm_perform_auto_form_sync(true);
+
+            wp_send_json_success([
+                'message' => sprintf('נמצאו %d טפסים (%d חדשים)', $result['total'], $result['new'])
+            ]);
+        } catch (Exception $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
     /**
      * AJAX handler for updating script category
      */
@@ -5778,8 +5646,20 @@ class WP_CCM_Admin {
      * Render sync history table
      */
     private function render_sync_history_table() {
-        // Get sync history
-        $history = wpccm_get_sync_history(10); // Get last 10 entries
+        // Get sync history (include extra rows so cookie-only filter still shows results)
+        $history = wpccm_get_sync_history(25);
+
+        // Keep only cookie-related entries (auto_cookie/newer and legacy auto/manual)
+        $history = array_values(array_filter($history, function ($entry) {
+            if (!isset($entry['sync_type'])) {
+                return false;
+            }
+
+            return in_array($entry['sync_type'], ['manual', 'auto_cookie', 'auto'], true);
+        }));
+
+        // Limit to the 10 most recent cookie sync rows
+        $history = array_slice($history, 0, 10);
         
         echo '<div style="margin-top: 30px;">';
         echo '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 היסטוריית סינכרון עוגיות</h3>';
@@ -5809,13 +5689,18 @@ class WP_CCM_Admin {
             
             foreach ($history as $entry) {
                 $sync_time = date('d/m/Y H:i', strtotime($entry['sync_time']));
-                $sync_type = $entry['sync_type'] === 'auto' ? '⏰ אוטומטי' : '👤 ידני';
+                $sync_label = '👤 ידני';
+
+                if ($entry['sync_type'] === 'auto_cookie' || $entry['sync_type'] === 'auto') {
+                    $sync_label = '⏰ אוטומטי ';
+                }
+
                 $status = $this->get_sync_status_display($entry['status']);
                 $execution_time = $entry['execution_time'] ? number_format($entry['execution_time'], 3) . 's' : 'N/A';
                 
                 echo '<tr>';
                 echo '<td style="padding: 10px;">' . esc_html($sync_time) . '</td>';
-                echo '<td style="padding: 10px;">' . $sync_type . '</td>';
+                echo '<td style="padding: 10px;">' . $sync_label . '</td>';
                 echo '<td style="padding: 10px;">' . $status . '</td>';
                 echo '<td style="padding: 10px; text-align: center;">' . (int) $entry['total_cookies_found'] . '</td>';
                 echo '<td style="padding: 10px; text-align: center;">';
@@ -6587,7 +6472,149 @@ class WP_CCM_Admin {
             ]
         ]);
     }
-    
+
+    /**
+     * AJAX handler for forcing complete reschedule (clear all and reschedule immediately)
+     */
+    public function ajax_force_reschedule() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Clear ALL existing cron jobs completely
+        wp_clear_scheduled_hook('wpccm_auto_cookie_sync');
+        wp_clear_scheduled_hook('wpccm_auto_script_sync');
+
+        // Force enable both sync types
+        update_option('wpccm_auto_sync_enabled', true);
+        update_option('wpccm_auto_script_sync_enabled', true);
+        update_option('wpccm_auto_form_sync_enabled', true);
+
+        // Schedule new ones starting in 30 seconds (almost immediately)
+        $current_time = current_time('timestamp', true);
+        $next_run = $current_time + 30; // Start in 30 seconds
+
+        // Frontend auto-sync is now used instead of wp_schedule_event
+        // wp_schedule_event($next_run, 'wpccm_every_minute', 'wpccm_auto_cookie_sync');
+        // wp_schedule_event($next_run, 'wpccm_every_minute', 'wpccm_auto_script_sync');
+
+        wpccm_debug_log('Force rescheduled sync to start immediately', [
+            'current_time' => date('Y-m-d H:i:s', $current_time),
+            'next_run' => date('Y-m-d H:i:s', $next_run)
+        ]);
+
+        wp_send_json_success([
+            'message' => 'הסינכרון רץ בפרונט כל ' . get_option('wpccm_sync_interval_minutes', 60) . ' דקות - אין צורך בתזמון מחדש',
+            'sync_method' => 'frontend'
+        ]);
+    }
+
+    /**
+     * AJAX handler for changing sync interval
+     */
+    public function ajax_change_sync_interval() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('No access');
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'wpccm_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        $minutes = intval($_POST['minutes']);
+        if ($minutes < 1 || $minutes > 60) {
+            wp_send_json_error('Invalid interval - must be between 1-60 minutes');
+            return;
+        }
+
+        // Save the new interval
+        update_option('wpccm_sync_interval_minutes', $minutes);
+
+        // Always enable sync
+        update_option('wpccm_auto_sync_enabled', true);
+        update_option('wpccm_auto_script_sync_enabled', true);
+
+        // Clear existing cron jobs
+        wp_clear_scheduled_hook('wpccm_auto_cookie_sync');
+        wp_clear_scheduled_hook('wpccm_auto_script_sync');
+
+        // Schedule new ones with the new interval
+        // wpccm_schedule_cookie_sync();
+        // wpccm_schedule_script_sync();
+
+        $interval_text = $minutes == 1 ? 'דקה' : $minutes . ' דקות';
+
+        wpccm_debug_log('Sync interval changed', [
+            'minutes' => $minutes,
+            'interval_text' => $interval_text
+        ]);
+
+        $next_cookie_run = wp_next_scheduled('wpccm_auto_cookie_sync');
+        $next_script_run = wp_next_scheduled('wpccm_auto_script_sync');
+        $next_run = $next_cookie_run && $next_script_run ? min($next_cookie_run, $next_script_run) : ($next_cookie_run ?: $next_script_run);
+
+        wp_send_json_success([
+            'message' => 'תדירות הסינכרון שונתה ל' . $interval_text . ' - הסינכרון הבא יתבצע בקרוב',
+            'next_run_timestamp' => $next_run,
+            'next_run_formatted' => $next_run ? wp_date('Y-m-d H:i:s', $next_run) : null,
+            'interval_minutes' => $minutes
+        ]);
+    }
+
+    /**
+     * AJAX handler for frontend auto sync (no admin permissions required)
+     */
+    public function ajax_frontend_auto_sync() {
+        // Check if plugin is activated
+        if (!WP_CCM_Consent::is_plugin_activated()) {
+            wp_send_json_error('Plugin not activated');
+            return;
+        }
+
+        // Check if auto sync is enabled
+        if (!get_option('wpccm_auto_sync_enabled', false) && !get_option('wpccm_auto_script_sync_enabled', false) && !get_option('wpccm_auto_form_sync_enabled', false)) {
+            wp_send_json_error('Auto sync disabled');
+            return;
+        }
+
+        try {
+            $results = [];
+
+            // Run cookie sync if enabled
+            if (get_option('wpccm_auto_sync_enabled', false)) {
+                wpccm_perform_auto_cookie_sync();
+                $results[] = 'cookies';
+            }
+
+            // Run script sync if enabled
+            if (get_option('wpccm_auto_script_sync_enabled', false)) {
+                wpccm_perform_auto_script_sync();
+                $results[] = 'scripts';
+            }
+
+            if (get_option('wpccm_auto_form_sync_enabled', false)) {
+                wpccm_perform_auto_form_sync();
+                $results[] = 'forms';
+            }
+
+            wp_send_json_success([
+                'synced' => $results,
+                'timestamp' => current_time('Y-m-d H:i:s')
+            ]);
+
+        } catch (Exception $e) {
+            wp_send_json_error('Sync failed: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Render sync page for cookies and scripts
      */

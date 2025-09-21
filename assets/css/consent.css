@@ -676,7 +676,27 @@ body.rtl .wpccm-top-actions {
     letter-spacing: 0.5px;
 }
 
-.wpccm-floating-button:hover {
+.wpccm-floating-button:hover:not(.position-top-right):not(.position-bottom-right) {
+    width: 200px;
+    /* background color will be slightly darker than the base color */
+    filter: brightness(0.9);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Position-specific hover behavior for floating button */
+.wpccm-floating-button.position-top-right:hover,
+.wpccm-floating-button.position-bottom-right:hover {
+    /* For right-positioned buttons, expand to the left */
+    margin-left: -140px; /* 200px total width - 60px original width = 140px expansion */
+    width: 200px;
+    /* background color will be slightly darker than the base color */
+    filter: brightness(0.9);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.wpccm-floating-button.position-top-left:hover,
+.wpccm-floating-button.position-bottom-left:hover {
+    /* For left-positioned buttons, expand to the right (default behavior) */
     width: 200px;
     /* background color will be slightly darker than the base color */
     filter: brightness(0.9);
