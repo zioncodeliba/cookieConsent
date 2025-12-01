@@ -43,6 +43,11 @@ define('WPCCM_PLUGIN_SLUG', dirname(WPCCM_PLUGIN_BASENAME)); // "wp-cookie-conse
 // The URL to your JSON metadata (see step 3)
 define('WPCCM_UPDATE_JSON_URL', 'https://wordpress-1142719-5821343.cloudwaysapps.com/ck_updates/wpccm.json');
 
+// Load translations for WordPress i18n (optional)
+add_action('init', function () {
+    load_plugin_textdomain('wp-cookie-consent-manager', false, dirname(WPCCM_PLUGIN_BASENAME) . '/languages');
+});
+
 add_action('plugins_loaded', function () {
     if (!class_exists(\YahnisElsts\PluginUpdateChecker\v5\PucFactory::class)) {
         // PUC not loaded, skip.
@@ -91,6 +96,20 @@ require_once WPCCM_PATH . 'includes/Dashboard.php';
 // require_once WPCCM_PATH . 'inc/ajax-scan-scripts.php';
 // require_once WPCCM_PATH . 'inc/detect-heuristics.php'; // Added for auto-categorization
 // require_once WPCCM_PATH . 'inc/enqueue.php';
+
+// Locale helpers & translation
+function wpccm_get_lang() {
+    $locale = function_exists('determine_locale') ? determine_locale() : get_locale();
+    return (strpos($locale, 'he') === 0) ? 'he' : 'en';
+}
+
+function wpccm_translate_pair($en, $he = '') {
+    $lang = wpccm_get_lang();
+    if ($lang === 'he') {
+        return $he !== '' ? $he : $en;
+    }
+    return $en !== '' ? $en : $he;
+}
 
 // Translation function
 function wpccm_text($key, $default = '') {
@@ -277,8 +296,7 @@ function wpccm_text($key, $default = '') {
         'enter_license_key' => ['en' => 'Enter the license key you received when purchasing the plugin', 'he' => 'הזן את מפתח הרישיון שקיבלת בעת רכישת התוסף'],
     ];
     
-    $locale = get_locale();
-    $lang = (strpos($locale, 'he') === 0) ? 'he' : 'en';
+    $lang = wpccm_get_lang();
     
     if (isset($texts[$key][$lang])) {
         return $texts[$key][$lang];

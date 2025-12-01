@@ -110,8 +110,8 @@ class WP_CCM_Admin {
         // NEW: Management & Statistics submenu
         add_submenu_page(
             'wpccm',
-            'ניהול עוגיות וסטטיסטיקות',
-            'ניהול וסטטיסטיקות',
+            wpccm_translate_pair('Cookie Management & Statistics', 'ניהול עוגיות וסטטיסטיקות'),
+            wpccm_translate_pair('Management & Statistics', 'ניהול וסטטיסטיקות'),
             'manage_options',
             'wpccm-management',
             [$this, 'render_management_page']
@@ -120,8 +120,8 @@ class WP_CCM_Admin {
         // NEW: Data Deletion Management submenu
         add_submenu_page(
             'wpccm',
-            'ניהול מחיקת נתונים',
-            'ניהול מחיקה',
+            wpccm_translate_pair('Data Deletion Management', 'ניהול מחיקת נתונים'),
+            wpccm_translate_pair('Deletion Management', 'ניהול מחיקה'),
             'manage_options',
             'wpccm-deletion',
             [$this->deletion_page, 'render']
@@ -130,8 +130,8 @@ class WP_CCM_Admin {
         // NEW: Activity History submenu
         add_submenu_page(
             'wpccm',
-            'היסטוריית פעילות',
-            'היסטוריית פעילות',
+            wpccm_translate_pair('Activity History', 'היסטוריית פעילות'),
+            wpccm_translate_pair('Activity History', 'היסטוריית פעילות'),
             'manage_options',
             'wpccm-history',
             [$this->history_page, 'render']
@@ -195,13 +195,13 @@ class WP_CCM_Admin {
         add_action('admin_init', [$this, 'handle_advanced_scanner_save']);
         
         // Tab 1: Activation & Dashboard Connection
-        add_settings_section('wpccm_dashboard_connection', 'אקטיבציה', [$this, 'dashboard_connection_section_callback'], 'wpccm_general');
+        add_settings_section('wpccm_dashboard_connection', wpccm_translate_pair('Activation', 'אקטיבציה'), [$this, 'dashboard_connection_section_callback'], 'wpccm_general');
         // add_settings_field('dashboard_api_url', 'כתובת API של הדשבורד', [$this, 'field_dashboard_api_url'], 'wpccm_general', 'wpccm_dashboard_connection');
-        add_settings_field('dashboard_license_key', 'מפתח רישיון', [$this, 'field_dashboard_license_key'], 'wpccm_general', 'wpccm_dashboard_connection');
+        add_settings_field('dashboard_license_key', wpccm_translate_pair('License Key', 'מפתח רישיון'), [$this, 'field_dashboard_license_key'], 'wpccm_general', 'wpccm_dashboard_connection');
         // add_settings_field('dashboard_test_connection', 'בדיקת חיבור', [$this, 'field_dashboard_test_connection'], 'wpccm_general', 'wpccm_dashboard_connection');
         
         // Tab 1: General Settings
-        add_settings_section('wpccm_general', 'הגדרות כלליות', null, 'wpccm_general');
+        add_settings_section('wpccm_general', wpccm_translate_pair('General Settings', 'הגדרות כלליות'), null, 'wpccm_general');
         add_settings_field('banner_title', wpccm_text('title'), [$this, 'field_text'], 'wpccm_general', 'wpccm_general', ['key' => 'banner.title']);
         add_settings_field('banner_description', wpccm_text('description'), [$this, 'field_textarea'], 'wpccm_general', 'wpccm_general', ['key' => 'banner.description']);
         add_settings_field('banner_policy_url', wpccm_text('policy_url'), [$this, 'field_text'], 'wpccm_general', 'wpccm_general', ['key' => 'banner.policy_url']);
@@ -548,9 +548,9 @@ class WP_CCM_Admin {
             
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
-                <a href="#general" class="nav-tab nav-tab-active" data-tab="general">הגדרות כלליות</a>
-                <a href="#design" class="nav-tab" data-tab="design">הגדרות עיצוב</a>
-                <a href="#categoriess" class="nav-tab" data-tab="categoriess">קטגוריות</a>
+                <a href="#general" class="nav-tab nav-tab-active" data-tab="general"><?php echo esc_html(wpccm_translate_pair('General Settings', 'הגדרות כלליות')); ?></a>
+                <a href="#design" class="nav-tab" data-tab="design"><?php echo esc_html(wpccm_translate_pair('Design Settings', 'הגדרות עיצוב')); ?></a>
+                <a href="#categoriess" class="nav-tab" data-tab="categoriess"><?php echo esc_html(wpccm_translate_pair('Categories', 'קטגוריות')); ?></a>
             </nav>
             
             <form method="post" action="options.php">
@@ -565,24 +565,24 @@ class WP_CCM_Admin {
                     
                     <!-- Auto sync controls -->
                     <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
-                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ סינכרון אוטומטי של עוגיות וסקריפטים</h3>
-                        <p style="margin: 0 0 15px 0; color: #50575e;">המערכת סורקת ומעדכנת עוגיות וסקריפטים באופן אוטומטי ברקע לפי התדירות שתבחר, כך שתמיד תהיה לך רשימה מעודכנת של כל הרכיבים באתר.</p>
+                        <h3 style="margin: 0 0 10px 0; color: #1d2327;">⏰ <?php echo esc_html(wpccm_translate_pair('Auto-sync cookies & scripts', 'סינכרון אוטומטי של עוגיות וסקריפטים')); ?></h3>
+                        <p style="margin: 0 0 15px 0; color: #50575e;"><?php echo esc_html(wpccm_translate_pair('The system scans and updates cookies and scripts in the background at the frequency you choose, keeping your lists up to date.', 'המערכת סורקת ומעדכנת עוגיות וסקריפטים באופן אוטומטי ברקע לפי התדירות שתבחר, כך שתמיד תהיה לך רשימה מעודכנת של כל הרכיבים באתר.')); ?></p>
                         
                         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                            <label for="wpccm-sync-interval" style="font-weight: 500; color: #1d2327;">⏱️ תדירות סינכרון:</label>
+                            <label for="wpccm-sync-interval" style="font-weight: 500; color: #1d2327;">⏱️ <?php echo esc_html(wpccm_translate_pair('Sync frequency:', 'תדירות סינכרון:')); ?></label>
                             <?php
                             $current_interval = (int) get_option('wpccm_sync_interval_minutes', 60);
                             $interval_options = [
-                                1 => 'כל דקה',
-                                2 => 'כל 2 דקות',
-                                3 => 'כל 3 דקות',
-                                5 => 'כל 5 דקות',
-                                10 => 'כל 10 דקות',
-                                15 => 'כל 15 דקות',
-                                20 => 'כל 20 דקות',
-                                30 => 'כל 30 דקות',
-                                45 => 'כל 45 דקות',
-                                60 => 'כל 60 דקות (שעה)'
+                                1 => wpccm_translate_pair('Every minute', 'כל דקה'),
+                                2 => wpccm_translate_pair('Every 2 minutes', 'כל 2 דקות'),
+                                3 => wpccm_translate_pair('Every 3 minutes', 'כל 3 דקות'),
+                                5 => wpccm_translate_pair('Every 5 minutes', 'כל 5 דקות'),
+                                10 => wpccm_translate_pair('Every 10 minutes', 'כל 10 דקות'),
+                                15 => wpccm_translate_pair('Every 15 minutes', 'כל 15 דקות'),
+                                20 => wpccm_translate_pair('Every 20 minutes', 'כל 20 דקות'),
+                                30 => wpccm_translate_pair('Every 30 minutes', 'כל 30 דקות'),
+                                45 => wpccm_translate_pair('Every 45 minutes', 'כל 45 דקות'),
+                                60 => wpccm_translate_pair('Every 60 minutes (1 hour)', 'כל 60 דקות (שעה)')
                             ];
                             ?>
                             <select id="wpccm-sync-interval" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 3px;">
@@ -594,18 +594,18 @@ class WP_CCM_Admin {
                         </div>
                         
                         <div style="margin-top: 15px; padding: 10px; background: #fff; border-radius: 3px; font-size: 12px; color: #666;">
-                            <strong>💡 איך זה עובד:</strong>
+                            <strong>💡 <?php echo esc_html(wpccm_translate_pair('How it works:', 'איך זה עובד:')); ?></strong>
                             <ul style="margin: 5px 0 0 20px; padding: 0;">
-                                <li>הסינכרון רץ אוטומטית לפי התדירות שנבחרת</li>
-                                <li>המערכת סורקת את האתר ומוצאת <strong>עוגיות וסקריפטים חדשים</strong></li>
-                                <li><strong>עוגיות חדשות</strong> נוספות אוטומטית לטבלה במיפוי העוגיות</li>
-                                <li><strong>סקריפטים חדשים</strong> נוספים אוטומטית לטבלה בסינכרון הסקריפטים</li>
+                                <li><?php echo esc_html(wpccm_translate_pair('Sync runs automatically at the chosen frequency', 'הסינכרון רץ אוטומטית לפי התדירות שנבחרת')); ?></li>
+                                <li><?php echo esc_html(wpccm_translate_pair('The system scans your site and finds new cookies & scripts', 'המערכת סורקת את האתר ומוצאת עוגיות וסקריפטים חדשים')); ?></li>
+                                <li><?php echo wp_kses_post('<strong>' . esc_html(wpccm_translate_pair('New cookies', 'עוגיות חדשות')) . '</strong> ' . esc_html(wpccm_translate_pair('are added to the cookies mapping table automatically', 'נוספות אוטומטית לטבלה במיפוי העוגיות'))); ?></li>
+                                <li><?php echo wp_kses_post('<strong>' . esc_html(wpccm_translate_pair('New scripts', 'סקריפטים חדשים')) . '</strong> ' . esc_html(wpccm_translate_pair('are added to the scripts sync table automatically', 'נוספים אוטומטית לטבלה בסינכרון הסקריפטים'))); ?></li>
                                 </ul>
                         </div>
                     </div>
                     
                     <p class="submit">
-                        <button type="button" class="button-primary" id="save-general-settings">שמור הגדרות כלליות</button>
+                        <button type="button" class="button-primary" id="save-general-settings"><?php echo esc_html(wpccm_translate_pair('Save general settings', 'שמור הגדרות כלליות')); ?></button>
                         <span id="general-settings-result" style="margin-left: 10px;"></span>
                     </p>
                 </div>
@@ -617,14 +617,14 @@ class WP_CCM_Admin {
                     try {
                         $this->render_design_tab(); 
                     } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת הגדרות עיצוב: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading design settings:', 'שגיאה בטעינת הגדרות עיצוב:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת הגדרות עיצוב: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading design settings:', 'שגיאה בטעינת הגדרות עיצוב:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     }
                     ?>
                     <p class="submit">
-                        <button type="button" class="button-primary" id="save-design-settings">שמור הגדרות עיצוב</button>
-                        <button type="button" class="button" id="reset-design-settings" style="margin-right: 10px;">הגדרות ברירת מחדל</button>
+                        <button type="button" class="button-primary" id="save-design-settings"><?php echo esc_html(wpccm_translate_pair('Save design settings', 'שמור הגדרות עיצוב')); ?></button>
+                        <button type="button" class="button" id="reset-design-settings" style="margin-right: 10px;"><?php echo esc_html(wpccm_translate_pair('Default settings', 'הגדרות ברירת מחדל')); ?></button>
                         <span id="design-settings-result" style="margin-left: 10px;"></span>
                     </p>
                 </div>
@@ -638,13 +638,13 @@ class WP_CCM_Admin {
                         $this->render_categories_tab(); 
                         
                     } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת קטגוריות: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading categories:', 'שגיאה בטעינת קטגוריות:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת קטגוריות: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading categories:', 'שגיאה בטעינת קטגוריות:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     }
                     ?>
                     <p class="submit">
-                        <input type="submit" name="save_categories_settings" class="button-primary" value="שמור הגדרות קטגוריות" />
+                        <input type="submit" name="save_categories_settings" class="button-primary" value="<?php echo esc_attr(wpccm_translate_pair('Save category settings', 'שמור הגדרות קטגוריות')); ?>" />
                     </p>
                 </div>
                 
@@ -725,6 +725,31 @@ class WP_CCM_Admin {
             
             // Auto sync functionality
             loadAutoSyncStatus();
+
+            const autoSyncStrings = {
+                rescheduling: '<?php echo esc_js(wpccm_translate_pair('Rescheduling sync to', 'מתזמן מחדש סינכרון ל-')); ?>',
+                minutes: '<?php echo esc_js(wpccm_translate_pair('minutes', 'דקות')); ?>',
+                errorPrefix: '<?php echo esc_js(wpccm_translate_pair('Error', 'שגיאה')); ?>',
+                unknownError: '<?php echo esc_js(wpccm_translate_pair('Unknown error', 'שגיאה לא ידועה')); ?>',
+                changeIntervalError: '<?php echo esc_js(wpccm_translate_pair('Error changing sync frequency', 'שגיאה בשינוי תדירות הסינכרון')); ?>',
+                statusActive: '<?php echo esc_js(wpccm_translate_pair('🟢 Active - running on the front-end', '🟢 פעיל - רץ בפרונט')); ?>',
+                statusNextRun: '<?php echo esc_js(wpccm_translate_pair('Next run:', 'הרצה הבאה:')); ?>',
+                statusDescription: '<?php echo esc_js(wpccm_translate_pair('Auto-sync runs in visitors browsers every', 'הסינכרון רץ אוטומטית בדפדפן של המבקרים כל')); ?>'
+            };
+            const autoSyncLocale = '<?php echo wpccm_get_lang() === 'he' ? 'he-IL' : 'en-US'; ?>';
+            const wpccmGeneralStrings = {
+                missingActivation: '<?php echo esc_js('✗ ' . wpccm_translate_pair('Please fill all activation fields (API URL, license key, site ID)', 'אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)')); ?>',
+                missingBanner: '<?php echo esc_js('✗ ' . wpccm_translate_pair('Please fill the banner title and description', 'אנא מלא את כותרת הבאנר ותיאור הבאנר')); ?>',
+                savingButton: '<?php echo esc_js(wpccm_translate_pair('Saving...', 'שומר...')); ?>',
+                savingSettings: '<?php echo esc_js(wpccm_translate_pair('Saving settings...', 'שומר הגדרות...')); ?>',
+                errorSaving: '<?php echo esc_js('✗ ' . wpccm_translate_pair('Error saving settings', 'שגיאה בשמירת ההגדרות')); ?>',
+                confirmResetDesign: '<?php echo esc_js(wpccm_translate_pair('Are you sure you want to reset all design settings to defaults?', 'האם אתה בטוח שברצונך לאפס את כל הגדרות העיצוב לברירת המחדל?')); ?>',
+                defaultsRestored: '<?php echo esc_js('✓ ' . wpccm_translate_pair('Default settings restored', 'הוחזרו הגדרות ברירת המחדל')); ?>',
+                saveGeneralLabel: '<?php echo esc_js(wpccm_translate_pair('Save general settings', 'שמור הגדרות כלליות')); ?>',
+                savingDesign: '<?php echo esc_js(wpccm_translate_pair('Saving design settings...', 'שומר הגדרות עיצוב...')); ?>',
+                errorSavingDesign: '<?php echo esc_js('✗ ' . wpccm_translate_pair('Error saving design settings', 'שגיאה בשמירת הגדרות העיצוב')); ?>',
+                saveDesignLabel: '<?php echo esc_js(wpccm_translate_pair('Save design settings', 'שמור הגדרות עיצוב')); ?>'
+            };
             
             // Sync interval dropdown change handler
             $('#wpccm-sync-interval').on('change', function() {
@@ -733,31 +758,31 @@ class WP_CCM_Admin {
                 const originalSelection = dropdown.val();
 
                 dropdown.prop('disabled', true);
-                showAutoSyncMessage('מתזמן מחדש סינכרון ל-' + minutes + ' דקות...', 'info');
+                showAutoSyncMessage(autoSyncStrings.rescheduling + ' ' + minutes + ' ' + autoSyncStrings.minutes + '...', 'info');
 
                 $.post(ajaxurl, {
                     action: 'wpccm_change_sync_interval',
                     minutes: minutes,
                     _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
-                }).done(function(response) {
-                    if (response.success) {
-                        showAutoSyncMessage(response.data.message, 'success');
-                        // Refresh status to show new timing
-                        setTimeout(function() {
+                    }).done(function(response) {
+                        if (response.success) {
+                            showAutoSyncMessage(response.data.message, 'success');
+                            // Refresh status to show new timing
+                            setTimeout(function() {
                             loadAutoSyncStatus();
                         }, 1000);
-                    } else {
+                        } else {
+                            // Revert selection on error
+                            dropdown.val(originalSelection);
+                            showAutoSyncMessage(autoSyncStrings.errorPrefix + ': ' + (response.data || autoSyncStrings.unknownError), 'error');
+                        }
+                    }).fail(function() {
                         // Revert selection on error
                         dropdown.val(originalSelection);
-                        showAutoSyncMessage('שגיאה: ' + (response.data || 'Unknown error'), 'error');
-                    }
-                }).fail(function() {
-                    // Revert selection on error
-                    dropdown.val(originalSelection);
-                    showAutoSyncMessage('שגיאה בשינוי תדירות הסינכרון', 'error');
-                }).always(function() {
-                    dropdown.prop('disabled', false);
-                });
+                        showAutoSyncMessage(autoSyncStrings.changeIntervalError, 'error');
+                    }).always(function() {
+                        dropdown.prop('disabled', false);
+                    });
             });
 
             function loadAutoSyncStatus() {
@@ -781,12 +806,12 @@ class WP_CCM_Admin {
                 }
 
                 // Show frontend auto-sync status with next run calculation
-                let statusText = '🟢 פעיל - רץ בפרונט';
+                let statusText = autoSyncStrings.statusActive;
 
                 // Calculate next run time (approximately)
                 const now = new Date();
                 const nextRun = new Date(now.getTime() + (data.interval_minutes * 60 * 1000));
-                const nextRunFormatted = nextRun.toLocaleString('he-IL', {
+                const nextRunFormatted = nextRun.toLocaleString(autoSyncLocale, {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -794,8 +819,8 @@ class WP_CCM_Admin {
                     minute: '2-digit'
                 });
 
-                statusText += ' - הרצה הבאה: ' + nextRunFormatted;
-                statusText += '<br><small style="color: #666;">הסינכרון רץ אוטומטית בדפדפן של המבקרים כל ' + data.interval_minutes + ' דקות</small>';
+                statusText += ' - ' + autoSyncStrings.statusNextRun + ' ' + nextRunFormatted;
+                statusText += '<br><small style="color: #666;">' + autoSyncStrings.statusDescription + ' ' + data.interval_minutes + ' ' + autoSyncStrings.minutes + '</small>';
 
                 status.html(statusText);
 
@@ -851,21 +876,21 @@ class WP_CCM_Admin {
                 // Validate required fields
                 if (!licenseKey) {
                     //console.log('WPCCM: Validation failed - missing activation fields');
-                    $result.html('<span class="error">✗ אנא מלא את כל שדות האקטיבציה (כתובת API, מפתח רישיון, מזהה אתר)</span>');
+                    $result.html('<span class="error">' + wpccmGeneralStrings.missingActivation + '</span>');
                     return;
                 }
                 
                 if (!bannerTitle || !bannerDescription) {
                     //console.log('WPCCM: Validation failed - missing banner fields');
-                    $result.html('<span class="error">✗ אנא מלא את כותרת הבאנר ותיאור הבאנר</span>');
+                    $result.html('<span class="error">' + wpccmGeneralStrings.missingBanner + '</span>');
                     return;
                 }
                 
                 //console.log('WPCCM: Validation passed, proceeding with save');
                 
                 // Disable button and show loading
-                $button.prop('disabled', true).text('שומר...');
-                $result.html('<span class="loading">שומר הגדרות...</span>');
+                $button.prop('disabled', true).text(wpccmGeneralStrings.savingButton);
+                $result.html('<span class="loading">' + wpccmGeneralStrings.savingSettings + '</span>');
                 
                 // Prepare form data
                 var formData = {
@@ -907,18 +932,18 @@ class WP_CCM_Admin {
                     },
                     error: function(xhr, status, error) {
                         //console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
-                        $result.html('<span class="error">✗ שגיאה בשמירת ההגדרות</span>');
+                        $result.html('<span class="error">' + wpccmGeneralStrings.errorSaving + '</span>');
                     },
                     complete: function() {
                         // Re-enable button
-                        $button.prop('disabled', false).text('שמור הגדרות כלליות');
+                        $button.prop('disabled', false).text(wpccmGeneralStrings.saveGeneralLabel);
                     }
                 });
             });
             
             // Reset design settings to defaults
             $('#reset-design-settings').on('click', function() {
-                if (confirm('האם אתה בטוח שברצונך לאפס את כל הגדרות העיצוב לברירת המחדל?')) {
+                if (confirm(wpccmGeneralStrings.confirmResetDesign)) {
                     // Reset all form fields to default values
                     $('#banner_position_top').prop('checked', true);
                     $('#floating_button_position_bottom_right').prop('checked', true);
@@ -971,7 +996,7 @@ class WP_CCM_Admin {
                     // }
                     
                     // Show success message
-                    $('#design-settings-result').html('<span class="success">✓ הוחזרו הגדרות ברירת המחדל</span>');
+                    $('#design-settings-result').html('<span class="success">' + wpccmGeneralStrings.defaultsRestored + '</span>');
                     
                     // Clear message after 3 seconds
                     setTimeout(function() {
@@ -996,8 +1021,8 @@ class WP_CCM_Admin {
                 var size = $('#size').val();
                 
                 // Disable button and show loading
-                $button.prop('disabled', true).text('שומר...');
-                $result.html('<span class="loading">שומר הגדרות עיצוב...</span>');
+                $button.prop('disabled', true).text(wpccmGeneralStrings.savingButton);
+                $result.html('<span class="loading">' + wpccmGeneralStrings.savingDesign + '</span>');
                 
                 // Prepare form data
                 var formData = {
@@ -1031,11 +1056,11 @@ class WP_CCM_Admin {
                         }
                     },
                     error: function(xhr, status, error) {
-                        $result.html('<span class="error">✗ שגיאה בשמירת הגדרות העיצוב</span>');
+                        $result.html('<span class="error">' + wpccmGeneralStrings.errorSavingDesign + '</span>');
                     },
                     complete: function() {
                         // Re-enable button
-                        $button.prop('disabled', false).text('שמור הגדרות עיצוב');
+                        $button.prop('disabled', false).text(wpccmGeneralStrings.saveDesignLabel);
                     }
                 });
             });
@@ -1207,10 +1232,21 @@ class WP_CCM_Admin {
                 $("#wpccm-banner-preview").attr("data-floating-position", floatingButtonPosition);
                 
                 // Update info text
-                var positionText = bannerPosition === "top" ? "בראש הדף" : "בתחתית הדף";
+                var positionText = bannerPosition === "top" ? "' . $js_position_top . '" : "' . $js_position_bottom . '";
+                var floatingTextMap = {
+                    "bottom-left": "' . $js_float_bl . '",
+                    "bottom-right": "' . $js_float_br . '",
+                    "top-right": "' . $js_float_tr . '",
+                    "top-left": "' . $js_float_tl . '"
+                };
+                var sizeTextMap = {
+                    "small": "' . $js_size_small . '",
+                    "medium": "' . $js_size_medium . '",
+                    "large": "' . $js_size_large . '"
+                };
                 $("#preview-position").text(positionText);
-                $("#preview-floating-position").text(floatingButtonPosition);
-                $("#preview-size").text(size);
+                $("#preview-floating-position").text(floatingTextMap[floatingButtonPosition] || floatingButtonPosition);
+                $("#preview-size").text(sizeTextMap[size] || size);
                 
                 console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
                 
@@ -1348,8 +1384,8 @@ class WP_CCM_Admin {
             
             <!-- Tabs Navigation -->
             <nav class="nav-tab-wrapper wpccm-tabs">
-                <a href="#cookies" class="nav-tab nav-tab-active" data-tab="cookies">עוגיות</a>
-                <a href="#script-sync" class="nav-tab" data-tab="script-sync">סקריפטים</a>
+                <a href="#cookies" class="nav-tab nav-tab-active" data-tab="cookies"><?php echo esc_html(wpccm_translate_pair('Cookies', 'עוגיות')); ?></a>
+                <a href="#script-sync" class="nav-tab" data-tab="script-sync"><?php echo esc_html(wpccm_translate_pair('Scripts', 'סקריפטים')); ?></a>
                 <a href="#forms-sync" class="nav-tab" data-tab="forms-sync"><?php echo wpccm_text('forms_sync'); ?></a>
             </nav>
             
@@ -1360,9 +1396,9 @@ class WP_CCM_Admin {
                     try {
                         $this->render_purge_tab(); 
                     } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת עוגיות: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading cookies:', 'שגיאה בטעינת עוגיות:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת עוגיות: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading cookies:', 'שגיאה בטעינת עוגיות:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     }
                     ?>
                     <!-- Auto-save enabled - no manual save button needed -->
@@ -1373,9 +1409,9 @@ class WP_CCM_Admin {
                     try {
                         $this->render_script_sync_tab(); 
                     } catch (Exception $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading scripts sync:', 'שגיאה בטעינת סינכרון סקריפטים:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     } catch (Error $e) {
-                        echo '<div class="notice notice-error"><p>שגיאה בטעינת סינכרון סקריפטים: ' . $e->getMessage() . '</p></div>';
+                        echo '<div class="notice notice-error"><p>' . esc_html(wpccm_translate_pair('Error loading scripts sync:', 'שגיאה בטעינת סינכרון סקריפטים:')) . ' ' . esc_html($e->getMessage()) . '</p></div>';
                     }
                     ?>
                 </div>
@@ -1572,8 +1608,8 @@ class WP_CCM_Admin {
         $design_settings = isset($opts['design']) ? $opts['design'] : [];
         
         // Get banner content from general settings
-        $banner_title = isset($opts['banner']['title']) ? $opts['banner']['title'] : 'באנר הסכמה לעוגיות';
-        $banner_description = isset($opts['banner']['description']) ? $opts['banner']['description'] : 'אנו משתמשים בעוגיות כדי לשפר את החוויה שלך באתר. המשך הגלישה מהווה הסכמה לשימוש בעוגיות.';
+        $banner_title = isset($opts['banner']['title']) ? $opts['banner']['title'] : wpccm_text('we_use_cookies');
+        $banner_description = isset($opts['banner']['description']) ? $opts['banner']['description'] : wpccm_text('cookie_description');
         $banner_policy_url = isset($opts['banner']['policy_url']) ? $opts['banner']['policy_url'] : '';
         
         // Default values
@@ -1588,8 +1624,8 @@ class WP_CCM_Admin {
         
         // Main explanation
         echo '<div class="wpccm-explanation-box" style="background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; padding: 15px; margin-bottom: 15px;">';
-        echo '<h4 style="margin: 0 0 8px 0; color: #0073aa;">🎨 הגדרות עיצוב באנר הסכמה</h4>';
-        echo '<p style="margin: 0; color: #555;">התאם את המראה והמיקום של באנר הסכמה לעוגיות</p>';
+        echo '<h4 style="margin: 0 0 8px 0; color: #0073aa;">🎨 ' . esc_html(wpccm_translate_pair('Consent banner design settings', 'הגדרות עיצוב באנר הסכמה')) . '</h4>';
+        echo '<p style="margin: 0; color: #555;">' . esc_html(wpccm_translate_pair('Customize the look and placement of the cookie consent banner', 'התאם את המראה והמיקום של באנר הסכמה לעוגיות')) . '</p>';
         echo '</div>';
         
         // Design settings form
@@ -1597,7 +1633,7 @@ class WP_CCM_Admin {
         
         // Banner Position
         echo '<tr>';
-        echo '<th scope="row"><label for="banner_position">מיקום הבאנר</label></th>';
+        echo '<th scope="row"><label for="banner_position">' . esc_html(wpccm_translate_pair('Banner position', 'מיקום הבאנר')) . '</label></th>';
         echo '<td>';
         echo '<div style="display: flex; gap: 20px; align-items: center;">';
         
@@ -1610,7 +1646,7 @@ class WP_CCM_Admin {
         echo '<div style="position: absolute; top: 60px; left: 47px; width: 25px; height: 8px; background: #6c757d; border-radius: 4px;"></div>';
         echo '<div style="position: absolute; top: 60px; left: 85px; width: 25px; height: 8px; background: #28a745; border-radius: 4px;"></div>';
         echo '</label>';
-        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'bottom' ? '#0073aa' : '#666') . ';">בתחתית הדף</div>';
+        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'bottom' ? '#0073aa' : '#666') . ';">' . esc_html(wpccm_translate_pair('Bottom of page', 'בתחתית הדף')) . '</div>';
         echo '</div>';
         
         // Top position button
@@ -1622,17 +1658,17 @@ class WP_CCM_Admin {
         echo '<div style="position: absolute; bottom: 60px; left: 47px; width: 25px; height: 8px; background: #6c757d; border-radius: 4px;"></div>';
         echo '<div style="position: absolute; bottom: 60px; left: 85px; width: 25px; height: 8px; background: #28a745; border-radius: 4px;"></div>';
         echo '</label>';
-        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'top' ? '#0073aa' : '#666') . ';">בראש הדף</div>';
+        echo '<div style="margin-bottom: 8px; font-weight: 500; color: ' . ($banner_position === 'top' ? '#0073aa' : '#666') . ';">' . esc_html(wpccm_translate_pair('Top of page', 'בראש הדף')) . '</div>';
         echo '</div>';
         
         echo '</div>';
-        echo '<p class="description">לחץ על הריבוע כדי לבחור את מיקום הבאנר</p>';
+        echo '<p class="description">' . esc_html(wpccm_translate_pair('Click a square to choose the banner position', 'לחץ על הריבוע כדי לבחור את מיקום הבאנר')) . '</p>';
         echo '</td>';
         echo '</tr>';
         
         // Floating Button Position
         echo '<tr>';
-        echo '<th scope="row"><label for="floating_button_position">מיקום כפתור צף</label></th>';
+        echo '<th scope="row"><label for="floating_button_position">' . esc_html(wpccm_translate_pair('Floating button position', 'מיקום כפתור צף')) . '</label></th>';
         echo '<td>';
         echo '<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">';
         
@@ -1642,7 +1678,7 @@ class WP_CCM_Admin {
         echo '<label for="floating_button_position_bottom_left" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'bottom-left' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'bottom-left' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
         echo '<div style="position: absolute; bottom: 15px; left: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
         echo '</label>';
-        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-left' ? '#0073aa' : '#666') . '; font-size: 12px;">שמאל למטה</div>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-left' ? '#0073aa' : '#666') . '; font-size: 12px;">' . esc_html(wpccm_translate_pair('Bottom left', 'שמאל למטה')) . '</div>';
         echo '</div>';
 
         // Bottom-right position button
@@ -1651,7 +1687,7 @@ class WP_CCM_Admin {
         echo '<label for="floating_button_position_bottom_right" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'bottom-right' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'bottom-right' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
         echo '<div style="position: absolute; bottom: 15px; right: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
         echo '</label>';
-        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-right' ? '#0073aa' : '#666') . '; font-size: 12px;">ימין למטה</div>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'bottom-right' ? '#0073aa' : '#666') . '; font-size: 12px;">' . esc_html(wpccm_translate_pair('Bottom right', 'ימין למטה')) . '</div>';
         echo '</div>';
         
         // Top-right position button
@@ -1660,7 +1696,7 @@ class WP_CCM_Admin {
         echo '<label for="floating_button_position_top_right" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'top-right' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'top-right' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
         echo '<div style="position: absolute; top: 15px; right: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
         echo '</label>';
-        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-right' ? '#0073aa' : '#666') . '; font-size: 12px;">ימין למעלה</div>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-right' ? '#0073aa' : '#666') . '; font-size: 12px;">' . esc_html(wpccm_translate_pair('Top right', 'ימין למעלה')) . '</div>';
         echo '</div>';
         
         // Top-left position button
@@ -1669,37 +1705,37 @@ class WP_CCM_Admin {
         echo '<label for="floating_button_position_top_left" class="wpccm-floating-position-button" style="display: block; width: 120px; height: 80px; border: 3px solid ' . ($floating_button_position === 'top-left' ? '#0073aa' : '#ddd') . '; border-radius: 8px; cursor: pointer; background: ' . ($floating_button_position === 'top-left' ? '#e7f3ff' : '#f9f9f9') . '; transition: all 0.3s ease; position: relative; overflow: hidden;">';
         echo '<div style="position: absolute; top: 15px; left: 15px; width: 12px; height: 12px; background: #28a745; border-radius: 50%;"></div>';
         echo '</label>';
-        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-left' ? '#0073aa' : '#666') . '; font-size: 12px;">שמאל למעלה</div>';
+        echo '<div style="margin-top: 8px; font-weight: 500; color: ' . ($floating_button_position === 'top-left' ? '#0073aa' : '#666') . '; font-size: 12px;">' . esc_html(wpccm_translate_pair('Top left', 'שמאל למעלה')) . '</div>';
         echo '</div>';
         
         echo '</div>';
-        echo '<p class="description">לחץ על הריבוע כדי לבחור את מיקום כפתור הצף</p>';
+        echo '<p class="description">' . esc_html(wpccm_translate_pair('Click a square to choose the floating button position', 'לחץ על הריבוע כדי לבחור את מיקום כפתור הצף')) . '</p>';
         echo '</td>';
         echo '</tr>';
         
         // Text Color (Black or White only)
         echo '<tr>';
-        echo '<th scope="row"><label for="text_color">חבילת עיצוב</label></th>';
+        echo '<th scope="row"><label for="text_color">' . esc_html(wpccm_translate_pair('Theme', 'חבילת עיצוב')) . '</label></th>';
         echo '<td>';
         echo '<select name="wpccm_options[design][text_color]" id="text_color">';
-        echo '<option value="#000000" ' . selected($text_color, '#000000', false) . '>עיצוב לבן</option>';
-        echo '<option value="#ffffff" ' . selected($text_color, '#ffffff', false) . '>עיצוב כהה</option>';
+        echo '<option value="#000000" ' . selected($text_color, '#000000', false) . '>' . esc_html(wpccm_translate_pair('Light theme', 'עיצוב לבן')) . '</option>';
+        echo '<option value="#ffffff" ' . selected($text_color, '#ffffff', false) . '>' . esc_html(wpccm_translate_pair('Dark theme', 'עיצוב כהה')) . '</option>';
         echo '</select>';
-        echo '<p class="description">בחר חבילת עיצוב</p>';
+        echo '<p class="description">' . esc_html(wpccm_translate_pair('Choose a theme', 'בחר חבילת עיצוב')) . '</p>';
         echo '</td>';
         echo '</tr>';
         
         
         // Size
         echo '<tr>';
-        echo '<th scope="row"><label for="size">גודל</label></th>';
+        echo '<th scope="row"><label for="size">' . esc_html(wpccm_translate_pair('Size', 'גודל')) . '</label></th>';
         echo '<td>';
         echo '<select name="wpccm_options[design][size]" id="size">';
-        echo '<option value="small" ' . selected($size, 'small', false) . '>קטן</option>';
-        echo '<option value="medium" ' . selected($size, 'medium', false) . '>בינוני</option>';
-        echo '<option value="large" ' . selected($size, 'large', false) . '>גדול</option>';
+        echo '<option value="small" ' . selected($size, 'small', false) . '>' . esc_html(wpccm_translate_pair('Small', 'קטן')) . '</option>';
+        echo '<option value="medium" ' . selected($size, 'medium', false) . '>' . esc_html(wpccm_translate_pair('Medium', 'בינוני')) . '</option>';
+        echo '<option value="large" ' . selected($size, 'large', false) . '>' . esc_html(wpccm_translate_pair('Large', 'גדול')) . '</option>';
         echo '</select>';
-        echo '<p class="description">בחר גודל לבאנר</p>';
+        echo '<p class="description">' . esc_html(wpccm_translate_pair('Choose banner size', 'בחר גודל לבאנר')) . '</p>';
         echo '</td>';
         echo '</tr>';
         
@@ -1707,7 +1743,7 @@ class WP_CCM_Admin {
         
         // Preview section
         echo '<div class="wpccm-preview-section" style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 4px;">';
-        echo '<h3>תצוגה מקדימה</h3>';
+        echo '<h3>' . esc_html(wpccm_translate_pair('Preview', 'תצוגה מקדימה')) . '</h3>';
         // Calculate initial size values
         $initial_padding = '15px';
         $initial_font_size = '14px';
@@ -1747,13 +1783,13 @@ class WP_CCM_Admin {
         echo '<path d="M17.5 14.446C17.5 14.446 15 14.93 12.5 13" stroke="' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '" stroke-linecap="round" stroke-linejoin="round"/>';
         echo '<path d="M13.5 5.25C13.5 5.58152 13.6317 5.89946 13.8661 6.13388C14.1005 6.3683 14.4185 6.5 14.75 6.5C15.0815 6.5 15.3995 6.3683 15.6339 6.13388C15.8683 5.89946 16 5.58152 16 5.25C16 4.91848 15.8683 4.60054 15.6339 4.36612C15.3995 4.1317 15.0815 4 14.75 4C14.4185 4 14.1005 4.1317 13.8661 4.36612C13.6317 4.60054 13.5 4.91848 13.5 5.25Z" stroke="' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '"/>';
         echo '<path d="M11 2V2.1" stroke="' . esc_attr(isset($design_settings['data_deletion_button_color']) ? $design_settings['data_deletion_button_color'] : '#dc3545') . '" stroke-linecap="round" stroke-linejoin="round"/>';
-        echo '</svg> ניקוי היסטוריה</button>';
+        echo '</svg> ' . esc_html(wpccm_translate_pair('Clear history', 'ניקוי היסטוריה')) . '</button>';
         
         // Reject button
-        echo '<button class="wpccm-btn-reject" style="background-color: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; font-size: ' . $initial_font_size . '; border-radius: 30px;">דחה הכל</button>';
+        echo '<button class="wpccm-btn-reject" style="background-color: transparent; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: ' . $initial_button_padding . '; font-size: ' . $initial_font_size . '; border-radius: 30px;">' . esc_html(wpccm_text('reject_non_essential')) . '</button>';
         
         // Accept button
-        echo '<button class="wpccm-btn-accept" style="background-color: transparent; color: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; border: 1px solid ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; padding: ' . $initial_button_padding . '; font-size: ' . $initial_font_size . '; border-radius: 30px;">קבל הכל</button>';
+        echo '<button class="wpccm-btn-accept" style="background-color: transparent; color: ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; border: 1px solid ' . esc_attr(isset($design_settings['accept_button_color']) ? $design_settings['accept_button_color'] : '#0073aa') . '; padding: ' . $initial_button_padding . '; font-size: ' . $initial_font_size . '; border-radius: 30px;">' . esc_html(wpccm_text('accept_all')) . '</button>';
         
         echo '</div>';
         
@@ -1780,7 +1816,7 @@ class WP_CCM_Admin {
         echo '</svg>';
         echo '<span style="max-width: 797px;">' . esc_html($banner_description);
         if (!empty($banner_policy_url)) {
-            echo ' <a href="' . esc_url($banner_policy_url) . '" target="_blank" style="font-size: 19px; font-weight: 400; color: ' . esc_attr($text_color) . '; margin-right: 5px; text-decoration: underline;">למד עוד</a>';
+            echo ' <a href="' . esc_url($banner_policy_url) . '" target="_blank" style="font-size: 19px; font-weight: 400; color: ' . esc_attr($text_color) . '; margin-right: 5px; text-decoration: underline;">' . esc_html(wpccm_text('learn_more')) . '</a>';
         }
         echo '</span>';
         echo '</span>';
@@ -1788,17 +1824,31 @@ class WP_CCM_Admin {
         echo '</div>';
         echo '</div>';
         echo '<div style="margin-top: 10px; font-size: 12px; color: #666;">';
-        echo '<strong>מיקום באנר:</strong> <span id="preview-position">' . ($banner_position === 'top' ? 'בראש הדף' : 'בתחתית הדף') . '</span> | ';
-        echo '<strong>מיקום כפתור צף:</strong> <span id="preview-floating-position">' . $floating_button_position . '</span> | ';
-        echo '<strong>גודל:</strong> <span id="preview-size">' . $size . '</span>';
+        echo '<strong>' . esc_html(wpccm_translate_pair('Banner position:', 'מיקום באנר:')) . '</strong> <span id="preview-position">' . ($banner_position === 'top' ? esc_html(wpccm_translate_pair('Top of page', 'בראש הדף')) : esc_html(wpccm_translate_pair('Bottom of page', 'בתחתית הדף'))) . '</span> | ';
+        echo '<strong>' . esc_html(wpccm_translate_pair('Floating button:', 'מיקום כפתור צף:')) . '</strong> <span id="preview-floating-position">' . esc_html($floating_button_position) . '</span> | ';
+        echo '<strong>' . esc_html(wpccm_translate_pair('Size:', 'גודל:')) . '</strong> <span id="preview-size">' . esc_html($size) . '</span>';
         echo '</div>';
-        echo '<p class="description">התצוגה המקדימה מתעדכנת בזמן אמת כשאתה משנה את ההגדרות</p>';
-        echo '<p class="description" style="margin-top: 10px; font-style: italic; color: #666;">💡 <strong>טיפ:</strong> הכותרת והתיאור בתצוגה המקדימה מגיעים מההגדרות הכלליות. שנה אותם בטאב "הגדרות כלליות" כדי לראות את השינויים כאן.</p>';
+        echo '<p class="description">' . esc_html(wpccm_translate_pair('The preview updates live as you change the settings', 'התצוגה המקדימה מתעדכנת בזמן אמת כשאתה משנה את ההגדרות')) . '</p>';
+        echo '<p class="description" style="margin-top: 10px; font-style: italic; color: #666;">💡 <strong>' . esc_html(wpccm_translate_pair('Tip:', 'טיפ:')) . '</strong> ' . esc_html(wpccm_translate_pair('The preview title and description come from the general settings. Update them in the “General Settings” tab.', 'הכותרת והתיאור בתצוגה המקדימה מגיעים מההגדרות הכלליות. שנה אותם בטאב \"הגדרות כלליות\" כדי לראות את השינויים כאן.')) . '</p>';
         echo '</div>';
         
         echo '</div>'; // Close main container
         
         // JavaScript for live preview
+        $js_position_top = esc_js(wpccm_translate_pair('Top of page', 'בראש הדף'));
+        $js_position_bottom = esc_js(wpccm_translate_pair('Bottom of page', 'בתחתית הדף'));
+        $js_float_bl = esc_js(wpccm_translate_pair('Bottom left', 'שמאל למטה'));
+        $js_float_br = esc_js(wpccm_translate_pair('Bottom right', 'ימין למטה'));
+        $js_float_tr = esc_js(wpccm_translate_pair('Top right', 'ימין למעלה'));
+        $js_float_tl = esc_js(wpccm_translate_pair('Top left', 'שמאל למעלה'));
+        $js_size_small = esc_js(wpccm_translate_pair('Small', 'קטן'));
+        $js_size_medium = esc_js(wpccm_translate_pair('Medium', 'בינוני'));
+        $js_size_large = esc_js(wpccm_translate_pair('Large', 'גדול'));
+        $js_cookie_category_saved = esc_js(wpccm_translate_pair('Cookie category updated successfully', 'קטגוריית העוגיה עודכנה ונשמרה בהצלחה'));
+        $js_error_saving_category = esc_js(wpccm_translate_pair('Error saving category:', 'שגיאה בשמירת הקטגוריה:'));
+        $js_server_error = esc_js(wpccm_translate_pair('Server connection error', 'שגיאה בחיבור לשרת'));
+        $js_unknown_error = esc_js(wpccm_translate_pair('Unknown error', 'שגיאה לא ידועה'));
+
         echo '<script>
         jQuery(document).ready(function($) {
             // console.log("WPCCM: jQuery(document).ready555555");
@@ -1869,10 +1919,21 @@ class WP_CCM_Admin {
                 $("#wpccm-banner-preview").attr("data-floating-position", floatingButtonPosition);
                 
                 // Update info text
-                var positionText = bannerPosition === "top" ? "בראש הדף" : "בתחתית הדף";
+                var positionText = bannerPosition === "top" ? "' . $js_position_top . '" : "' . $js_position_bottom . '";
+                var floatingTextMap = {
+                    "bottom-left": "' . $js_float_bl . '",
+                    "bottom-right": "' . $js_float_br . '",
+                    "top-right": "' . $js_float_tr . '",
+                    "top-left": "' . $js_float_tl . '"
+                };
+                var sizeTextMap = {
+                    "small": "' . $js_size_small . '",
+                    "medium": "' . $js_size_medium . '",
+                    "large": "' . $js_size_large . '"
+                };
                 $("#preview-position").text(positionText);
-                $("#preview-floating-position").text(floatingButtonPosition);
-                $("#preview-size").text(size);
+                $("#preview-floating-position").text(floatingTextMap[floatingButtonPosition] || floatingButtonPosition);
+                $("#preview-size").text(sizeTextMap[size] || size);
                 
                 console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
             }
@@ -2082,9 +2143,9 @@ class WP_CCM_Admin {
         
         // Buttons with tooltips
         echo '<div style="position: relative; margin-bottom: 15px;">';
-        echo '<button type="button" class="button button-primary" id="wpccm-sync-current-cookies-btn" title="'.esc_attr(wpccm_text('sync_explanation')).'">🔄 סנכרן עוגיות</button>';
+        echo '<button type="button" class="button button-primary" id="wpccm-sync-current-cookies-btn" title="'.esc_attr(wpccm_text('sync_explanation')).'">🔄 ' . esc_html(wpccm_translate_pair('Sync cookies', 'סנכרן עוגיות')) . '</button>';
         echo '<span id="wpccm-sync-result"></span>';
-        echo '<button type="button" class="button" id="wpccm-sync-categories-btn" style="margin-left: 10px; background: #00a32a; color: white; display: none;" title="סנכרן קטגוריות מטבלת המיפוי">סנכרן קטגוריות</button>';
+        echo '<button type="button" class="button" id="wpccm-sync-categories-btn" style="margin-left: 10px; background: #00a32a; color: white; display: none;" title="' . esc_attr(wpccm_translate_pair('Sync categories from mapping table', 'סנכרן קטגוריות מטבלת המיפוי')) . '">' . esc_html(wpccm_translate_pair('Sync categories', 'סנכרן קטגוריות')) . '</button>';
         echo '<button type="button" class="button" id="wpccm-add-cookie" style="margin-left: 10px; display: none;" title="'.wpccm_text('add_cookie_manually', 'Add cookie manually').'">'.wpccm_text('add_cookie').'</button>';
         echo '<button type="button" class="button button-secondary" id="wpccm-clear-all-cookies" style="margin-left: 10px; color: #d63384; display: none;" title="'.esc_attr(wpccm_text('confirm_clear_all_cookies')).'">'.wpccm_text('clear_all_cookies').'</button>';
         echo '</div>'; // Close buttons div
@@ -2106,9 +2167,9 @@ class WP_CCM_Admin {
             echo '<tr>';
             echo '<td colspan="4" style="text-align: center; padding: 40px 20px; background: #f9f9f9;">';
             echo '<div style="font-size: 48px; margin-bottom: 15px;">🍪</div>';
-            echo '<h3 style="margin: 0 0 10px 0; color: #0073aa;">אין עוגיות רשומות במערכת</h3>';
-            echo '<p style="margin: 0 0 15px 0; color: #555;">הסריקה עובדת ברקע והתוצאות יופיעו בקרוב</p>';
-            echo '<p style="margin: 0; color: #0073aa; font-weight: 600;">💡 לחץ על "🔄 סנכרן עוגיות" כדי לסרוק עוגיות מהאתר</p>';
+            echo '<h3 style="margin: 0 0 10px 0; color: #0073aa;">' . esc_html(wpccm_text('no_cookies_found', wpccm_translate_pair('No cookies recorded yet', 'אין עוגיות רשומות במערכת'))) . '</h3>';
+            echo '<p style="margin: 0 0 15px 0; color: #555;">' . esc_html(wpccm_translate_pair('The scan runs in the background and results will appear soon.', 'הסריקה עובדת ברקע והתוצאות יופיעו בקרוב')) . '</p>';
+            echo '<p style="margin: 0; color: #0073aa; font-weight: 600;">💡 ' . esc_html(wpccm_translate_pair('Click “Sync cookies” to scan cookies from the site', 'לחץ על \"🔄 סנכרן עוגיות\" כדי לסרוק עוגיות מהאתר')) . '</p>';
             echo '</td>';
             echo '</tr>';
         }
@@ -2185,12 +2246,12 @@ class WP_CCM_Admin {
         
         // Fallback for backward compatibility
         $names = [
-            'necessary' => 'חיוני',
-            'functional' => 'פונקציונלי',
-            'performance' => 'ביצועים',
-            'analytics' => 'אנליטיקה',
-            'advertisement' => 'פרסום',
-            'others' => 'אחר'
+            'necessary' => wpccm_text('necessary'),
+            'functional' => wpccm_text('functional'),
+            'performance' => wpccm_text('performance'),
+            'analytics' => wpccm_text('analytics'),
+            'advertisement' => wpccm_text('advertisement'),
+            'others' => wpccm_text('others')
         ];
         
         return isset($names[$category_key]) ? $names[$category_key] : ucfirst($category_key);
@@ -2243,18 +2304,24 @@ class WP_CCM_Admin {
      * Add category edit modal
      */
     private function add_category_edit_modal() {
+        $edit_title = wpccm_translate_pair('Edit category', 'ערוך קטגוריה');
+        $cookie_label = wpccm_translate_pair('Cookie name:', 'שם העוגיה:');
+        $category_label = wpccm_translate_pair('Category:', 'קטגוריה:');
+        $save_label = wpccm_translate_pair('Save', 'שמור');
+        $cancel_label = wpccm_translate_pair('Cancel', 'ביטול');
+
         echo '
         <!-- Category Edit Modal -->
         <div id="category-edit-modal" style="display: none;">
             <div class="category-edit-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
                 <div class="category-edit-dialog" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 400px;">
-                    <h3 style="margin-top: 0;">ערוך קטגוריה</h3>
+                    <h3 style="margin-top: 0;">' . esc_html($edit_title) . '</h3>
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">שם העוגיה:</label>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">' . esc_html($cookie_label) . '</label>
                         <span id="edit-cookie-name" style="font-family: monospace; background: #f8f9fa; padding: 4px 8px; border-radius: 4px;"></span>
                     </div>
                     <div style="margin-bottom: 20px;">
-                        <label for="edit-category-select" style="display: block; margin-bottom: 5px; font-weight: 600;">קטגוריה:</label>
+                        <label for="edit-category-select" style="display: block; margin-bottom: 5px; font-weight: 600;">' . esc_html($category_label) . '</label>
                         <select id="edit-category-select" style="width: 100%; padding: 8px;">';
         
         $categories = wpccm_get_categories();
@@ -2266,8 +2333,8 @@ class WP_CCM_Admin {
         echo '</select>
                     </div>
                     <div style="text-align: left;">
-                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;">שמור</button>
-                        <button type="button" id="cancel-category-btn" class="button">ביטול</button>
+                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;">' . esc_html($save_label) . '</button>
+                        <button type="button" id="cancel-category-btn" class="button">' . esc_html($cancel_label) . '</button>
                     </div>
                 </div>
             </div>
@@ -2337,19 +2404,19 @@ class WP_CCM_Admin {
                     success: function(response) {
                         if (response.success) {
                             // Show success message
-                            $("<div class=\"notice notice-success is-dismissible\" style=\"margin: 10px 0;\"><p>קטגוריית העוגיה עודכנה ונשמרה בהצלחה</p></div>")
+                            $("<div class=\"notice notice-success is-dismissible\" style=\"margin: 10px 0;\"><p>' . $js_cookie_category_saved . '</p></div>")
                                 .prependTo("#wpccm-cookie-purge-table")
                                 .delay(3000)
                                 .fadeOut();
                         } else {
-                            $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>שגיאה בשמירת הקטגוריה: " + (response.data || "Unknown error") + "</p></div>")
+                            $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>' . $js_error_saving_category . ' " + (response.data || "' . $js_unknown_error . '") + "</p></div>")
                                 .prependTo("#wpccm-cookie-purge-table")
                                 .delay(5000)
                                 .fadeOut();
                         }
                     },
                     error: function() {
-                        $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>שגיאה בחיבור לשרת</p></div>")
+                        $("<div class=\"notice notice-error is-dismissible\" style=\"margin: 10px 0;\"><p>' . $js_server_error . '</p></div>")
                             .prependTo("#wpccm-cookie-purge-table")
                             .delay(5000)
                             .fadeOut();
@@ -2368,13 +2435,13 @@ class WP_CCM_Admin {
         
         echo '<div id="wpccm-categories-manager">';
         echo '<div style="background: #f0f0f1; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #00a32a;">';
-        echo '<h3 style="margin: 0 0 10px 0; color: #1d2327;">🏷️ ניהול קטגוריות עוגיות</h3>';
-        echo '<p style="margin: 0; color: #50575e;">כאן תוכל לנהל את הקטגוריות השונות של העוגיות באתר. כל עוגיה תשויך לאחת מהקטגוריות הללו.</p>';
+        echo '<h3 style="margin: 0 0 10px 0; color: #1d2327;">🏷️ ' . esc_html(wpccm_translate_pair('Manage cookie categories', 'ניהול קטגוריות עוגיות')) . '</h3>';
+        echo '<p style="margin: 0; color: #50575e;">' . esc_html(wpccm_translate_pair('Manage the different cookie categories on your site. Each cookie will be assigned to one of these categories.', 'כאן תוכל לנהל את הקטגוריות השונות של העוגיות באתר. כל עוגיה תשויך לאחת מהקטגוריות הללו.')) . '</p>';
         echo '</div>';
         
         echo '<div style="margin-bottom: 15px;">';
-        echo '<button type="button" class="button button-primary" id="wpccm-add-category">➕ הוסף קטגוריה חדשה</button>';
-        echo '<button type="button" class="button button-secondary" id="wpccm-check-table" style="margin-right: 10px;">🔍 בדוק טבלה</button>';
+        echo '<button type="button" class="button button-primary" id="wpccm-add-category">➕ ' . esc_html(wpccm_translate_pair('Add new category', 'הוסף קטגוריה חדשה')) . '</button>';
+        echo '<button type="button" class="button button-secondary" id="wpccm-check-table" style="margin-right: 10px;">🔍 ' . esc_html(wpccm_translate_pair('Check table', 'בדוק טבלה')) . '</button>';
         echo '</div>';
         
         // Add debug button JavaScript
