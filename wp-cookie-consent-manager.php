@@ -182,6 +182,8 @@ function wpccm_text($key, $default = '') {
         'unknown_cookies' => ['en' => '(unknown)', 'he' => '(לא ידוע)'],
         'enter_cookies_separated' => ['en' => 'Enter cookies separated by commas', 'he' => 'הזן עוגיות מופרדות בפסיקים'],
         'cookies_input_help' => ['en' => 'Enter cookie names that this script creates, separated by commas. Example: _ga, _gid, _gat', 'he' => 'הזן שמות עוגיות שהסקריפט יוצר, מופרדות בפסיקים. דוגמה: _ga, _gid, _gat'],
+        'no_related_cookies' => ['en' => 'No related cookies found', 'he' => 'לא נמצאו עוגיות קשורות'],
+        'cookies_input_helper_text' => ['en' => 'Choose from the list or enter manually', 'he' => 'בחר מהרשימה או הזן ידנית'],
         'sync_to_purge' => ['en' => 'Sync to Purge List', 'he' => 'סנכרן לרשימת מחיקה'],
         'sync_to_purge_help' => ['en' => 'Add all mapped cookies to the cookie purge list', 'he' => 'הוסף את כל העוגיות המשויכות לרשימת המחיקה'],
         'click_scan_to_see' => ['en' => '(click scan to see files)', 'he' => '(לחץ סרוק לראות קבצים)'],
@@ -211,6 +213,84 @@ function wpccm_text($key, $default = '') {
         'add_cookie' => ['en' => 'Add Cookie', 'he' => 'הוסף עוגיה'],
         'enter_handle_name' => ['en' => 'Enter handle name...', 'he' => 'הכנס שם handle...'],
         'enter_cookie_name' => ['en' => 'Enter cookie name...', 'he' => 'הכנס שם עוגיה...'],
+        'script_sync_title' => ['en' => 'Script Sync', 'he' => 'סינכרון סקריפטים'],
+        'script_sync_description' => ['en' => 'Scan the site to find all active scripts and categorize them.', 'he' => 'סרוק את האתר כדי למצוא את כל הסקריפטים הפעילים ולקטלג אותם לפי קטגוריות.'],
+        'sync_scripts_button' => ['en' => 'Sync Scripts', 'he' => 'סנכרן סקריפטים'],
+        'script_sync_history_title' => ['en' => 'Script Sync History', 'he' => 'היסטוריית סינכרון סקריפטים'],
+        'script_sync_scanning' => ['en' => 'Scanning...', 'he' => 'סורק...'],
+        'script_sync_starting' => ['en' => 'Starting script scan...', 'he' => 'מתחיל סריקת סקריפטים...'],
+        'script_sync_error' => ['en' => 'Error syncing scripts', 'he' => 'שגיאה בסינכרון סקריפטים'],
+        'scripts_table_url_type' => ['en' => 'URL/Script type', 'he' => 'URL/סוג סקריפט'],
+        'scripts_table_type' => ['en' => 'Type', 'he' => 'סוג'],
+        'scripts_table_category' => ['en' => 'Category', 'he' => 'קטגוריה'],
+        'scripts_table_last_seen' => ['en' => 'Last seen', 'he' => 'נצפה לאחרונה'],
+        'scripts_table_actions' => ['en' => 'Actions', 'he' => 'פעולות'],
+        'scripts_table_empty' => ['en' => 'No scripts in the table. Click "Sync Scripts" to start.', 'he' => 'אין סקריפטים בטבלה. לחץ על "סנכרן סקריפטים" כדי להתחיל.'],
+        'script_internal' => ['en' => 'Internal script', 'he' => 'סקריפט פנימי'],
+        'script_external' => ['en' => 'External', 'he' => 'חיצוני'],
+        'script_internal_label' => ['en' => 'Internal', 'he' => 'פנימי'],
+        'script_open_new_tab' => ['en' => 'Open in a new tab', 'he' => 'פתח בטאב חדש'],
+        'script_edit_button' => ['en' => 'Edit', 'he' => 'ערוך'],
+        'script_edit_category_title' => ['en' => 'Edit Script Category', 'he' => 'ערוך קטגוריית סקריפט'],
+        'script_edit_category_label' => ['en' => 'Category:', 'he' => 'קטגוריה:'],
+        'save' => ['en' => 'Save', 'he' => 'שמור'],
+        'close' => ['en' => 'Close', 'he' => 'סגור'],
+        'script_sync_details_title' => ['en' => 'Script Sync Details - %s', 'he' => 'פרטי סינכרון סקריפטים - %s'],
+        'script_sync_details_url_type' => ['en' => 'URL/Type', 'he' => 'URL/סוג'],
+        'script_sync_details_type' => ['en' => 'Type', 'he' => 'סוג'],
+        'script_sync_details_category' => ['en' => 'Category', 'he' => 'קטגוריה'],
+        'script_sync_details_no_data' => ['en' => 'No data to display', 'he' => 'אין נתונים להצגה'],
+        'script_sync_details_loading' => ['en' => 'Loading...', 'he' => 'טוען...'],
+        'script_sync_details_load_error' => ['en' => 'Could not load sync details', 'he' => 'לא ניתן לטעון פרטי סינכרון'],
+        'script_update_error' => ['en' => 'Error updating script category', 'he' => 'שגיאה בעדכון קטגוריית הסקריפט'],
+        'script_history_sync_time' => ['en' => 'Sync time', 'he' => 'זמן סינכרון'],
+        'script_history_type' => ['en' => 'Type', 'he' => 'סוג'],
+        'script_history_total' => ['en' => 'Total found', 'he' => 'סך הכל נמצא'],
+        'script_history_new' => ['en' => 'New', 'he' => 'חדשים'],
+        'script_history_updated' => ['en' => 'Updated', 'he' => 'מעודכנים'],
+        'script_history_status' => ['en' => 'Status', 'he' => 'סטטוס'],
+        'script_history_actions' => ['en' => 'Actions', 'he' => 'פעולות'],
+        'script_history_empty' => ['en' => 'No sync history yet. Run your first sync to see data.', 'he' => 'אין היסטוריית סינכרון עדיין. בצע סינכרון ראשון כדי לראות נתונים.'],
+        'script_history_view_details' => ['en' => 'View details of new scripts', 'he' => 'צפה בפרטי הסקריפטים החדשים'],
+        'script_sync_type_auto' => ['en' => 'Automatic', 'he' => 'אוטומטי'],
+        'script_sync_type_manual' => ['en' => 'Manual', 'he' => 'ידני'],
+        'forms_table_page' => ['en' => 'Page', 'he' => 'דף'],
+        'forms_table_form_id' => ['en' => 'Form ID', 'he' => 'מזהה טופס'],
+        'forms_table_action' => ['en' => 'Action URL', 'he' => 'כתובת פעולה'],
+        'forms_table_method' => ['en' => 'Method', 'he' => 'שיטה'],
+        'forms_table_status' => ['en' => 'Status', 'he' => 'סטטוס'],
+        'forms_table_created' => ['en' => 'Created', 'he' => 'נוצר'],
+        'forms_page_id' => ['en' => 'Page ID:', 'he' => 'ID דף:'],
+        'forms_no_identifier' => ['en' => 'No ID/class', 'he' => 'ללא מזהה/מחלקה'],
+        'forms_action_same_page' => ['en' => '(Submits to same page)', 'he' => '(נשלח לאותו עמוד)'],
+        'forms_status_required' => ['en' => 'Required', 'he' => 'חובה'],
+        'forms_status_disabled' => ['en' => 'Disabled', 'he' => 'מושבת'],
+        'forms_history_empty_title' => ['en' => 'No form sync history yet', 'he' => 'אין היסטוריית סינכרון טפסים עדיין'],
+        'forms_history_empty_hint' => ['en' => 'History will update after the first sync', 'he' => 'ההיסטוריה תתעדכן אחרי סינכרון ראשון'],
+        'forms_history_time' => ['en' => 'Time', 'he' => 'זמן'],
+        'forms_history_type' => ['en' => 'Type', 'he' => 'סוג'],
+        'forms_history_status' => ['en' => 'Status', 'he' => 'סטטוס'],
+        'forms_history_found' => ['en' => 'Forms found', 'he' => 'טפסים שנמצאו'],
+        'forms_history_new' => ['en' => 'New forms', 'he' => 'טפסים חדשים'],
+        'forms_history_details' => ['en' => 'Details', 'he' => 'פרטים'],
+        'forms_sync_type_manual' => ['en' => 'Manual', 'he' => 'ידני'],
+        'forms_sync_type_auto' => ['en' => 'Automatic', 'he' => 'אוטומטי'],
+        'forms_details_loading' => ['en' => 'Loading...', 'he' => 'טוען...'],
+        'forms_details_load_error' => ['en' => 'Could not load sync details', 'he' => 'לא ניתן לטעון פרטי סינכרון'],
+        'forms_details_title' => ['en' => 'New forms - %s', 'he' => 'טפסים חדשים - %s'],
+        'forms_details_page' => ['en' => 'Page', 'he' => 'דף'],
+        'forms_details_identifier' => ['en' => 'Identifier', 'he' => 'מזהה'],
+        'forms_details_action' => ['en' => 'Action', 'he' => 'פעולה'],
+        'forms_details_no_data' => ['en' => 'No data to display', 'he' => 'אין נתונים להצגה'],
+        'forms_sync_scanning' => ['en' => 'Scanning forms...', 'he' => 'סורק טפסים...'],
+        'forms_sync_detecting' => ['en' => 'Detecting forms on the site...', 'he' => 'מאתר טפסים באתר...'],
+        'forms_sync_error' => ['en' => 'Error syncing forms', 'he' => 'שגיאה בסינכרון טפסים'],
+        'forms_sync_found_summary' => ['en' => 'Found %d forms (%d new)', 'he' => 'נמצאו %d טפסים (%d חדשים)'],
+        'scripts_sync_found_summary' => ['en' => 'Found %d scripts (%d new, %d updated)', 'he' => 'נמצאו %d סקריפטים (%d חדשים, %d מעודכנים)'],
+        'forms_updated_label' => ['en' => 'Updated:', 'he' => 'עודכן:'],
+        'design_settings_saved' => ['en' => 'Design settings saved successfully! Banner position: %s, Floating button position: %s, Size: %s', 'he' => 'הגדרות העיצוב נשמרו בהצלחה! מיקום באנר: %s, מיקום כפתור צף: %s, גודל: %s'],
+        'no_permissions' => ['en' => 'You do not have sufficient permissions', 'he' => 'אין לך הרשאות מתאימות'],
+        'security_check_failed' => ['en' => 'Security check failed', 'he' => 'בדיקת אבטחה נכשלה'],
         
         // Categories Management
         'manage_categories' => ['en' => 'Manage Cookie Categories', 'he' => 'ניהול קטגוריות עוגיות'],
@@ -221,12 +301,129 @@ function wpccm_text($key, $default = '') {
         'category_description' => ['en' => 'Description', 'he' => 'תיאור'],
         'required_category' => ['en' => 'Required', 'he' => 'נדרש'],
         'category_enabled' => ['en' => 'Enabled', 'he' => 'מופעל'],
+        'manage_categories_description' => ['en' => 'Manage the different cookie categories on your site. Each cookie will be assigned to one of these categories.', 'he' => 'כאן תוכל לנהל את הקטגוריות השונות של העוגיות באתר. כל עוגיה תשויך לאחת מהקטגוריות הללו.'],
+        'add_new_category' => ['en' => 'Add new category', 'he' => 'הוסף קטגוריה חדשה'],
+        'categories_empty_title' => ['en' => 'No categories yet', 'he' => 'אין קטגוריות עדיין'],
+        'categories_empty_hint' => ['en' => 'Click "Add new category" to get started', 'he' => 'לחץ על "הוסף קטגוריה חדשה" כדי להתחיל'],
+        'category_display_name' => ['en' => 'Display Name', 'he' => 'שם תצוגה'],
+        'category_color' => ['en' => 'Color', 'he' => 'צבע'],
+        'category_icon' => ['en' => 'Icon', 'he' => 'אייקון'],
+        'category_essential' => ['en' => 'Essential', 'he' => 'חיוני'],
+        'category_active' => ['en' => 'Active', 'he' => 'פעיל'],
         'save_categories' => ['en' => 'Save Categories', 'he' => 'שמור קטגוריות'],
         'delete_category' => ['en' => 'Delete', 'he' => 'מחק'],
+        'not_essential' => ['en' => 'No', 'he' => 'לא'],
+        'inactive' => ['en' => 'Inactive', 'he' => 'לא פעיל'],
+        'no_description' => ['en' => 'No description', 'he' => 'אין תיאור'],
+        'edit_category' => ['en' => 'Edit category', 'he' => 'ערוך קטגוריה'],
+        'edit' => ['en' => 'Edit', 'he' => 'ערוך'],
+        'delete_category_label' => ['en' => 'Delete category', 'he' => 'מחק קטגוריה'],
+        'delete' => ['en' => 'Delete', 'he' => 'מחק'],
+        'category_modal_add_title' => ['en' => 'Add new category', 'he' => 'הוסף קטגוריה חדשה'],
+        'category_modal_edit_title' => ['en' => 'Edit category', 'he' => 'ערוך קטגוריה'],
+        'category_key_label' => ['en' => 'Category key:', 'he' => 'מפתח קטגוריה:'],
+        'category_key_help' => ['en' => 'English only, no spaces', 'he' => 'באנגלית בלבד, ללא רווחים'],
+        'category_display_name_label' => ['en' => 'Display name:', 'he' => 'שם תצוגה:'],
+        'category_description_label' => ['en' => 'Description:', 'he' => 'תיאור:'],
+        'category_color_label' => ['en' => 'Color:', 'he' => 'צבע:'],
+        'category_icon_label' => ['en' => 'Icon (emoji):', 'he' => 'אייקון (אמוג׳י):'],
+        'category_icon_placeholder' => ['en' => '📦', 'he' => '📦'],
+        'category_essential_label' => ['en' => 'Essential category', 'he' => 'קטגוריה חיונית'],
+        'category_essential_hint' => ['en' => '(Cannot be disabled by the user)', 'he' => '(לא ניתן לכבות על ידי המשתמש)'],
+        'saving' => ['en' => 'Saving...', 'he' => 'שומר...'],
+        'error_saving_category' => ['en' => 'Error saving category:', 'he' => 'שגיאה בשמירת הקטגוריה:'],
         'key_placeholder' => ['en' => 'e.g., social_media', 'he' => 'למשל, רשתות_חברתיות'],
         'name_placeholder' => ['en' => 'e.g., Social Media', 'he' => 'למשל, רשתות חברתיות'],
         'description_placeholder' => ['en' => 'Describe what this category includes...', 'he' => 'תאר מה הקטגוריה הזו כוללת...'],
         'saved_successfully' => ['en' => 'Saved successfully!', 'he' => 'נשמר בהצלחה!'],
+        'no_permissions' => ['en' => 'You do not have sufficient permissions', 'he' => 'אין לך הרשאות מתאימות'],
+        'security_check_failed' => ['en' => 'Security check failed', 'he' => 'בדיקת אבטחה נכשלה'],
+        
+        // Management Dashboard
+        'management_title' => ['en' => 'Cookie Management & Statistics', 'he' => 'ניהול עוגיות וסטטיסטיקות'],
+        'consents_today' => ['en' => 'Consents Today', 'he' => 'הסכמות היום'],
+        'rejects_today' => ['en' => 'Rejections Today', 'he' => 'דחיות היום'],
+        'total_users' => ['en' => 'Total Users', 'he' => 'סה״כ משתמשים'],
+        'active_cookies' => ['en' => 'Active Cookies', 'he' => 'עוגיות פעילות'],
+        'quick_actions' => ['en' => 'Quick Actions', 'he' => 'פעולות מהירות'],
+        'export_report' => ['en' => 'Export report', 'he' => 'ייצוא דוח'],
+        'refresh_data' => ['en' => 'Refresh data', 'he' => 'רענון נתונים'],
+        'advanced_settings' => ['en' => 'Advanced settings', 'he' => 'הגדרות מתקדמות'],
+        'charts_and_analysis' => ['en' => 'Charts & Analysis', 'he' => 'גרפים וניתוחים'],
+        'consents_over_time' => ['en' => 'Consents over time', 'he' => 'הסכמות לאורך זמן'],
+        'category_distribution' => ['en' => 'Category distribution', 'he' => 'התפלגות לפי קטגוריות'],
+        'loading_data' => ['en' => 'Loading data...', 'he' => 'טוען נתונים...'],
+        'error_loading_data' => ['en' => 'Error loading data', 'he' => 'שגיאה בטעינת הנתונים'],
+        'error_server_connection' => ['en' => 'Server connection error', 'he' => 'שגיאה בחיבור לשרת'],
+        'no_history_data' => ['en' => 'No history data', 'he' => 'אין נתוני היסטוריה'],
+        'loaded_records_ip_page' => ['en' => 'Loaded %1$d records out of %2$d for IP: %3$s (page %4$d)', 'he' => 'נטענו %1$d רשומות מתוך %2$d עבור IP: %3$s (עמוד %4$d)'],
+        'loaded_records_ip_all' => ['en' => 'Loaded all data for search: %1$s (%2$d records)', 'he' => 'נטענו את כל הנתונים עבור חיפוש: %1$s (%2$d רשומות)'],
+        'loaded_records_page' => ['en' => 'Loaded %1$d records out of %2$d (page %3$d)', 'he' => 'נטענו %1$d רשומות מתוך %2$d (עמוד %3$d)'],
+        'loaded_records_all' => ['en' => 'Loaded all data: %d records', 'he' => 'נטענו את כל הנתונים: %d רשומות'],
+        'search_results_ip' => ['en' => 'Search results for: %s', 'he' => 'תוצאות חיפוש עבור: %s'],
+        'exporting_ip' => ['en' => 'Exporting data for search: %s...', 'he' => 'מייצא נתונים עבור חיפוש: %s...'],
+        'exporting' => ['en' => 'Exporting data...', 'he' => 'מייצא נתונים...'],
+        'export_complete_ip' => ['en' => 'Export complete for search: %s!', 'he' => 'הייצוא הושלם בהצלחה עבור חיפוש: %s!'],
+        'export_complete' => ['en' => 'Export complete!', 'he' => 'הייצוא הושלם בהצלחה!'],
+        'enter_exact_ip' => ['en' => 'Please enter a search term', 'he' => 'אנא הזן מחרוזת חיפוש'],
+        'searching' => ['en' => 'Searching...', 'he' => 'מחפש...'],
+        'previous' => ['en' => 'Previous', 'he' => 'הקודם'],
+        'next' => ['en' => 'Next', 'he' => 'הבא'],
+        'rows_per_page' => ['en' => 'Rows per page', 'he' => 'שורות בעמוד'],
+        'search_placeholder' => ['en' => 'Search all columns...', 'he' => 'חפש בכל העמודות...'],
+        'no_categories_label' => ['en' => 'No categories', 'he' => 'ללא קטגוריות'],
+        'invalid_data' => ['en' => 'Invalid data', 'he' => 'נתונים לא תקינים'],
+        'action_accept' => ['en' => 'Accept', 'he' => 'קבלה'],
+        'action_reject' => ['en' => 'Reject', 'he' => 'דחייה'],
+        'action_save' => ['en' => 'Save', 'he' => 'שמירה'],
+        'action_accept_all' => ['en' => 'Accept all', 'he' => 'קבלת הכל'],
+        'action_reject_all' => ['en' => 'Reject all', 'he' => 'דחיית הכל'],
+        'action_withdraw' => ['en' => 'Withdraw consent', 'he' => 'משיכת הסכמה'],
+        'refreshing' => ['en' => 'Refreshing...', 'he' => 'רענון...'],
+        'design_settings_saved' => ['en' => 'Design settings saved successfully! Banner position: %s, Floating button position: %s, Size: %s', 'he' => 'הגדרות העיצוב נשמרו בהצלחה! מיקום באנר: %s, מיקום כפתור צף: %s, גודל: %s'],
+        'activity_history' => ['en' => 'Activity History', 'he' => 'היסטוריית פעילות'],
+        'activity_history_description' => ['en' => 'View user activity history on the site', 'he' => 'צפייה בהיסטוריית פעילות המשתמשים באתר'],
+        'load_100_records' => ['en' => 'Load 100 records', 'he' => 'טען 100 רשומות'],
+        'load_500_records' => ['en' => 'Load 500 records', 'he' => 'טען 500 רשומות'],
+        'load_all_data' => ['en' => 'Load all data', 'he' => 'טען את כל הנתונים'],
+        'export_csv' => ['en' => 'Export to CSV', 'he' => 'ייצא ל-CSV'],
+        'export_json' => ['en' => 'Export to JSON', 'he' => 'ייצא ל-JSON'],
+        'search_ip_placeholder' => ['en' => 'Enter exact IP address...', 'he' => 'הזן כתובת IP מדויקת...'],
+        'search_button' => ['en' => 'Search', 'he' => 'חפש'],
+        'clear_search' => ['en' => 'Clear search', 'he' => 'נקה חיפוש'],
+        'table_date' => ['en' => 'Date', 'he' => 'תאריך'],
+        'table_action_type' => ['en' => 'Action type', 'he' => 'סוג פעולה'],
+        'table_categories' => ['en' => 'Categories', 'he' => 'קטגוריות'],
+        'table_user_ip' => ['en' => 'User IP', 'he' => 'IP משתמש'],
+        'table_referer_url' => ['en' => 'Referer URL', 'he' => 'URL הפניה'],
+        'export_error' => ['en' => 'Error exporting data', 'he' => 'שגיאה בייצוא הנתונים'],
+        
+        // Data Deletion Management
+        'data_deletion_management' => ['en' => 'Data Deletion Management', 'he' => 'ניהול מחיקת נתונים'],
+        'data_deletion_manage_requests' => ['en' => 'Manage data deletion requests from site users', 'he' => 'ניהול בקשות מחיקת נתונים ממשתמשי האתר'],
+        'auto_deletion_settings' => ['en' => 'Automatic deletion settings', 'he' => 'הגדרות מחיקה אוטומטית'],
+        'auto_deletion' => ['en' => 'Automatic deletion', 'he' => 'מחיקה אוטומטית'],
+        'enable_auto_delete' => ['en' => 'Enable automatic deletion of data when a request is received', 'he' => 'הפעל מחיקה אוטומטית של נתונים כאשר מתקבלת בקשה'],
+        'auto_delete_description' => ['en' => 'When enabled, data will be deleted immediately when a request is received. Otherwise, requests will be kept for manual handling.', 'he' => 'כאשר מופעל, הנתונים יימחקו מיד כאשר מתקבלת בקשה. אחרת, הבקשות יישמרו לטיפול ידני.'],
+        'total_requests' => ['en' => 'Total requests', 'he' => 'סה\"כ בקשות'],
+        'pending_requests' => ['en' => 'Pending requests', 'he' => 'בקשות ממתינות'],
+        'completed_requests' => ['en' => 'Completed requests', 'he' => 'בקשות שהושלמו'],
+        'request_date' => ['en' => 'Request date', 'he' => 'תאריך בקשה'],
+        'ip_address' => ['en' => 'IP address', 'he' => 'כתובת IP'],
+        'deletion_type' => ['en' => 'Deletion type', 'he' => 'סוג מחיקה'],
+        'status' => ['en' => 'Status', 'he' => 'סטטוס'],
+        'deletion_date' => ['en' => 'Deletion date', 'he' => 'תאריך מחיקה'],
+        'actions' => ['en' => 'Actions', 'he' => 'פעולות'],
+        'no_deletion_requests' => ['en' => 'No deletion requests', 'he' => 'אין בקשות מחיקה'],
+        'status_completed' => ['en' => 'Completed', 'he' => 'הושלם'],
+        'status_pending' => ['en' => 'Pending', 'he' => 'ממתין'],
+        'delete_data' => ['en' => 'Delete data', 'he' => 'מחק נתונים'],
+        'delete_in_progress' => ['en' => 'Deleting...', 'he' => 'מוחק...'],
+        'delete_confirm' => ['en' => 'Are you sure you want to delete all data for this IP?', 'he' => 'האם אתה בטוח שברצונך למחוק את כל הנתונים עבור כתובת IP זו?'],
+        'error_deleting_data' => ['en' => 'Error deleting data: %s', 'he' => 'שגיאה במחיקת הנתונים: %s'],
+        'communication_error' => ['en' => 'Communication error with the server', 'he' => 'שגיאה בתקשורת עם השרת'],
+        'deletion_type_browsing' => ['en' => 'Browsing data', 'he' => 'נתוני גלישה'],
+        'deletion_type_account' => ['en' => 'Browsing and account data', 'he' => 'נתוני גלישה וחשבון'],
         
         // Cookie Scanner
         'current_cookies' => ['en' => 'Current Cookies', 'he' => 'עוגיות נוכחיות'],
@@ -241,6 +438,36 @@ function wpccm_text($key, $default = '') {
         'no_suggestions_found' => ['en' => 'No cookie suggestions found.', 'he' => 'לא נמצאו הצעות עוגיות.'],
         'add_to_purge_list' => ['en' => 'Add to Purge List', 'he' => 'הוסף לרשימת מחיקה'],
         'cookies_added_to_purge' => ['en' => 'Cookies added to purge list', 'he' => 'עוגיות נוספו לרשימת המחיקה'],
+        'scanning_site_cookies' => ['en' => 'Scanning cookies from the site...', 'he' => 'סורק עוגיות מהאתר...'],
+        'site_cookies_found' => ['en' => 'Found %d cookies from the site', 'he' => 'נמצאו %d עוגיות מהאתר'],
+        'cookies_added_to_table' => ['en' => 'Cookies added to the table successfully', 'he' => 'העוגיות נוספו לטבלה בהצלחה'],
+        'cookies_added_to_table_admin' => ['en' => 'Cookies added to the table successfully (from admin)', 'he' => 'העוגיות נוספו לטבלה בהצלחה (מהאדמין)'],
+        'error_with_message' => ['en' => 'Error: %s', 'he' => 'שגיאה: %s'],
+        'error_saving_cookies' => ['en' => 'Error saving cookies', 'he' => 'שגיאה בשמירת העוגיות'],
+        'error_accessing_site_using_admin' => ['en' => 'Could not access the site, using admin cookies', 'he' => 'לא ניתן לגשת לאתר, משתמש בעוגיות האדמין'],
+        'unknown_error' => ['en' => 'Unknown error', 'he' => 'שגיאה לא מוכרת'],
+        
+        // Sync History
+        'cookie_sync_history_title' => ['en' => 'Cookie Sync History', 'he' => 'היסטוריית סינכרון עוגיות'],
+        'cookie_sync_history_description' => ['en' => 'List of all sync actions performed on the site (manual and automatic)', 'he' => 'רשימת כל פעולות הסינכרון שבוצעו באתר (ידניות ואוטומטיות)'],
+        'cookie_sync_history_empty_title' => ['en' => 'No sync history yet', 'he' => 'אין היסטוריית סינכרון עדיין'],
+        'cookie_sync_history_empty_hint' => ['en' => 'History will appear after the first sync', 'he' => 'ההיסטוריה תתחיל להופיע אחרי הסינכרון הראשון'],
+        'sync_column_time' => ['en' => 'Time', 'he' => 'זמן'],
+        'sync_column_type' => ['en' => 'Type', 'he' => 'סוג'],
+        'sync_column_status' => ['en' => 'Status', 'he' => 'סטטוס'],
+        'sync_column_cookies_found' => ['en' => 'Cookies found', 'he' => 'עוגיות נמצאו'],
+        'sync_column_new_cookies' => ['en' => 'New cookies', 'he' => 'עוגיות חדשות'],
+        'sync_column_execution_time' => ['en' => 'Execution time', 'he' => 'זמן ביצוע'],
+        'sync_column_details' => ['en' => 'Details', 'he' => 'פרטים'],
+        'manual_sync_label' => ['en' => 'Manual', 'he' => 'ידני'],
+        'automatic_sync_label' => ['en' => 'Automatic', 'he' => 'אוטומטי'],
+        'view_details' => ['en' => 'View', 'he' => 'צפה'],
+        'view_new_cookies_details' => ['en' => 'View details of new cookies', 'he' => 'צפה בפרטי העוגיות החדשות'],
+        'execution_seconds' => ['en' => '%ss', 'he' => '%s שניות'],
+        'not_available' => ['en' => 'N/A', 'he' => 'לא זמין'],
+        'sync_status_success' => ['en' => 'Success', 'he' => 'הצליח'],
+        'sync_status_error' => ['en' => 'Error', 'he' => 'שגיאה'],
+        'sync_status_skipped' => ['en' => 'Skipped', 'he' => 'דולג'],
         
         // Data Deletion
         'data_deletion' => ['en' => 'Data Deletion History', 'he' => 'מחיקת היסטוריית נתונים'],
@@ -293,6 +520,12 @@ function wpccm_text($key, $default = '') {
         'cookie_reason_security' => ['en' => 'Security token - prevents attacks', 'he' => 'אסימון אבטחה - מונע התקפות'],
         'cookie_reason_wordpress' => ['en' => 'WordPress core functionality', 'he' => 'פונקציונליות ליבה של WordPress'],
         'cookie_reason_necessary' => ['en' => 'Essential for basic site functionality', 'he' => 'חיוני לתפקוד בסיסי של האתר'],
+        'dashboard_api_description' => ['en' => 'Central dashboard API URL', 'he' => 'כתובת ה-API של הדשבורד המרכזי'],
+        'license_valid' => ['en' => 'License valid:', 'he' => 'רישיון תקף:'],
+        'license_invalid_or_disconnected' => ['en' => 'License invalid or not connected', 'he' => 'רישיון לא תקף או לא מחובר'],
+        'error_code_label' => ['en' => 'Error code:', 'he' => 'קוד שגיאה:'],
+        'license_key_description' => ['en' => 'License key from the central dashboard', 'he' => 'מפתח הרישיון מהדשבורד המרכזי'],
+        'edit' => ['en' => 'Edit', 'he' => 'ערוך'],
         'enter_license_key' => ['en' => 'Enter the license key you received when purchasing the plugin', 'he' => 'הזן את מפתח הרישיון שקיבלת בעת רכישת התוסף'],
     ];
     
@@ -2702,20 +2935,169 @@ function wpccm_get_category_display_name($category_key) {
 }
 
 function wpccm_get_cookie_reason_by_category($cookie_name, $category) {
-    switch ($category) {
-        case 'necessary':
-            return 'חיוני לתפקוד בסיסי של האתר';
-        case 'functional':
-            return 'משפר את חוויית המשתמש';
-        case 'performance':
-            return 'עוזר לשיפור ביצועי האתר';
-        case 'analytics':
-            return 'עוזר להבין את השימוש באתר';
-        case 'advertisement':
-            return 'משמש להצגת פרסומות מותאמות';
-        default:
-            return 'פונקציונליות אחרת של האתר';
+    $lang = wpccm_get_lang();
+    
+    $reasons = [
+        'necessary' => [
+            'en' => 'Essential for basic site functionality',
+            'he' => 'חיוני לתפקוד בסיסי של האתר',
+        ],
+        'functional' => [
+            'en' => 'Improves the user experience',
+            'he' => 'משפר את חוויית המשתמש',
+        ],
+        'performance' => [
+            'en' => 'Helps improve site performance',
+            'he' => 'עוזר לשיפור ביצועי האתר',
+        ],
+        'analytics' => [
+            'en' => 'Helps understand site usage',
+            'he' => 'עוזר להבין את השימוש באתר',
+        ],
+        'advertisement' => [
+            'en' => 'Used to show personalized ads',
+            'he' => 'משמש להצגת פרסומות מותאמות',
+        ],
+        'default' => [
+            'en' => 'Other functionality on the site',
+            'he' => 'פונקציונליות אחרת של האתר',
+        ],
+    ];
+    
+    $reason_key = isset($reasons[$category]) ? $category : 'default';
+    
+    return $reasons[$reason_key][$lang] ?? $reasons[$reason_key]['en'];
+}
+
+/**
+ * Default category definitions in both languages.
+ */
+function wpccm_get_default_category_definitions() {
+    return [
+        'necessary' => [
+            'display_name' => [
+                'en' => 'Necessary',
+                'he' => 'נחוץ',
+            ],
+            'description' => [
+                'en' => 'Essential cookies for basic site functionality',
+                'he' => 'עוגיות הכרחיות לפעולת האתר הבסיסית',
+            ],
+            'color' => '#d63384',
+            'icon' => '🔒',
+            'sort_order' => 1,
+            'is_essential' => 1,
+        ],
+        'functional' => [
+            'display_name' => [
+                'en' => 'Functional',
+                'he' => 'פונקציונלי',
+            ],
+            'description' => [
+                'en' => 'Cookies that improve user experience',
+                'he' => 'עוגיות המשפרות את חוויית המשתמש',
+            ],
+            'color' => '#0073aa',
+            'icon' => '⚙️',
+            'sort_order' => 2,
+            'is_essential' => 0,
+        ],
+        'performance' => [
+            'display_name' => [
+                'en' => 'Performance',
+                'he' => 'ביצועים',
+            ],
+            'description' => [
+                'en' => 'Cookies that enhance website performance',
+                'he' => 'עוגיות לשיפור ביצועי האתר',
+            ],
+            'color' => '#00a32a',
+            'icon' => '📈',
+            'sort_order' => 3,
+            'is_essential' => 0,
+        ],
+        'analytics' => [
+            'display_name' => [
+                'en' => 'Analytics',
+                'he' => 'אנליטיקה',
+            ],
+            'description' => [
+                'en' => 'Cookies for measuring traffic and user behavior',
+                'he' => 'עוגיות למדידת תנועה וניתוח התנהגות משתמשים',
+            ],
+            'color' => '#dba617',
+            'icon' => '📊',
+            'sort_order' => 4,
+            'is_essential' => 0,
+        ],
+        'advertisement' => [
+            'display_name' => [
+                'en' => 'Advertisement',
+                'he' => 'פרסום',
+            ],
+            'description' => [
+                'en' => 'Cookies for personalized advertising and marketing',
+                'he' => 'עוגיות למטרות פרסום ושיווק מותאם אישית',
+            ],
+            'color' => '#8c8f94',
+            'icon' => '📢',
+            'sort_order' => 5,
+            'is_essential' => 0,
+        ],
+        'others' => [
+            'display_name' => [
+                'en' => 'Others',
+                'he' => 'אחרים',
+            ],
+            'description' => [
+                'en' => 'Cookies that do not fit other categories',
+                'he' => 'עוגיות שלא נכללות בקטגוריות אחרות',
+            ],
+            'color' => '#666666',
+            'icon' => '📦',
+            'sort_order' => 6,
+            'is_essential' => 0,
+        ],
+    ];
+}
+
+/**
+ * Adjust default categories to the current site language unless user-customized.
+ */
+function wpccm_localize_default_categories($categories) {
+    if (empty($categories)) {
+        return [];
     }
+    
+    $defaults = wpccm_get_default_category_definitions();
+    $lang     = wpccm_get_lang();
+    
+    foreach ($categories as &$category) {
+        $key = isset($category['category_key']) ? $category['category_key'] : null;
+        if (!$key || !isset($defaults[$key])) {
+            continue;
+        }
+        
+        $default = $defaults[$key];
+        
+        $known_display_names = array_values($default['display_name']);
+        $known_descriptions  = array_values($default['description']);
+        
+        $has_custom_name = !isset($category['display_name']) || !in_array($category['display_name'], $known_display_names, true) ? true : false;
+        $has_custom_desc = !isset($category['description']) || !in_array($category['description'], $known_descriptions, true) ? true : false;
+        
+        if (!$has_custom_name && isset($default['display_name'][$lang])) {
+            $category['display_name'] = $default['display_name'][$lang];
+        }
+        
+        if (!$has_custom_desc && isset($default['description'][$lang])) {
+            $category['description'] = $default['description'][$lang];
+        }
+    }
+    
+    unset($category);
+    
+    return $categories;
 }
 
 /**
@@ -2732,70 +3114,19 @@ function wpccm_create_default_categories() {
         return; // Categories already exist
     }
     
-    $default_categories = [
-        [
-            'category_key' => 'necessary',
-            'display_name' => 'נחוץ',
-            'description' => 'עוגיות הכרחיות לפעולת האתר הבסיסית',
-            'color' => '#d63384',
-            'icon' => '🔒',
-            'sort_order' => 1,
-            'is_essential' => 1
-        ],
-        [
-            'category_key' => 'functional',
-            'display_name' => 'פונקציונלי',
-            'description' => 'עוגיות המשפרות את חוויית המשתמש',
-            'color' => '#0073aa',
-            'icon' => '⚙️',
-            'sort_order' => 2,
-            'is_essential' => 0
-        ],
-        [
-            'category_key' => 'performance',
-            'display_name' => 'ביצועים',
-            'description' => 'עוגיות לשיפור ביצועי האתר',
-            'color' => '#00a32a',
-            'icon' => '📈',
-            'sort_order' => 3,
-            'is_essential' => 0
-        ],
-        [
-            'category_key' => 'analytics',
-            'display_name' => 'אנליטיקה',
-            'description' => 'עוגיות למדידת תנועה וניתוח התנהגות משתמשים',
-            'color' => '#dba617',
-            'icon' => '📊',
-            'sort_order' => 4,
-            'is_essential' => 0
-        ],
-        [
-            'category_key' => 'advertisement',
-            'display_name' => 'פרסום',
-            'description' => 'עוגיות למטרות פרסום ושיווק מותאם אישית',
-            'color' => '#8c8f94',
-            'icon' => '📢',
-            'sort_order' => 5,
-            'is_essential' => 0
-        ],
-        [
-            'category_key' => 'others',
-            'display_name' => 'אחרים',
-            'description' => 'עוגיות שלא נכללות בקטגוריות אחרות',
-            'color' => '#666666',
-            'icon' => '📦',
-            'sort_order' => 6,
-            'is_essential' => 0
-        ]
-    ];
+    $default_categories = wpccm_get_default_category_definitions();
+    $lang = wpccm_get_lang();
     
-    foreach ($default_categories as $category) {
+    foreach ($default_categories as $category_key => $category) {
+        $display_name = isset($category['display_name'][$lang]) ? $category['display_name'][$lang] : $category['display_name']['en'];
+        $description  = isset($category['description'][$lang]) ? $category['description'][$lang] : $category['description']['en'];
+        
         $wpdb->insert(
             $categories_table,
             [
-                'category_key' => $category['category_key'],
-                'display_name' => $category['display_name'],
-                'description' => $category['description'],
+                'category_key' => $category_key,
+                'display_name' => $display_name,
+                'description' => $description,
                 'color' => $category['color'],
                 'icon' => $category['icon'],
                 'sort_order' => $category['sort_order'],
@@ -2824,7 +3155,11 @@ function wpccm_get_categories($active_only = true) {
         ARRAY_A
     );
     
-    return $categories ?: [];
+    if (!$categories) {
+        return [];
+    }
+    
+    return wpccm_localize_default_categories($categories);
 }
 
 /**
@@ -2840,7 +3175,12 @@ function wpccm_get_category_by_key($category_key) {
         $category_key
     ), ARRAY_A);
     
-    return $category ?: null;
+    if (!$category) {
+        return null;
+    }
+    
+    $localized = wpccm_localize_default_categories([$category]);
+    return $localized ? $localized[0] : null;
 }
 
 /**

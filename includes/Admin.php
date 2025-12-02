@@ -58,7 +58,7 @@ class WP_CCM_Admin {
         add_action('wp_ajax_wpccm_get_category', [$this, 'ajax_get_category']);
         add_action('wp_ajax_wpccm_save_category', [$this, 'ajax_save_category']);
         add_action('wp_ajax_wpccm_delete_category', [$this, 'ajax_delete_category']);
-        add_action('wp_ajax_wpccm_check_categories_table', [$this, 'ajax_check_categories_table']);
+        // add_action('wp_ajax_wpccm_check_categories_table', [$this, 'ajax_check_categories_table']);
         
         // Script sync management
         add_action('wp_ajax_wpccm_sync_scripts', [$this, 'ajax_sync_scripts']);
@@ -2102,7 +2102,17 @@ class WP_CCM_Admin {
                 performance: "' . wpccm_text('performance') . '",
                 analytics: "' . wpccm_text('analytics') . '",
                 advertisement: "' . wpccm_text('advertisement') . '",
-                others: "' . wpccm_text('others') . '"
+                others: "' . wpccm_text('others') . '",
+                no_related_cookies: "' . wpccm_text('no_related_cookies') . '",
+                cookies_input_helper_text: "' . wpccm_text('cookies_input_helper_text') . '",
+                scanning_site_cookies: "' . wpccm_text('scanning_site_cookies') . '",
+                site_cookies_found: "' . wpccm_text('site_cookies_found') . '",
+                cookies_added_to_table: "' . wpccm_text('cookies_added_to_table') . '",
+                cookies_added_to_table_admin: "' . wpccm_text('cookies_added_to_table_admin') . '",
+                error_with_message: "' . wpccm_text('error_with_message') . '",
+                error_saving_cookies: "' . wpccm_text('error_saving_cookies') . '",
+                error_accessing_site_using_admin: "' . wpccm_text('error_accessing_site_using_admin') . '",
+                unknown_error: "' . wpccm_text('unknown_error') . '"
             }
         };
         //console.log("WPCCM Debug: WPCCM_TABLE initialized BEFORE script load:", window.WPCCM_TABLE);
@@ -2435,49 +2445,49 @@ class WP_CCM_Admin {
         
         echo '<div id="wpccm-categories-manager">';
         echo '<div style="background: #f0f0f1; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #00a32a;">';
-        echo '<h3 style="margin: 0 0 10px 0; color: #1d2327;">🏷️ ' . esc_html(wpccm_translate_pair('Manage cookie categories', 'ניהול קטגוריות עוגיות')) . '</h3>';
-        echo '<p style="margin: 0; color: #50575e;">' . esc_html(wpccm_translate_pair('Manage the different cookie categories on your site. Each cookie will be assigned to one of these categories.', 'כאן תוכל לנהל את הקטגוריות השונות של העוגיות באתר. כל עוגיה תשויך לאחת מהקטגוריות הללו.')) . '</p>';
+        echo '<h3 style="margin: 0 0 10px 0; color: #1d2327;">🏷️ ' . esc_html(wpccm_text('manage_categories')) . '</h3>';
+        echo '<p style="margin: 0; color: #50575e;">' . esc_html(wpccm_text('manage_categories_description')) . '</p>';
         echo '</div>';
         
         echo '<div style="margin-bottom: 15px;">';
-        echo '<button type="button" class="button button-primary" id="wpccm-add-category">➕ ' . esc_html(wpccm_translate_pair('Add new category', 'הוסף קטגוריה חדשה')) . '</button>';
-        echo '<button type="button" class="button button-secondary" id="wpccm-check-table" style="margin-right: 10px;">🔍 ' . esc_html(wpccm_translate_pair('Check table', 'בדוק טבלה')) . '</button>';
+        echo '<button type="button" class="button button-primary" id="wpccm-add-category">➕ ' . esc_html(wpccm_text('add_new_category')) . '</button>';
+        //echo '<button type="button" class="button button-secondary" id="wpccm-check-table" style="margin-right: 10px;">🔍 ' . esc_html(wpccm_translate_pair('Check table', 'בדוק טבלה')) . '</button>';
         echo '</div>';
         
         // Add debug button JavaScript
-        echo '<script>
-        jQuery(document).ready(function($) {
-            $("#wpccm-check-table").on("click", function() {
-                $.post(ajaxurl, {
-                    action: "wpccm_check_categories_table",
-                    _wpnonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
-                }).done(function(response) {
-                    console.log("Table check response:", response);
-                    alert(response.data || response.message || "בדיקה הושלמה - בדוק קונסול");
-                });
-            });
-        });
-        </script>';
+        // echo '<script>
+        // jQuery(document).ready(function($) {
+        //     $("#wpccm-check-table").on("click", function() {
+        //         $.post(ajaxurl, {
+        //             action: "wpccm_check_categories_table",
+        //             _wpnonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
+        //         }).done(function(response) {
+        //             console.log("Table check response:", response);
+        //             alert(response.data || response.message || "בדיקה הושלמה - בדוק קונסול");
+        //         });
+        //     });
+        // });
+        // </script>';
         
         if (empty($categories)) {
             echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
             echo '<div style="font-size: 36px; margin-bottom: 10px;">📂</div>';
-            echo '<p style="margin: 0; font-size: 14px;">אין קטגוריות עדיין</p>';
-            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">לחץ על "הוסף קטגוריה חדשה" כדי להתחיל</p>';
+            echo '<p style="margin: 0; font-size: 14px;">' . esc_html(wpccm_text('categories_empty_title')) . '</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">' . esc_html(wpccm_text('categories_empty_hint')) . '</p>';
             echo '</div>';
         } else {
             echo '<div class="wpccm-table-container" style="border: 1px solid #c3c4c7; border-radius: 4px; background: #fff; overflow: hidden;">';
             echo '<table class="widefat" id="wpccm-categories-table" style="margin: 0; border: none;">';
             echo '<thead>';
             echo '<tr style="background: #f6f7f7;">';
-            echo '<th style="padding: 12px; font-weight: 600;">מפתח</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">שם תצוגה</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">תיאור</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">צבע</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">אייקון</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">חיוני</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">פעיל</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">פעולות</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_key')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_display_name')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_description')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_color')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_icon')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_essential')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('category_active')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('actions')) . '</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody>';
@@ -2794,7 +2804,7 @@ class WP_CCM_Admin {
     public function render_management_page() {
         ?>
         <div class="wrap">
-            <h1><span class="dashicons dashicons-chart-bar"></span> ניהול עוגיות וסטטיסטיקות</h1>
+            <h1><span class="dashicons dashicons-chart-bar"></span> <?php echo esc_html(wpccm_text('management_title')); ?></h1>
             
             <!-- Dashboard Overview -->
             <div class="wpccm-dashboard-grid">
@@ -2805,7 +2815,7 @@ class WP_CCM_Admin {
                             <span class="dashicons dashicons-yes-alt"></span>
                         </div>
                         <div class="wpccm-stat-content">
-                            <h3>הסכמות היום</h3>
+                            <h3><?php echo esc_html(wpccm_text('consents_today')); ?></h3>
                             <span class="wpccm-stat-number">0</span>
                         </div>
                     </div>
@@ -2815,7 +2825,7 @@ class WP_CCM_Admin {
                             <span class="dashicons dashicons-dismiss"></span>
                         </div>
                         <div class="wpccm-stat-content">
-                            <h3>דחיות היום</h3>
+                            <h3><?php echo esc_html(wpccm_text('rejects_today')); ?></h3>
                             <span class="wpccm-stat-number">0</span>
                         </div>
                     </div>
@@ -2825,7 +2835,7 @@ class WP_CCM_Admin {
                             <span class="dashicons dashicons-groups"></span>
                         </div>
                         <div class="wpccm-stat-content">
-                            <h3>סה״כ משתמשים</h3>
+                            <h3><?php echo esc_html(wpccm_text('total_users')); ?></h3>
                             <span class="wpccm-stat-number">0</span>
                         </div>
                     </div>
@@ -2835,7 +2845,7 @@ class WP_CCM_Admin {
                             <span class="dashicons dashicons-admin-tools"></span>
                         </div>
                         <div class="wpccm-stat-content">
-                            <h3>עוגיות פעילות</h3>
+                            <h3><?php echo esc_html(wpccm_text('active_cookies')); ?></h3>
                             <span class="wpccm-stat-number">0</span>
                         </div>
                     </div>
@@ -2843,19 +2853,19 @@ class WP_CCM_Admin {
                 
                 <!-- Quick Actions -->
                 <div class="wpccm-quick-actions">
-                    <h3>פעולות מהירות</h3>
+                    <h3><?php echo esc_html(wpccm_text('quick_actions')); ?></h3>
                     <div class="wpccm-action-buttons">
                         <button type="button" class="button button-primary">
                             <span class="dashicons dashicons-download"></span>
-                            ייצוא דוח
+                            <?php echo esc_html(wpccm_text('export_report')); ?>
                         </button>
                         <button type="button" class="button" onclick="refreshAllData()">
                             <span class="dashicons dashicons-update"></span>
-                            רענון נתונים
+                            <?php echo esc_html(wpccm_text('refresh_data')); ?>
                         </button>
                         <button type="button" class="button" onclick="goToAdvancedSettings()">
                             <span class="dashicons dashicons-admin-settings"></span>
-                            הגדרות מתקדמות
+                            <?php echo esc_html(wpccm_text('advanced_settings')); ?>
                         </button>
 
                     </div>
@@ -2866,14 +2876,14 @@ class WP_CCM_Admin {
             
             <!-- Charts Area -->
             <div class="wpccm-charts-section">
-                <h2>גרפים וניתוחים</h2>
+                <h2><?php echo esc_html(wpccm_text('charts_and_analysis')); ?></h2>
                 <div class="wpccm-charts-grid">
                     <div class="wpccm-chart-container">
-                        <h3>הסכמות לאורך זמן</h3>
+                        <h3><?php echo esc_html(wpccm_text('consents_over_time')); ?></h3>
                         <canvas id="consentTimeChart"></canvas>
                     </div>
                     <div class="wpccm-chart-container">
-                        <h3>התפלגות לפי קטגוריות</h3>
+                        <h3><?php echo esc_html(wpccm_text('category_distribution')); ?></h3>
                         <canvas id="consentCategoryChart"></canvas>
                     </div>
                 </div>
@@ -3086,13 +3096,41 @@ class WP_CCM_Admin {
         
         <script>
 
-        
-                 // Load statistics on page load
-         jQuery(document).ready(function($) {
-             loadStatistics();
-             loadConsentHistory(1, 100, ''); // Load 100 records by default
-         });
-        
+        const wpccmDashboardTexts = {
+            loading_data: <?php echo json_encode(wpccm_text('loading_data')); ?>,
+            error_loading_data: <?php echo json_encode(wpccm_text('error_loading_data')); ?>,
+            error_server_connection: <?php echo json_encode(wpccm_text('error_server_connection')); ?>,
+            no_history_data: <?php echo json_encode(wpccm_text('no_history_data')); ?>,
+            loaded_records_ip_page: <?php echo json_encode(wpccm_text('loaded_records_ip_page')); ?>,
+            loaded_records_ip_all: <?php echo json_encode(wpccm_text('loaded_records_ip_all')); ?>,
+            loaded_records_page: <?php echo json_encode(wpccm_text('loaded_records_page')); ?>,
+            loaded_records_all: <?php echo json_encode(wpccm_text('loaded_records_all')); ?>,
+            search_results_ip: <?php echo json_encode(wpccm_text('search_results_ip')); ?>,
+            exporting_ip: <?php echo json_encode(wpccm_text('exporting_ip')); ?>,
+            exporting: <?php echo json_encode(wpccm_text('exporting')); ?>,
+            export_complete_ip: <?php echo json_encode(wpccm_text('export_complete_ip')); ?>,
+            export_complete: <?php echo json_encode(wpccm_text('export_complete')); ?>,
+            enter_exact_ip: <?php echo json_encode(wpccm_text('enter_exact_ip')); ?>,
+            searching: <?php echo json_encode(wpccm_text('searching')); ?>,
+            previous: <?php echo json_encode(wpccm_text('previous')); ?>,
+            next: <?php echo json_encode(wpccm_text('next')); ?>,
+            no_categories_label: <?php echo json_encode(wpccm_text('no_categories_label')); ?>,
+            invalid_data: <?php echo json_encode(wpccm_text('invalid_data')); ?>,
+            action_accept: <?php echo json_encode(wpccm_text('action_accept')); ?>,
+            action_reject: <?php echo json_encode(wpccm_text('action_reject')); ?>,
+            action_save: <?php echo json_encode(wpccm_text('action_save')); ?>,
+            action_accept_all: <?php echo json_encode(wpccm_text('action_accept_all')); ?>,
+            action_reject_all: <?php echo json_encode(wpccm_text('action_reject_all')); ?>,
+            refreshing: <?php echo json_encode(wpccm_text('refreshing')); ?>,
+        };
+        const wpccmDateLocale = <?php echo json_encode(wpccm_get_lang() === 'he' ? 'he-IL' : 'en-US'); ?>;
+
+        // Load statistics on page load
+        jQuery(document).ready(function($) {
+            loadStatistics();
+            loadConsentHistory(1, 100, ''); // Load 100 records by default
+        });
+
         function loadStatistics() {
             jQuery.post(ajaxurl, {
                 action: 'wpccm_get_consent_stats',
@@ -3124,7 +3162,7 @@ class WP_CCM_Admin {
          
          function loadConsentHistory(page = 1, perPage = 100, searchIP = '') {
              var tbody = jQuery('.wpccm-activity-table tbody');
-             tbody.html('<tr><td colspan="5">טוען נתונים...</td></tr>');
+             tbody.html('<tr><td colspan="5">' + wpccmDashboardTexts.loading_data + '</td></tr>');
              
              jQuery.post(ajaxurl, {
                  action: 'wpccm_get_consent_history',
@@ -3136,10 +3174,10 @@ class WP_CCM_Admin {
                  if (response.success) {
                      renderConsentHistory(response.data);
                  } else {
-                     tbody.html('<tr><td colspan="5">שגיאה בטעינת הנתונים</td></tr>');
+                     tbody.html('<tr><td colspan="5">' + wpccmDashboardTexts.error_loading_data + '</td></tr>');
                  }
              }).fail(function() {
-                 tbody.html('<tr><td colspan="5">שגיאה בחיבור לשרת</td></tr>');
+                 tbody.html('<tr><td colspan="5">' + wpccmDashboardTexts.error_server_connection + '</td></tr>');
              });
          }
          
@@ -3154,29 +3192,38 @@ class WP_CCM_Admin {
              
              if (currentSearchIP !== '') {
                  if (data.per_page > 0) {
-                     loadingInfo.text('נטענו ' + data.data.length + ' רשומות מתוך ' + data.total + ' עבור IP מדויק: ' + currentSearchIP + ' (עמוד ' + data.current_page + ')');
+                     loadingInfo.text(wpccmDashboardTexts.loaded_records_ip_page
+                         .replace('%1$d', data.data.length)
+                         .replace('%2$d', data.total)
+                         .replace('%3$s', currentSearchIP)
+                         .replace('%4$d', data.current_page));
                  } else {
-                     loadingInfo.text('נטענו את כל הנתונים עבור IP מדויק: ' + currentSearchIP + ': ' + data.data.length + ' רשומות');
+                     loadingInfo.text(wpccmDashboardTexts.loaded_records_ip_all
+                         .replace('%1$s', currentSearchIP)
+                         .replace('%2$d', data.data.length));
                  }
-                 searchInfo.text('תוצאות חיפוש מדויק עבור IP: ' + currentSearchIP);
+                 searchInfo.text(wpccmDashboardTexts.search_results_ip.replace('%s', currentSearchIP));
              } else {
                  if (data.per_page > 0) {
-                     loadingInfo.text('נטענו ' + data.data.length + ' רשומות מתוך ' + data.total + ' (עמוד ' + data.current_page + ')');
+                     loadingInfo.text(wpccmDashboardTexts.loaded_records_page
+                         .replace('%1$d', data.data.length)
+                         .replace('%2$d', data.total)
+                         .replace('%3$d', data.current_page));
                  } else {
-                     loadingInfo.text('נטענו את כל הנתונים: ' + data.data.length + ' רשומות');
+                     loadingInfo.text(wpccmDashboardTexts.loaded_records_all.replace('%d', data.data.length));
                  }
                  searchInfo.text('');
              }
              
              if (!data.data || data.data.length === 0) {
-                 tbody.html('<tr><td colspan="5">אין נתוני היסטוריה</td></tr>');
+                 tbody.html('<tr><td colspan="5">' + wpccmDashboardTexts.no_history_data + '</td></tr>');
                  loadingInfo.text('');
                  return;
              }
              
              data.data.forEach(function(record) {
-                 var date = new Date(record.created_at).toLocaleString('he-IL');
-                 var actionText = getActionText(record.action_type);
+                 var date = new Date(record.created_at).toLocaleString(wpccmDateLocale);
+                var actionText = getActionText(record.action_type);
                  var categories = '';
                  
                  try {
@@ -3184,10 +3231,10 @@ class WP_CCM_Admin {
                      if (Array.isArray(categoriesData) && categoriesData.length > 0) {
                          categories = categoriesData.join(', ');
                      } else {
-                         categories = 'ללא קטגוריות';
+                         categories = wpccmDashboardTexts.no_categories_label;
                      }
                  } catch (e) {
-                     categories = 'נתונים לא תקינים';
+                     categories = wpccmDashboardTexts.invalid_data;
                  }
                  
                  var row = '<tr>' +
@@ -3212,11 +3259,11 @@ class WP_CCM_Admin {
          
          function getActionText(actionType) {
              var actions = {
-                 'accept': 'קבלה',
-                 'reject': 'דחייה', 
-                 'save': 'שמירה',
-                 'accept_all': 'קבלת הכל',
-                 'reject_all': 'דחיית הכל'
+                 'accept': wpccmDashboardTexts.action_accept,
+                 'reject': wpccmDashboardTexts.action_reject, 
+                 'save': wpccmDashboardTexts.action_save,
+                 'accept_all': wpccmDashboardTexts.action_accept_all,
+                 'reject_all': wpccmDashboardTexts.action_reject_all
              };
              return actions[actionType] || actionType;
          }
@@ -3231,7 +3278,7 @@ class WP_CCM_Admin {
              
              // Previous button
              if (currentPage > 1) {
-                 paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage - 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">« הקודם</button> ';
+                 paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage - 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">« ' + wpccmDashboardTexts.previous + '</button> ';
              }
              
              // Page numbers (show max 5 pages around current)
@@ -3245,7 +3292,7 @@ class WP_CCM_Admin {
              
              // Next button
              if (currentPage < totalPages) {
-                 paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage + 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">הבא »</button>';
+                 paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage + 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">' + wpccmDashboardTexts.next + ' »</button>';
              }
              
              paginationHtml += '</div>';
@@ -3264,9 +3311,9 @@ class WP_CCM_Admin {
              var currentSearchIP = getCurrentSearchIP();
              
              if (currentSearchIP !== '') {
-                 loadingInfo.text('מייצא נתונים עבור IP מדויק: ' + currentSearchIP + '...');
+                 loadingInfo.text(wpccmDashboardTexts.exporting_ip.replace('%s', currentSearchIP));
              } else {
-                 loadingInfo.text('מייצא נתונים...');
+                 loadingInfo.text(wpccmDashboardTexts.exporting);
              }
              
              // Create a form to submit the export request
@@ -3305,9 +3352,9 @@ class WP_CCM_Admin {
              document.body.removeChild(form);
              
              if (currentSearchIP !== '') {
-                 loadingInfo.text('הייצוא הושלם בהצלחה עבור IP מדויק: ' + currentSearchIP + '!');
+                 loadingInfo.text(wpccmDashboardTexts.export_complete_ip.replace('%s', currentSearchIP));
              } else {
-                 loadingInfo.text('הייצוא הושלם בהצלחה!');
+                 loadingInfo.text(wpccmDashboardTexts.export_complete);
              }
              
              setTimeout(function() {
@@ -3320,11 +3367,11 @@ class WP_CCM_Admin {
              var searchInfo = jQuery('.wpccm-search-info');
              
              if (searchIP === '') {
-                 searchInfo.text('אנא הזן כתובת IP מדויקת לחיפוש');
+                 searchInfo.text(wpccmDashboardTexts.enter_exact_ip);
                  return;
              }
              
-             searchInfo.text('מחפש...');
+             searchInfo.text(wpccmDashboardTexts.searching);
              loadConsentHistory(1, 100, searchIP);
          }
          
@@ -3351,7 +3398,7 @@ class WP_CCM_Admin {
              // Show loading state
              var refreshButton = jQuery('button[onclick="refreshAllData()"]');
              var originalText = refreshButton.html();
-             refreshButton.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> רענון...');
+             refreshButton.html('<span class="dashicons dashicons-update" style="animation: spin 1s linear infinite;"></span> ' + wpccmDashboardTexts.refreshing);
              refreshButton.prop('disabled', true);
              
              // Refresh statistics
@@ -3722,396 +3769,6 @@ class WP_CCM_Admin {
     }
 
     /**
-     * Render activity history page
-     */
-    public function render_history_page() {
-        ?>
-        <div class="wrap">
-            <h1>היסטוריית פעילות</h1>
-            <p class="description">צפייה בהיסטוריית פעילות המשתמשים באתר</p>
-            
-            <?php $this->render_consent_history_tab(); ?>
-        </div>
-        <?php
-    }
-    
-
-
-    /**
-     * Render consent history tab
-     */
-    private function render_consent_history_tab() {
-        ?>
-        <!-- Controls for data loading -->
-        <div class="wpccm-controls" style="margin-bottom: 15px;">
-            <button class="button" onclick="loadConsentHistory(1, 100, getCurrentSearchIP())">טען 100 רשומות</button>
-            <button class="button" onclick="loadConsentHistory(1, 500, getCurrentSearchIP())">טען 500 רשומות</button>
-            <button class="button button-primary" onclick="loadConsentHistory(1, 0, getCurrentSearchIP())">טען את כל הנתונים</button>
-            <button class="button" onclick="exportData('csv')" style="margin-left: 10px;">ייצא ל-CSV</button>
-            <button class="button" onclick="exportData('json')">ייצא ל-JSON</button>
-            <span class="wpccm-loading-info" style="margin-left: 10px; color: #666;"></span>
-        </div>
-        
-        <!-- Search controls -->
-        <div class="wpccm-search-controls" style="margin-bottom: 15px;">
-            <input type="text" id="search-ip" placeholder="הזן כתובת IP מדויקת..." style="width: 200px; margin-left: 10px;">
-            <button class="button" onclick="searchByIP()">חפש</button>
-            <button class="button" onclick="clearSearch()">נקה חיפוש</button>
-            <span class="wpccm-search-info" style="margin-right: 10px; color: #666;"></span>
-        </div>
-        
-        <table class="wpccm-activity-table">
-            <thead>
-                <tr>
-                    <th>תאריך</th>
-                    <th>סוג פעולה</th>
-                    <th>קטגוריות</th>
-                    <th>IP משתמש</th>
-                    <th>URL הפניה</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Data will be populated here -->
-            </tbody>
-        </table>
-        
-        <style>
-        .wpccm-activity-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        
-        .wpccm-activity-table th,
-        .wpccm-activity-table td {
-            padding: 12px;
-            text-align: right;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .wpccm-activity-table th {
-            background-color: #f9f9f9;
-            font-weight: 600;
-        }
-        
-        .wpccm-activity-table tr:hover {
-            background-color: #f5f5f5;
-        }
-        
-        .action-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            color: white;
-            text-transform: uppercase;
-        }
-        
-        .action-accept,
-        .action-accept_all {
-            background: #28a745;
-        }
-        
-        .action-reject,
-        .action-reject_all {
-            background: #dc3545;
-        }
-        
-        .action-save {
-            background: #17a2b8;
-        }
-        
-        .wpccm-pagination button {
-            margin: 0 2px;
-        }
-        
-        .wpccm-controls {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .wpccm-controls .button {
-            margin: 0;
-        }
-        
-        .wpccm-loading-info {
-            font-style: italic;
-            color: #666;
-            margin-right: 10px;
-        }
-        
-        .wpccm-search-controls {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        
-        .wpccm-search-controls input[type="text"] {
-            padding: 6px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        
-        .wpccm-search-controls input[type="text"]:focus {
-            outline: none;
-            border-color: #0073aa;
-            box-shadow: 0 0 0 1px #0073aa;
-        }
-        
-        .wpccm-search-info {
-            font-style: italic;
-            color: #0073aa;
-            font-weight: 500;
-        }
-        </style>
-        
-        <script>
-        // Load consent history on page load
-        jQuery(document).ready(function($) {
-            loadConsentHistory(1, 100, ''); // Load 100 records by default
-        });
-        
-        function loadConsentHistory(page = 1, perPage = 100, searchIP = '') {
-            var tbody = jQuery('.wpccm-activity-table tbody');
-            tbody.html('<tr><td colspan="5">טוען נתונים...</td></tr>');
-            
-            jQuery.post(ajaxurl, {
-                action: 'wpccm_get_consent_history',
-                nonce: '<?php echo wp_create_nonce('wpccm_history'); ?>',
-                page: page,
-                per_page: perPage,
-                search_ip: searchIP
-            }, function(response) {
-                if (response.success) {
-                    renderConsentHistory(response.data);
-                } else {
-                    tbody.html('<tr><td colspan="5">שגיאה בטעינת הנתונים</td></tr>');
-                }
-            }).fail(function() {
-                tbody.html('<tr><td colspan="5">שגיאה בחיבור לשרת</td></tr>');
-            });
-        }
-        
-        function renderConsentHistory(data) {
-            var tbody = jQuery('.wpccm-activity-table tbody');
-            tbody.empty();
-            
-            // Update loading info
-            var loadingInfo = jQuery('.wpccm-loading-info');
-            var searchInfo = jQuery('.wpccm-search-info');
-            var currentSearchIP = getCurrentSearchIP();
-            
-            if (currentSearchIP !== '') {
-                if (data.per_page > 0) {
-                    loadingInfo.text('נטענו ' + data.data.length + ' רשומות מתוך ' + data.total + ' עבור IP מדויק: ' + currentSearchIP + ' (עמוד ' + data.current_page + ')');
-                } else {
-                    loadingInfo.text('נטענו את כל הנתונים עבור IP מדויק: ' + currentSearchIP + ': ' + data.data.length + ' רשומות');
-                }
-                searchInfo.text('תוצאות חיפוש מדויק עבור IP: ' + currentSearchIP);
-            } else {
-                if (data.per_page > 0) {
-                    loadingInfo.text('נטענו ' + data.data.length + ' רשומות מתוך ' + data.total + ' (עמוד ' + data.current_page + ')');
-                } else {
-                    loadingInfo.text('נטענו את כל הנתונים: ' + data.data.length + ' רשומות');
-                }
-                searchInfo.text('');
-            }
-            
-            if (!data.data || data.data.length === 0) {
-                tbody.html('<tr><td colspan="5">אין נתוני היסטוריה</td></tr>');
-                loadingInfo.text('');
-                return;
-            }
-            
-            data.data.forEach(function(record) {
-                var date = new Date(record.created_at).toLocaleString('he-IL');
-                var actionText = getActionText(record.action_type);
-                var categories = '';
-                
-                try {
-                    var categoriesData = JSON.parse(record.categories_accepted || '[]');
-                    if (Array.isArray(categoriesData) && categoriesData.length > 0) {
-                        categories = categoriesData.join(', ');
-                    } else {
-                        categories = 'ללא קטגוריות';
-                    }
-                } catch (e) {
-                    categories = 'נתונים לא תקינים';
-                }
-                
-                var row = '<tr>' +
-                    '<td>' + escapeHtml(date) + '</td>' +
-                    '<td><span class="action-badge action-' + record.action_type + '">' + actionText + '</span></td>' +
-                    '<td>' + escapeHtml(categories) + '</td>' +
-                    '<td>' + escapeHtml(record.user_ip || '-') + '</td>' +
-                    '<td>' + escapeHtml(record.referer_url || '-') + '</td>' +
-                '</tr>';
-                
-                tbody.append(row);
-            });
-            
-            // Add pagination if needed (only when not loading all data)
-            if (data.per_page > 0 && data.total > data.per_page) {
-                addPagination(data);
-            } else {
-                // Remove existing pagination if loading all data
-                jQuery('.wpccm-pagination').remove();
-            }
-        }
-        
-        function getActionText(actionType) {
-            var actions = {
-                'accept': 'קבלה',
-                'reject': 'דחייה', 
-                'save': 'שמירה',
-                'accept_all': 'קבלת הכל',
-                'reject_all': 'דחיית הכל'
-            };
-            return actions[actionType] || actionType;
-        }
-        
-        function addPagination(data) {
-            var totalPages = Math.ceil(data.total / data.per_page);
-            var currentPage = data.current_page;
-            
-            if (totalPages <= 1) return;
-            
-            var paginationHtml = '<div class="wpccm-pagination" style="margin-top: 15px; text-align: center;">';
-            
-            // Previous button
-            if (currentPage > 1) {
-                paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage - 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">« הקודם</button> ';
-            }
-            
-            // Page numbers (show max 5 pages around current)
-            var startPage = Math.max(1, currentPage - 2);
-            var endPage = Math.min(totalPages, currentPage + 2);
-            
-            for (var i = startPage; i <= endPage; i++) {
-                var buttonClass = (i === currentPage) ? 'button button-primary' : 'button';
-                paginationHtml += '<button class="' + buttonClass + '" onclick="loadConsentHistory(' + i + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">' + i + '</button> ';
-            }
-            
-            // Next button
-            if (currentPage < totalPages) {
-                paginationHtml += '<button class="button" onclick="loadConsentHistory(' + (currentPage + 1) + ', ' + data.per_page + ', \'' + getCurrentSearchIP() + '\')">הבא »</button>';
-            }
-            
-            paginationHtml += '</div>';
-            
-            jQuery('.wpccm-activity-table').after(paginationHtml);
-        }
-        
-        function escapeHtml(text) {
-            var div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
-        function exportData(format) {
-            var loadingInfo = jQuery('.wpccm-loading-info');
-            var currentSearchIP = getCurrentSearchIP();
-            
-            if (currentSearchIP !== '') {
-                loadingInfo.text('מייצא נתונים עבור IP מדויק: ' + currentSearchIP + '...');
-            } else {
-                loadingInfo.text('מייצא נתונים...');
-            }
-            
-            // Create a form to submit the export request
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = ajaxurl;
-            form.target = '_blank';
-            
-            var actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'wpccm_export_consent_history';
-            
-            var nonceInput = document.createElement('input');
-            nonceInput.type = 'hidden';
-            nonceInput.name = 'nonce';
-            nonceInput.value = '<?php echo wp_create_nonce('wpccm_export'); ?>';
-            
-            var formatInput = document.createElement('input');
-            formatInput.type = 'hidden';
-            formatInput.name = 'format';
-            formatInput.value = format;
-            
-            var searchInput = document.createElement('input');
-            searchInput.type = 'hidden';
-            searchInput.name = 'search_ip';
-            searchInput.value = currentSearchIP;
-            
-            form.appendChild(actionInput);
-            form.appendChild(nonceInput);
-            form.appendChild(formatInput);
-            form.appendChild(searchInput);
-            
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-            
-            if (currentSearchIP !== '') {
-                loadingInfo.text('הייצוא הושלם בהצלחה עבור IP מדויק: ' + currentSearchIP + '!');
-            } else {
-                loadingInfo.text('הייצוא הושלם בהצלחה!');
-            }
-            
-            setTimeout(function() {
-                loadingInfo.text('');
-            }, 3000);
-        }
-        
-        function searchByIP() {
-            var searchIP = jQuery('#search-ip').val().trim();
-            var searchInfo = jQuery('.wpccm-search-info');
-            
-            if (searchIP === '') {
-                searchInfo.text('אנא הזן כתובת IP מדויקת לחיפוש');
-                return;
-            }
-            
-            searchInfo.text('מחפש...');
-            loadConsentHistory(1, 100, searchIP);
-        }
-        
-        function clearSearch() {
-            jQuery('#search-ip').val('');
-            jQuery('.wpccm-search-info').text('');
-            loadConsentHistory(1, 100, '');
-        }
-        
-        function getCurrentSearchIP() {
-            return jQuery('#search-ip').val().trim();
-        }
-        
-        // Add Enter key support for search
-        jQuery(document).ready(function($) {
-            jQuery('#search-ip').on('keypress', function(e) {
-                if (e.which === 13) { // Enter key
-                    searchByIP();
-                }
-            });
-        });
-        </script>
-        <?php
-    }
-
-
-    /**
      * Dashboard Connection Section Callback
      */
     public function dashboard_connection_section_callback() {
@@ -4124,7 +3781,7 @@ class WP_CCM_Admin {
     public function field_dashboard_api_url() {
         $value = WPCCM_DASHBOARD_API_URL;
         echo '<input type="url" name="wpccm_dashboard_api_url" value="' . esc_attr($value) . '" class="large-text" disabled />';
-        echo '<p class="description">כתובת ה-API של הדשבורד המרכזי</p>';
+        echo '<p class="description">' . esc_html(wpccm_text('dashboard_api_description')) . '</p>';
     }
 
     /**
@@ -4150,12 +3807,12 @@ class WP_CCM_Admin {
             echo '<div class="license-field-container">';
             echo '<div class="license-status valid">';
             echo '<span class="dashicons dashicons-yes-alt" style="color: green;"></span>';
-            echo '<strong>רישיון תקף: </strong>' . esc_html(substr($value, 0, 8) . '...') . '';
-            echo '<button type="button" class="button button-small" id="edit-license-key" style="margin-right: 10px;">ערוך</button>';
+            echo '<strong>' . esc_html(wpccm_text('license_valid')) . '</strong> ' . esc_html(substr($value, 0, 8) . '...');
+            echo '<button type="button" class="button button-small" id="edit-license-key" style="margin-right: 10px;">' . esc_html(wpccm_text('edit')) . '</button>';
             echo '</div>';
             echo '<div class="license-input-container" style="display: none;">';
-            echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
-            echo '<button type="button" class="button button-small" id="cancel-edit-license" style="margin-right: 5px;">ביטול</button>';
+            echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="' . esc_attr(wpccm_text('enter_license_key')) . '" />';
+            echo '<button type="button" class="button button-small" id="cancel-edit-license" style="margin-right: 5px;">' . esc_html(wpccm_text('cancel')) . '</button>';
             echo '</div>';
         echo '</div>';
         
@@ -4181,7 +3838,7 @@ class WP_CCM_Admin {
             
             if (!empty($value)) {
                 // הצגת הודעת השגיאה הספציפית מהשרת
-                $error_message = 'רישיון לא תקף או לא מחובר';
+                $error_message = wpccm_text('license_invalid_or_disconnected');
                 if ($license_status && isset($license_status['error'])) {
                     $error_message = $license_status['error'];
                 }
@@ -4192,13 +3849,13 @@ class WP_CCM_Admin {
                 
                 // הצגת קוד שגיאה אם קיים
                 if ($license_status && isset($license_status['code']) && $license_status['code'] !== 200) {
-                    echo '<br><small style="color: #666;">קוד שגיאה: ' . esc_html($license_status['code']) . '</small>';
+                    echo '<br><small style="color: #666;">' . esc_html(wpccm_text('error_code_label')) . ' ' . esc_html($license_status['code']) . '</small>';
                 }
                 echo '</div>';
             }
             
-            echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="הכנס את מפתח הרישיון" />';
-            echo '<p class="description">מפתח הרישיון מהדשבורד המרכזי</p>';
+            echo '<input type="text" name="wpccm_license_key" value="' . esc_attr($value) . '" class="large-text" placeholder="' . esc_attr(wpccm_text('enter_license_key')) . '" />';
+            echo '<p class="description">' . esc_html(wpccm_text('license_key_description')) . '</p>';
             echo '</div>';
         }
     }
@@ -4294,12 +3951,12 @@ class WP_CCM_Admin {
     public function ajax_cc_detect_save_map() {
         // Check permissions
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'אין לך הרשאות מתאימות']);
+            wp_send_json_error(['message' => wpccm_text('no_permissions')]);
         }
         
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'wpccm_admin_nonce')) {
-            wp_send_json_error(['message' => 'בדיקת אבטחה נכשלה']);
+            wp_send_json_error(['message' => wpccm_text('security_check_failed')]);
         }
         
         // Get selected items
@@ -4854,11 +4511,11 @@ class WP_CCM_Admin {
     private function render_script_sync_tab() {
         ?>
         <div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #00a32a;">
-            <h3 style="margin: 0 0 10px 0; color: #1d2327;">🔍 סינכרון סקריפטים</h3>
-            <p style="margin: 0 0 15px 0; color: #50575e;">סרוק את האתר כדי למצוא את כל הסקריפטים הפעילים ולקטלג אותם לפי קטגוריות.</p>
+            <h3 style="margin: 0 0 10px 0; color: #1d2327;">🔍 <?php echo esc_html(wpccm_text('script_sync_title')); ?></h3>
+            <p style="margin: 0 0 15px 0; color: #50575e;"><?php echo esc_html(wpccm_text('script_sync_description')); ?></p>
             
             <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                <button type="button" class="button button-primary" id="wpccm-sync-scripts-btn">🔄 סנכרן סקריפטים</button>
+                <button type="button" class="button button-primary" id="wpccm-sync-scripts-btn">🔄 <?php echo esc_html(wpccm_text('sync_scripts_button')); ?></button>
                 <span id="wpccm-scripts-sync-status" style="color: #50575e; font-size: 13px; font-weight: 500;"></span>
             </div>
         </div>
@@ -4870,7 +4527,7 @@ class WP_CCM_Admin {
 
         <!-- Scripts Sync History -->
         <div style="margin-top: 30px;">
-            <h3>📊 היסטוריית סינכרון סקריפטים</h3>
+            <h3>📊 <?php echo esc_html(wpccm_text('script_sync_history_title')); ?></h3>
             <?php $this->render_scripts_sync_history_table(); ?>
         </div>
 
@@ -4882,8 +4539,8 @@ class WP_CCM_Admin {
                 const originalText = button.text();
                 const status = $('#wpccm-scripts-sync-status');
                 
-                button.text('⏳ סורק...').prop('disabled', true);
-                status.text('מתחיל סריקת סקריפטים...');
+                button.text('⏳ ' + <?php echo json_encode(wpccm_text('script_sync_scanning')); ?>).prop('disabled', true);
+                status.text(<?php echo json_encode(wpccm_text('script_sync_starting')); ?>);
                 
                 $.post(ajaxurl, {
                     action: 'wpccm_sync_scripts',
@@ -4898,10 +4555,13 @@ class WP_CCM_Admin {
                             location.reload();
                         }, 2000);
                     } else {
-                        status.html('❌ שגיאה: ' + (response.data || 'Unknown error'));
+                        const errTpl = <?php echo json_encode(wpccm_text('error_with_message')); ?> || 'Error: %s';
+                        const fallback = <?php echo json_encode(wpccm_text('unknown_error')); ?> || 'Unknown error';
+                        const msg = errTpl.replace('%s', response.data || fallback);
+                        status.html('❌ ' + msg);
                     }
                 }).fail(function() {
-                    status.html('❌ שגיאה בסינכרון סקריפטים');
+                    status.html('❌ ' + <?php echo json_encode(wpccm_text('script_sync_error')); ?>);
                 }).always(function() {
                     button.text(originalText).prop('disabled', false);
                 });
@@ -4942,24 +4602,27 @@ class WP_CCM_Admin {
                 const originalText = button.text();
                 const status = $('#wpccm-forms-sync-status');
 
-                button.text('⏳ סורק טפסים...').prop('disabled', true);
-                status.text('מאתר טפסים באתר...');
+                button.text('⏳ ' + <?php echo json_encode(wpccm_text('forms_sync_scanning')); ?>).prop('disabled', true);
+                status.text(<?php echo json_encode(wpccm_text('forms_sync_detecting')); ?>);
 
                 $.post(ajaxurl, {
                     action: 'wpccm_sync_forms',
                     _wpnonce: '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>'
                 }).done(function(response) {
                     if (response.success) {
-                        status.html('✅ ' + response.data.message);
+                        const msg = response.data && response.data.message ? response.data.message : <?php echo json_encode(wpccm_text('forms_sync')); ?>;
+                        status.html('✅ ' + msg);
                         $('#wpccm-forms-table-container').load(location.href + ' #wpccm-forms-table-container > *');
                         setTimeout(function() {
                             location.reload();
                         }, 2000);
                     } else {
-                        status.html('❌ שגיאה: ' + (response.data || 'Unknown error'));
+                        const errTpl = <?php echo json_encode(wpccm_text('error_with_message')); ?> || 'Error: %s';
+                        const unknownErr = <?php echo json_encode(wpccm_text('unknown_error')); ?> || 'Unknown error';
+                        status.html('❌ ' + errTpl.replace('%s', response.data || unknownErr));
                     }
                 }).fail(function() {
-                    status.html('❌ שגיאה בסינכרון טפסים');
+                    status.html('❌ ' + <?php echo json_encode(wpccm_text('forms_sync_error')); ?>);
                 }).always(function() {
                     button.text(originalText).prop('disabled', false);
                 });
@@ -4980,18 +4643,18 @@ class WP_CCM_Admin {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 40%;">URL/סוג סקריפט</th>
-                    <th style="width: 15%;">סוג</th>
-                    <th style="width: 20%;">קטגוריה</th>
-                    <th style="width: 15%;">נצפה לאחרונה</th>
-                    <th style="width: 10%;">פעולות</th>
+                    <th style="width: 40%;"><?php echo esc_html(wpccm_text('scripts_table_url_type')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('scripts_table_type')); ?></th>
+                    <th style="width: 20%;"><?php echo esc_html(wpccm_text('scripts_table_category')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('scripts_table_last_seen')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('scripts_table_actions')); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($scripts)): ?>
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 20px; color: #666;">
-                            🔍 אין סקריפטים בטבלה. לחץ על "סנכרן סקריפטים" כדי להתחיל.
+                            🔍 <?php echo esc_html(wpccm_text('scripts_table_empty')); ?>
                         </td>
                     </tr>
                 <?php else: ?>
@@ -5000,11 +4663,11 @@ class WP_CCM_Admin {
                             <td>
                                 <div style="font-weight: 500;">
                                     <?php if ($script['script_type'] === 'external'): ?>
-                                        <a href="<?php echo esc_url($script['script_url']); ?>" target="_blank" title="פתח בטאב חדש">
+                                        <a href="<?php echo esc_url($script['script_url']); ?>" target="_blank" title="<?php echo esc_attr(wpccm_text('script_open_new_tab')); ?>">
                                             <?php echo esc_html($script['script_url']); ?>
                                         </a>
                                     <?php else: ?>
-                                        <span style="color: #666;">סקריפט פנימי</span>
+                                        <span style="color: #666;"><?php echo esc_html(wpccm_text('script_internal')); ?></span>
                                         <div style="font-size: 11px; color: #999; margin-top: 2px;">
                                             <?php echo substr(esc_html($script['script_content']), 0, 100) . '...'; ?>
                                         </div>
@@ -5013,7 +4676,7 @@ class WP_CCM_Admin {
                             </td>
                             <td>
                                 <span class="script-type-badge script-type-<?php echo $script['script_type']; ?>">
-                                    <?php echo $script['script_type'] === 'external' ? '🔗 חיצוני' : '📝 פנימי'; ?>
+                                    <?php echo $script['script_type'] === 'external' ? '🔗 ' . esc_html(wpccm_text('script_external')) : '📝 ' . esc_html(wpccm_text('script_internal_label')); ?>
                                 </span>
                             </td>
                             <td>
@@ -5028,8 +4691,8 @@ class WP_CCM_Admin {
                                 <button type="button" class="button button-small edit-script-category" 
                                         data-script-id="<?php echo $script['id']; ?>"
                                         data-current-category="<?php echo $script['category']; ?>"
-                                        title="ערוך קטגוריה">
-                                    ✏️ ערוך
+                                        title="<?php echo esc_attr(wpccm_text('script_edit_button')); ?>">
+                                    ✏️ <?php echo esc_html(wpccm_text('script_edit_button')); ?>
                                 </button>
                             </td>
                         </tr>
@@ -5041,10 +4704,10 @@ class WP_CCM_Admin {
         <!-- Edit Category Modal -->
         <div id="edit-script-category-modal" style="display: none;">
             <div class="modal-content">
-                <h3>ערוך קטגוריית סקריפט</h3>
+                <h3><?php echo esc_html(wpccm_text('script_edit_category_title')); ?></h3>
                 <form id="edit-script-category-form">
                     <input type="hidden" id="edit-script-id" name="script_id" value="">
-                    <label for="edit-script-category">קטגוריה:</label>
+                    <label for="edit-script-category"><?php echo esc_html(wpccm_text('script_edit_category_label')); ?></label>
                     <select id="edit-script-category" name="category" required>
                         <?php foreach ($categories as $category): ?>
                             <option value="<?php echo esc_attr($category['category_key']); ?>">
@@ -5053,8 +4716,8 @@ class WP_CCM_Admin {
                         <?php endforeach; ?>
                     </select>
                     <div class="modal-buttons">
-                        <button type="button" id="save-script-category" class="button button-primary">שמור</button>
-                        <button type="button" id="cancel-script-edit" class="button">ביטול</button>
+                        <button type="button" id="save-script-category" class="button button-primary"><?php echo esc_html(wpccm_text('save')); ?></button>
+                        <button type="button" id="cancel-script-edit" class="button"><?php echo esc_html(wpccm_text('cancel')); ?></button>
                     </div>
                 </form>
             </div>
@@ -5136,10 +4799,12 @@ class WP_CCM_Admin {
                         // Refresh the table
                         $('#wpccm-scripts-table-container').load(location.href + ' #wpccm-scripts-table-container > *');
                     } else {
-                        alert('שגיאה: ' + (response.data || 'Unknown error'));
+                        const errTpl = <?php echo json_encode(wpccm_text('error_with_message')); ?> || 'Error: %s';
+                        const unknownErr = <?php echo json_encode(wpccm_text('unknown_error')); ?> || 'Unknown error';
+                        alert(errTpl.replace('%s', response.data || unknownErr));
                     }
                 }).fail(function() {
-                    alert('שגיאה בעדכון קטגוריית הסקריפט');
+                    alert(<?php echo json_encode(wpccm_text('script_update_error')); ?>);
                 });
             });
 
@@ -5149,7 +4814,7 @@ class WP_CCM_Admin {
                 const button = $(this);
                 const originalText = button.text();
                 
-                button.text('⏳ טוען...').prop('disabled', true);
+                button.text('⏳ ' + <?php echo json_encode(wpccm_text('script_sync_details_loading')); ?>).prop('disabled', true);
                 
                 $.post(ajaxurl, {
                     action: 'wpccm_get_sync_details',
@@ -5159,10 +4824,10 @@ class WP_CCM_Admin {
                     if (response.success && response.data.cookies_data) {
                         showScriptSyncDetailsModal(response.data.cookies_data, response.data.sync_time);
                     } else {
-                        alert('לא ניתן לטעון פרטי סינכרון');
+                        alert(<?php echo json_encode(wpccm_text('script_sync_details_load_error')); ?>);
                     }
                 }).fail(function() {
-                    alert('שגיאה בטעינת פרטי סינכרון');
+                    alert(<?php echo json_encode(wpccm_text('script_sync_details_load_error')); ?>);
                 }).always(function() {
                     button.text(originalText).prop('disabled', false);
                 });
@@ -5171,13 +4836,14 @@ class WP_CCM_Admin {
             function showScriptSyncDetailsModal(scriptsData, syncTime) {
                 let modalHtml = '<div id="script-sync-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">';
                 modalHtml += '<div style="background: white; padding: 20px; border-radius: 8px; max-width: 800px; max-height: 80%; overflow-y: auto; margin: 20px;">';
-                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 פרטי סינכרון סקריפטים - ' + syncTime + '</h3>';
+                const detailsTitleTpl = <?php echo json_encode(wpccm_text('script_sync_details_title')); ?> || 'Script Sync Details - %s';
+                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 ' + detailsTitleTpl.replace('%s', syncTime) + '</h3>';
                 modalHtml += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">';
                 modalHtml += '<table style="width: 100%; border-collapse: collapse;">';
                 modalHtml += '<thead style="background: #f9f9f9; position: sticky; top: 0;"><tr>';
-                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">URL/סוג</th>';
-                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">סוג</th>';
-                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">קטגוריה</th>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;"><?php echo esc_html(wpccm_text('script_sync_details_url_type')); ?></th>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;"><?php echo esc_html(wpccm_text('script_sync_details_type')); ?></th>';
+                modalHtml += '<th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;"><?php echo esc_html(wpccm_text('script_sync_details_category')); ?></th>';
                 modalHtml += '</tr></thead><tbody>';
                 
                 if (Array.isArray(scriptsData)) {
@@ -5187,26 +4853,26 @@ class WP_CCM_Admin {
                         if (script.type === 'external') {
                             modalHtml += '<a href="' + script.url + '" target="_blank" style="color: #0073aa;">' + script.url + '</a>';
                         } else {
-                            modalHtml += '<span style="color: #666;">סקריפט פנימי</span>';
+                            modalHtml += '<span style="color: #666;"><?php echo esc_html(wpccm_text('script_internal')); ?></span>';
                             if (script.content) {
                                 modalHtml += '<div style="font-size: 10px; color: #999; margin-top: 2px;">' + script.content.substring(0, 100) + '...</div>';
                             }
                         }
                         modalHtml += '</td>';
                         modalHtml += '<td style="padding: 8px; border-bottom: 1px solid #eee;">';
-                        modalHtml += script.type === 'external' ? '🔗 חיצוני' : '📝 פנימי';
+                        modalHtml += script.type === 'external' ? '🔗 ' + <?php echo json_encode(wpccm_text('script_external')); ?> : '📝 ' + <?php echo json_encode(wpccm_text('script_internal_label')); ?>;
                         modalHtml += '</td>';
                         modalHtml += '<td style="padding: 8px; border-bottom: 1px solid #eee;">' + getScriptCategoryBadge(script.category) + '</td>';
                         modalHtml += '</tr>';
                     });
                 } else {
-                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">אין נתונים להצגה</td></tr>';
+                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;"><?php echo esc_html(wpccm_text('script_sync_details_no_data')); ?></td></tr>';
                 }
                 
                 modalHtml += '</tbody></table>';
                 modalHtml += '</div>';
                 modalHtml += '<div style="margin-top: 15px; text-align: center;">';
-                modalHtml += '<button type="button" class="button button-primary" onclick="closeScriptSyncDetailsModal()">סגור</button>';
+                modalHtml += '<button type="button" class="button button-primary" onclick="closeScriptSyncDetailsModal()"><?php echo esc_html(wpccm_text('close')); ?></button>';
                 modalHtml += '</div>';
                 modalHtml += '</div>';
                 modalHtml += '</div>';
@@ -5228,7 +4894,7 @@ class WP_CCM_Admin {
                 echo json_encode($categories_js);
                 ?>;
                 
-                const cat = categories[category] || categories['others'] || { name: 'אחרים', color: '#666', icon: '' };
+                const cat = categories[category] || categories['others'] || { name: '<?php echo esc_html(wpccm_text('others')); ?>', color: '#666', icon: '' };
                 const icon = cat.icon ? cat.icon + ' ' : '';
                 return '<span style="background: ' + cat.color + '; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-weight: 600;">' + icon + cat.name + '</span>';
             }
@@ -5256,12 +4922,12 @@ class WP_CCM_Admin {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 25%;">דף</th>
-                    <th style="width: 20%;">מזהה טופס</th>
-                    <th style="width: 25%;">כתובת פעולה</th>
-                    <th style="width: 10%;">שיטה</th>
-                    <th style="width: 10%;">סטטוס</th>
-                    <th style="width: 10%;">נוצר</th>
+                    <th style="width: 25%;"><?php echo esc_html(wpccm_text('forms_table_page')); ?></th>
+                    <th style="width: 20%;"><?php echo esc_html(wpccm_text('forms_table_form_id')); ?></th>
+                    <th style="width: 25%;"><?php echo esc_html(wpccm_text('forms_table_action')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('forms_table_method')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('forms_table_status')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('forms_table_created')); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -5278,7 +4944,7 @@ class WP_CCM_Admin {
                                 <div style="font-weight: 500;">
                                     <a href="<?php echo esc_url($form['page_url']); ?>" target="_blank"><?php echo esc_html($form['page_title']); ?></a>
                                 </div>
-                                <div style="font-size: 11px; color: #666;">ID דף: <?php echo (int) $form['post_id']; ?></div>
+                                <div style="font-size: 11px; color: #666;"><?php echo esc_html(wpccm_text('forms_page_id')); ?> <?php echo (int) $form['post_id']; ?></div>
                             </td>
                             <td>
                                 <?php if (!empty($form['form_id_attr'])): ?>
@@ -5288,7 +4954,7 @@ class WP_CCM_Admin {
                                     <div class="description">.<?php echo esc_html(str_replace(' ', '.', trim($form['form_class_attr']))); ?></div>
                                 <?php endif; ?>
                                 <?php if (empty($form['form_id_attr']) && empty($form['form_class_attr'])): ?>
-                                    <span style="color:#666; font-size:11px;">ללא מזהה/מחלקה</span>
+                                    <span style="color:#666; font-size:11px;"><?php echo esc_html(wpccm_text('forms_no_identifier')); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -5297,7 +4963,7 @@ class WP_CCM_Admin {
                                         <?php echo esc_html($form['form_action']); ?>
                                     </code>
                                 <?php else: ?>
-                                    <span style="color:#666; font-size: 11px;">(נשלח לאותו עמוד)</span>
+                                    <span style="color:#666; font-size: 11px;"><?php echo esc_html(wpccm_text('forms_action_same_page')); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td style="text-transform: uppercase; text-align:center;">
@@ -5305,9 +4971,9 @@ class WP_CCM_Admin {
                             </td>
                             <td style="text-align:center;">
                                 <?php if ($form['consent_required']): ?>
-                                    <span style="color:#00a32a; font-weight:600;">חובה</span>
+                                    <span style="color:#00a32a; font-weight:600;"><?php echo esc_html(wpccm_text('forms_status_required')); ?></span>
                                 <?php else: ?>
-                                    <span style="color:#666;">מושבת</span>
+                                    <span style="color:#666;"><?php echo esc_html(wpccm_text('forms_status_disabled')); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td style="font-size:11px; color:#555;">
@@ -5316,7 +4982,7 @@ class WP_CCM_Admin {
                                     $last_seen = !empty($form['last_seen']) ? date_i18n('d/m/Y', strtotime($form['last_seen'])) : '-';
                                 ?>
                                 <?php echo esc_html($detected_at); ?><br>
-                                <span style="color:#888;">עודכן: <?php echo esc_html($last_seen); ?></span>
+                                <span style="color:#888;"><?php echo esc_html(wpccm_text('forms_updated_label')); ?> <?php echo esc_html($last_seen); ?></span>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -5338,30 +5004,32 @@ class WP_CCM_Admin {
         if (empty($history)) {
             echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
             echo '<div style="font-size: 36px; margin-bottom: 10px;">🗂️</div>';
-            echo '<p style="margin: 0; font-size: 14px;">אין היסטוריית סינכרון טפסים עדיין</p>';
-            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">ההיסטוריה תתעדכן אחרי סינכרון ראשון</p>';
+            echo '<p style="margin: 0; font-size: 14px;">' . esc_html(wpccm_text('forms_history_empty_title')) . '</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">' . esc_html(wpccm_text('forms_history_empty_hint')) . '</p>';
             echo '</div>';
             return;
         }
 
         echo '<table class="widefat fixed striped">';
         echo '<thead><tr>';
-        echo '<th style="width: 20%;">זמן</th>';
-        echo '<th style="width: 20%;">סוג</th>';
-        echo '<th style="width: 15%;">סטטוס</th>';
-        echo '<th style="width: 15%;">טפסים שנמצאו</th>';
-        echo '<th style="width: 15%;">טפסים חדשים</th>';
-        echo '<th style="width: 15%;">פרטים</th>';
+        echo '<th style="width: 20%;">' . esc_html(wpccm_text('forms_history_time')) . '</th>';
+        echo '<th style="width: 20%;">' . esc_html(wpccm_text('forms_history_type')) . '</th>';
+        echo '<th style="width: 15%;">' . esc_html(wpccm_text('forms_history_status')) . '</th>';
+        echo '<th style="width: 15%;">' . esc_html(wpccm_text('forms_history_found')) . '</th>';
+        echo '<th style="width: 15%;">' . esc_html(wpccm_text('forms_history_new')) . '</th>';
+        echo '<th style="width: 15%;">' . esc_html(wpccm_text('forms_history_details')) . '</th>';
         echo '</tr></thead><tbody>';
 
         foreach ($history as $entry) {
             $sync_time = date('d/m/Y H:i', strtotime($entry['sync_time']));
-            $sync_label = $entry['sync_type'] === 'manual_forms' ? '👤 ידני' : '⏰ אוטומטי';
+            $sync_label = $entry['sync_type'] === 'manual_forms'
+                ? '👤 ' . wpccm_text('forms_sync_type_manual')
+                : '⏰ ' . wpccm_text('forms_sync_type_auto');
             $status = $this->get_sync_status_display($entry['status']);
 
             echo '<tr>';
             echo '<td style="padding:10px;">' . esc_html($sync_time) . '</td>';
-            echo '<td style="padding:10px;">' . $sync_label . '</td>';
+            echo '<td style="padding:10px;">' . esc_html($sync_label) . '</td>';
             echo '<td style="padding:10px;">' . $status . '</td>';
             echo '<td style="padding:10px; text-align:center;">' . (int) $entry['total_cookies_found'] . '</td>';
             echo '<td style="padding:10px; text-align:center;">';
@@ -5373,7 +5041,7 @@ class WP_CCM_Admin {
             echo '</td>';
             echo '<td style="padding:10px;">';
             if (!empty($entry['cookies_data'])) {
-                echo '<button type="button" class="button button-small view-form-sync-details" data-sync-id="' . (int) $entry['id'] . '">👁️ צפה</button>';
+                echo '<button type="button" class="button button-small view-form-sync-details" data-sync-id="' . (int) $entry['id'] . '" title="' . esc_attr(wpccm_text('forms_history_details')) . '">👁️ ' . esc_html(wpccm_text('view_details')) . '</button>';
             }
             echo '</td>';
             echo '</tr>';
@@ -5389,7 +5057,7 @@ class WP_CCM_Admin {
                 const button = $(this);
                 const originalText = button.text();
 
-                button.text('⏳ טוען...').prop('disabled', true);
+                button.text('⏳ ' + <?php echo json_encode(wpccm_text('forms_details_loading')); ?>).prop('disabled', true);
 
                 $.post(ajaxurl, {
                     action: 'wpccm_get_sync_details',
@@ -5399,10 +5067,10 @@ class WP_CCM_Admin {
                     if (response.success && Array.isArray(response.data.cookies_data)) {
                         showFormSyncDetailsModal(response.data.cookies_data, response.data.sync_time);
                     } else {
-                        alert('לא ניתן לטעון פרטי סינכרון');
+                        alert(<?php echo json_encode(wpccm_text('forms_details_load_error')); ?>);
                     }
                 }).fail(function() {
-                    alert('שגיאה בטעינת פרטי סינכרון');
+                    alert(<?php echo json_encode(wpccm_text('forms_details_load_error')); ?>);
                 }).always(function() {
                     button.text(originalText).prop('disabled', false);
                 });
@@ -5411,13 +5079,14 @@ class WP_CCM_Admin {
             function showFormSyncDetailsModal(formsData, syncTime) {
                 let modalHtml = '<div id="form-sync-details-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;">';
                 modalHtml += '<div style="background: white; padding: 20px; border-radius: 8px; max-width: 700px; max-height: 80%; overflow-y: auto; margin: 20px;">';
-                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📝 טפסים חדשים - ' + syncTime + '</h3>';
+                const titleTpl = <?php echo json_encode(wpccm_text('forms_details_title')); ?> || 'New forms - %s';
+                modalHtml += '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📝 ' + titleTpl.replace('%s', syncTime) + '</h3>';
                 modalHtml += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">';
                 modalHtml += '<table style="width:100%; border-collapse: collapse;">';
                 modalHtml += '<thead style="background:#f9f9f9;"><tr>';
-                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">דף</th>';
-                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">מזהה</th>';
-                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">פעולה</th>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;"><?php echo esc_html(wpccm_text('forms_details_page')); ?></th>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;"><?php echo esc_html(wpccm_text('forms_details_identifier')); ?></th>';
+                modalHtml += '<th style="padding:8px; border-bottom:1px solid #ddd; text-align:right;"><?php echo esc_html(wpccm_text('forms_details_action')); ?></th>';
                 modalHtml += '</tr></thead><tbody>';
 
                 if (Array.isArray(formsData) && formsData.length) {
@@ -5425,17 +5094,17 @@ class WP_CCM_Admin {
                         modalHtml += '<tr>';
                         modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee;">' + (item.page_title || '-') + '</td>';
                         modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee;">' + (item.identifier || '-') + '</td>';
-                        modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee; font-size:11px; word-break:break-all;">' + (item.action || '(אותו עמוד)') + '</td>';
+                        modalHtml += '<td style="padding:8px; border-bottom:1px solid #eee; font-size:11px; word-break:break-all;">' + (item.action || <?php echo json_encode(wpccm_text('forms_action_same_page')); ?>) + '</td>';
                         modalHtml += '</tr>';
                     });
                 } else {
-                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;">אין נתונים להצגה</td></tr>';
+                    modalHtml += '<tr><td colspan="3" style="padding: 20px; text-align: center; color: #666;"><?php echo esc_html(wpccm_text('forms_details_no_data')); ?></td></tr>';
                 }
 
                 modalHtml += '</tbody></table>';
                 modalHtml += '</div>';
                 modalHtml += '<div style="margin-top: 15px; text-align: center;">';
-                modalHtml += '<button type="button" class="button button-primary" onclick="closeFormSyncDetailsModal()">סגור</button>';
+                modalHtml += '<button type="button" class="button button-primary" onclick="closeFormSyncDetailsModal()"><?php echo esc_html(wpccm_text('close')); ?></button>';
                 modalHtml += '</div>';
                 modalHtml += '</div>';
                 modalHtml += '</div>';
@@ -5466,27 +5135,27 @@ class WP_CCM_Admin {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 20%;">זמן סינכרון</th>
-                    <th style="width: 15%;">סוג</th>
-                    <th style="width: 15%;">סך הכל נמצא</th>
-                    <th style="width: 15%;">חדשים</th>
-                    <th style="width: 15%;">מעודכנים</th>
-                    <th style="width: 10%;">סטטוס</th>
-                    <th style="width: 10%;">פעולות</th>
+                    <th style="width: 20%;"><?php echo esc_html(wpccm_text('script_history_sync_time')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('script_history_type')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('script_history_total')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('script_history_new')); ?></th>
+                    <th style="width: 15%;"><?php echo esc_html(wpccm_text('script_history_updated')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('script_history_status')); ?></th>
+                    <th style="width: 10%;"><?php echo esc_html(wpccm_text('script_history_actions')); ?></th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($script_history)): ?>
                     <tr>
                         <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
-                            📊 אין היסטוריית סינכרון עדיין. בצע סינכרון ראשון כדי לראות נתונים.
+                            📊 <?php echo esc_html(wpccm_text('script_history_empty')); ?>
                         </td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($script_history as $entry): ?>
                         <tr>
                             <td><?php echo date('d/m/Y H:i:s', strtotime($entry['sync_time'])); ?></td>
-                            <td><?php echo $entry['sync_type'] === 'auto_script' ? '🤖 אוטומטי' : '👤 ידני'; ?></td>
+                            <td><?php echo $entry['sync_type'] === 'auto_script' ? '🤖 ' . esc_html(wpccm_text('script_sync_type_auto')) : '👤 ' . esc_html(wpccm_text('script_sync_type_manual')); ?></td>
                             <td><?php echo $entry['total_cookies_found']; ?></td>
                             <td><?php echo $entry['new_cookies_added']; ?></td>
                             <td><?php echo $entry['updated_cookies']; ?></td>
@@ -5499,8 +5168,8 @@ class WP_CCM_Admin {
                                     ?>
                                     <button type="button" class="button button-small view-script-sync-details" 
                                             data-sync-id="<?php echo $entry['id']; ?>"
-                                            title="צפה בפרטי הסקריפטים החדשים">
-                                        👁️ צפה (<?php echo $count; ?>)
+                                            title="<?php echo esc_attr(wpccm_text('script_history_view_details')); ?>">
+                                        👁️ <?php echo esc_html(wpccm_text('view_details')); ?> (<?php echo $count; ?>)
                                     </button>
                                 <?php endif; ?>
                             </td>
@@ -5561,7 +5230,7 @@ class WP_CCM_Admin {
             
             wp_send_json_success([
                 'message' => sprintf(
-                    'נמצאו %d סקריפטים (%d חדשים, %d מעודכנים)',
+                    wpccm_text('scripts_sync_found_summary'),
                     count($scripts),
                     $result['new'],
                     $result['updated']
@@ -5592,7 +5261,11 @@ class WP_CCM_Admin {
             $result = wpccm_perform_auto_form_sync(true);
 
             wp_send_json_success([
-                'message' => sprintf('נמצאו %d טפסים (%d חדשים)', $result['total'], $result['new'])
+                'message' => sprintf(
+                    wpccm_text('forms_sync_found_summary'),
+                    $result['total'],
+                    $result['new']
+                )
             ]);
         } catch (Exception $e) {
             wp_send_json_error($e->getMessage());
@@ -5729,45 +5402,47 @@ class WP_CCM_Admin {
         $history = array_slice($history, 0, 10);
         
         echo '<div style="margin-top: 30px;">';
-        echo '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 היסטוריית סינכרון עוגיות</h3>';
-        echo '<p style="margin: 0 0 15px 0; color: #50575e;">רשימת כל פעולות הסינכרון שבוצעו באתר (ידניות ואוטומטיות)</p>';
+        echo '<h3 style="margin: 0 0 15px 0; color: #1d2327;">📊 ' . esc_html(wpccm_text('cookie_sync_history_title')) . '</h3>';
+        echo '<p style="margin: 0 0 15px 0; color: #50575e;">' . esc_html(wpccm_text('cookie_sync_history_description')) . '</p>';
         
         if (empty($history)) {
             echo '<div style="background: #f9f9f9; padding: 20px; border-radius: 4px; text-align: center; color: #666;">';
             echo '<div style="font-size: 36px; margin-bottom: 10px;">📋</div>';
-            echo '<p style="margin: 0; font-size: 14px;">אין היסטוריית סינכרון עדיין</p>';
-            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">ההיסטוריה תתחיל להופיע אחרי הסינכרון הראשון</p>';
+            echo '<p style="margin: 0; font-size: 14px;">' . esc_html(wpccm_text('cookie_sync_history_empty_title')) . '</p>';
+            echo '<p style="margin: 5px 0 0 0; font-size: 12px;">' . esc_html(wpccm_text('cookie_sync_history_empty_hint')) . '</p>';
             echo '</div>';
         } else {
             echo '<div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; overflow: hidden;">';
             echo '<table class="widefat" style="margin: 0; border: none;">';
             echo '<thead>';
             echo '<tr style="background: #f6f7f7;">';
-            echo '<th style="padding: 12px; font-weight: 600;">זמן</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">סוג</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">סטטוס</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">עוגיות נמצאו</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">עוגיות חדשות</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">זמן ביצוע</th>';
-            echo '<th style="padding: 12px; font-weight: 600;">פרטים</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_time')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_type')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_status')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_cookies_found')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_new_cookies')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_execution_time')) . '</th>';
+            echo '<th style="padding: 12px; font-weight: 600;">' . esc_html(wpccm_text('sync_column_details')) . '</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody>';
             
             foreach ($history as $entry) {
                 $sync_time = date('d/m/Y H:i', strtotime($entry['sync_time']));
-                $sync_label = '👤 ידני';
+                $sync_label = '👤 ' . wpccm_text('manual_sync_label');
 
                 if ($entry['sync_type'] === 'auto_cookie' || $entry['sync_type'] === 'auto') {
-                    $sync_label = '⏰ אוטומטי ';
+                    $sync_label = '⏰ ' . wpccm_text('automatic_sync_label');
                 }
 
                 $status = $this->get_sync_status_display($entry['status']);
-                $execution_time = $entry['execution_time'] ? number_format($entry['execution_time'], 3) . 's' : 'N/A';
+                $execution_time = $entry['execution_time']
+                    ? sprintf(wpccm_text('execution_seconds'), number_format($entry['execution_time'], 3))
+                    : wpccm_text('not_available');
                 
                 echo '<tr>';
                 echo '<td style="padding: 10px;">' . esc_html($sync_time) . '</td>';
-                echo '<td style="padding: 10px;">' . $sync_label . '</td>';
+                echo '<td style="padding: 10px;">' . esc_html($sync_label) . '</td>';
                 echo '<td style="padding: 10px;">' . $status . '</td>';
                 echo '<td style="padding: 10px; text-align: center;">' . (int) $entry['total_cookies_found'] . '</td>';
                 echo '<td style="padding: 10px; text-align: center;">';
@@ -5777,14 +5452,14 @@ class WP_CCM_Admin {
                     echo '<span style="color: #666;">0</span>';
                 }
                 echo '</td>';
-                echo '<td style="padding: 10px; text-align: center; font-family: monospace; font-size: 12px;">' . $execution_time . '</td>';
+                echo '<td style="padding: 10px; text-align: center; font-family: monospace; font-size: 12px;">' . esc_html($execution_time) . '</td>';
                 echo '<td style="padding: 10px;">';
                 
                 if (!empty($entry['cookies_data'])) {
                     $cookies_data = json_decode($entry['cookies_data'], true);
                     if (is_array($cookies_data) && !empty($cookies_data)) {
-                        echo '<button type="button" class="button button-small view-sync-details" data-sync-id="' . $entry['id'] . '" title="צפה בפרטי העוגיות החדשות">';
-                        echo '👁️ צפה (' . count($cookies_data) . ')';
+                        echo '<button type="button" class="button button-small view-sync-details" data-sync-id="' . $entry['id'] . '" title="' . esc_attr(wpccm_text('view_new_cookies_details')) . '">';
+                        echo '👁️ ' . esc_html(wpccm_text('view_details')) . ' (' . count($cookies_data) . ')';
                         echo '</button>';
                     }
                 }
@@ -5816,11 +5491,11 @@ class WP_CCM_Admin {
     private function get_sync_status_display($status) {
         switch ($status) {
             case 'success':
-                return '<span style="color: #00a32a; font-weight: 600;">✅ הצליח</span>';
+                return '<span style="color: #00a32a; font-weight: 600;">✅ ' . esc_html(wpccm_text('sync_status_success')) . '</span>';
             case 'error':
-                return '<span style="color: #d63384; font-weight: 600;">❌ שגיאה</span>';
+                return '<span style="color: #d63384; font-weight: 600;">❌ ' . esc_html(wpccm_text('sync_status_error')) . '</span>';
             case 'skipped':
-                return '<span style="color: #dba617; font-weight: 600;">⏭️ דולג</span>';
+                return '<span style="color: #dba617; font-weight: 600;">⏭️ ' . esc_html(wpccm_text('sync_status_skipped')) . '</span>';
             default:
                 return '<span style="color: #666;">' . esc_html($status) . '</span>';
         }
@@ -6124,49 +5799,53 @@ class WP_CCM_Admin {
     /**
      * AJAX handler for checking categories table
      */
-    public function ajax_check_categories_table() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('No access');
-            return;
-        }
+    // public function ajax_check_categories_table() {
+    //     if (!current_user_can('manage_options')) {
+    //         wp_send_json_error('No access');
+    //         return;
+    //     }
         
-        global $wpdb;
-        $categories_table = $wpdb->prefix . 'ck_categories';
+    //     global $wpdb;
+    //     $categories_table = $wpdb->prefix . 'ck_categories';
         
-        // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$categories_table'");
+    //     // Check if table exists
+    //     $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$categories_table'");
         
-        if (!$table_exists) {
-            wp_send_json_error('טבלת הקטגוריות לא קיימת! אנא כבה והפעל את הפלאגין.');
-            return;
-        }
+    //     if (!$table_exists) {
+    //         wp_send_json_error('טבלת הקטגוריות לא קיימת! אנא כבה והפעל את הפלאגין.');
+    //         return;
+    //     }
         
-        // Get table structure
-        $table_structure = $wpdb->get_results("DESCRIBE $categories_table");
+    //     // Get table structure
+    //     $table_structure = $wpdb->get_results("DESCRIBE $categories_table");
         
-        // Get categories count
-        $categories_count = $wpdb->get_var("SELECT COUNT(*) FROM $categories_table");
+    //     // Get categories count
+    //     $categories_count = $wpdb->get_var("SELECT COUNT(*) FROM $categories_table");
         
-        $message = "✅ טבלת הקטגוריות קיימת!\n";
-        $message .= "📊 מספר קטגוריות: $categories_count\n";
-        $message .= "🏗️ מבנה הטבלה: " . count($table_structure) . " עמודות\n";
-        $message .= "📋 עמודות: " . implode(', ', array_column($table_structure, 'Field'));
+    //     $message = "✅ טבלת הקטגוריות קיימת!\n";
+    //     $message .= "📊 מספר קטגוריות: $categories_count\n";
+    //     $message .= "🏗️ מבנה הטבלה: " . count($table_structure) . " עמודות\n";
+    //     $message .= "📋 עמודות: " . implode(', ', array_column($table_structure, 'Field'));
         
-        wp_send_json_success($message);
-    }
+    //     wp_send_json_success($message);
+    // }
     
     /**
      * Render a single category row in the new categories table
      */
     private function render_new_category_row($category) {
-        $essential_badge = $category['is_essential'] ? '<span style="background: #d63384; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">חיוני</span>' : '<span style="color: #666;">לא</span>';
-        $active_badge = $category['is_active'] ? '<span style="background: #00a32a; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">פעיל</span>' : '<span style="background: #666; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">לא פעיל</span>';
+        $essential_badge = $category['is_essential']
+            ? '<span style="background: #d63384; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html(wpccm_text('category_essential')) . '</span>'
+            : '<span style="color: #666;">' . esc_html(wpccm_text('not_essential')) . '</span>';
+        $active_badge = $category['is_active']
+            ? '<span style="background: #00a32a; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html(wpccm_text('category_active')) . '</span>'
+            : '<span style="background: #666; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">' . esc_html(wpccm_text('inactive')) . '</span>';
         $icon = !empty($category['icon']) ? $category['icon'] : '📦';
         
         echo '<tr>';
         echo '<td style="padding: 10px;"><code>' . esc_html($category['category_key']) . '</code></td>';
         echo '<td style="padding: 10px;"><strong>' . esc_html($category['display_name']) . '</strong></td>';
-        echo '<td style="padding: 10px;">' . esc_html($category['description'] ?: 'אין תיאור') . '</td>';
+        echo '<td style="padding: 10px;">' . esc_html($category['description'] ?: wpccm_text('no_description')) . '</td>';
         echo '<td style="padding: 10px; text-align: center;">';
         echo '<div style="width: 20px; height: 20px; background: ' . esc_attr($category['color']) . '; border-radius: 3px; margin: 0 auto; border: 1px solid #ddd;"></div>';
         echo '</td>';
@@ -6174,9 +5853,9 @@ class WP_CCM_Admin {
         echo '<td style="padding: 10px; text-align: center;">' . $essential_badge . '</td>';
         echo '<td style="padding: 10px; text-align: center;">' . $active_badge . '</td>';
         echo '<td style="padding: 10px;">';
-        echo '<button type="button" class="button button-small edit-category-btn" data-category-id="' . $category['id'] . '" title="ערוך קטגוריה">✏️ ערוך</button> ';
+        echo '<button type="button" class="button button-small edit-category-btn" data-category-id="' . $category['id'] . '" title="' . esc_attr(wpccm_text('edit_category')) . '">✏️ ' . esc_html(wpccm_text('edit')) . '</button> ';
         if (!$category['is_essential']) {
-            echo '<button type="button" class="button button-small delete-category-btn" data-category-id="' . $category['id'] . '" title="מחק קטגוריה" style="color: #d63384;">🗑️ מחק</button>';
+            echo '<button type="button" class="button button-small delete-category-btn" data-category-id="' . $category['id'] . '" title="' . esc_attr(wpccm_text('delete_category_label')) . '" style="color: #d63384;">🗑️ ' . esc_html(wpccm_text('delete')) . '</button>';
         }
         echo '</td>';
         echo '</tr>';
@@ -6190,49 +5869,49 @@ class WP_CCM_Admin {
         <!-- Category Management Modal -->
         <div id="category-management-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999;">
             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-width: 500px; max-height: 80vh; overflow-y: auto;">
-                <h3 id="modal-title" style="margin-top: 0;">הוסף קטגוריה חדשה</h3>
+                <h3 id="modal-title" style="margin-top: 0;"><?php echo esc_html(wpccm_text('category_modal_add_title')); ?></h3>
                 
                 <form id="category-form">
                     <input type="hidden" id="category-id" value="">
                     
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">מפתח קטגוריה:</label>
-                        <input type="text" id="category-key" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="למשל: my_category" required>
-                        <small style="color: #666;">באנגלית בלבד, ללא רווחים</small>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;"><?php echo esc_html(wpccm_text('category_key_label')); ?></label>
+                        <input type="text" id="category-key" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="<?php echo esc_attr(wpccm_text('key_placeholder')); ?>" required>
+                        <small style="color: #666;"><?php echo esc_html(wpccm_text('category_key_help')); ?></small>
                     </div>
                     
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">שם תצוגה:</label>
-                        <input type="text" id="category-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="למשל: הקטגוריה שלי" required>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;"><?php echo esc_html(wpccm_text('category_display_name_label')); ?></label>
+                        <input type="text" id="category-name" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="<?php echo esc_attr(wpccm_text('name_placeholder')); ?>" required>
                     </div>
                     
                     <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">תיאור:</label>
-                        <textarea id="category-description" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 80px;" placeholder="תיאור קצר של הקטגוריה"></textarea>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;"><?php echo esc_html(wpccm_text('category_description_label')); ?></label>
+                        <textarea id="category-description" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 80px;" placeholder="<?php echo esc_attr(wpccm_text('description_placeholder')); ?>"></textarea>
                     </div>
                     
                     <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div style="flex: 1;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">צבע:</label>
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;"><?php echo esc_html(wpccm_text('category_color_label')); ?></label>
                             <input type="color" id="category-color" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px; height: 40px;" value="#666666">
                         </div>
                         <div style="flex: 1;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600;">אייקון (אמוג'י):</label>
-                            <input type="text" id="category-icon" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="📦" maxlength="2">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600;"><?php echo esc_html(wpccm_text('category_icon_label')); ?></label>
+                            <input type="text" id="category-icon" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="<?php echo esc_attr(wpccm_text('category_icon_placeholder')); ?>" maxlength="2">
                         </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
                         <label style="display: flex; align-items: center; gap: 8px;">
                             <input type="checkbox" id="category-essential"> 
-                            <strong>קטגוריה חיונית</strong>
-                            <small style="color: #666;">(לא ניתן לכבות על ידי המשתמש)</small>
+                            <strong><?php echo esc_html(wpccm_text('category_essential_label')); ?></strong>
+                            <small style="color: #666;"><?php echo esc_html(wpccm_text('category_essential_hint')); ?></small>
                         </label>
                     </div>
                     
                     <div style="text-align: left;">
-                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;">שמור</button>
-                        <button type="button" id="cancel-category-modal" class="button">ביטול</button>
+                        <button type="button" id="save-category-btn" class="button button-primary" style="margin-left: 10px;"><?php echo esc_html(wpccm_text('save')); ?></button>
+                        <button type="button" id="cancel-category-modal" class="button"><?php echo esc_html(wpccm_text('cancel')); ?></button>
                     </div>
                 </form>
             </div>
@@ -6282,7 +5961,7 @@ class WP_CCM_Admin {
                 // Show loading state
                 const submitBtn = $(this);
                 const originalText = submitBtn.text();
-                submitBtn.text('🔄 שומר...').prop('disabled', true);
+                submitBtn.text('🔄 ' + <?php echo json_encode(wpccm_text('saving')); ?>).prop('disabled', true);
                 
                 // Send AJAX request
                 $.post(ajaxurl, formData).done(function(response) {
@@ -6291,12 +5970,15 @@ class WP_CCM_Admin {
                         $('#category-management-modal').hide();
                         location.reload(); // Refresh to show changes
                     } else {
-                        alert('שגיאה בשמירת הקטגוריה: ' + (response.data || 'שגיאה לא ידועה'));
+                        const errPrefix = <?php echo json_encode(wpccm_text('error_saving_category')); ?> || 'Error saving category:';
+                        const unknownErr = <?php echo json_encode(wpccm_text('unknown_error')); ?> || 'Unknown error';
+                        alert(errPrefix + ' ' + (response.data || unknownErr));
                         submitBtn.text(originalText).prop('disabled', false);
                     }
                 }).fail(function(xhr, status, error) {
                     console.error('AJAX Error:', xhr, status, error);
-                    alert('שגיאה בשמירת הקטגוריה: ' + error);
+                    const errPrefix = <?php echo json_encode(wpccm_text('error_saving_category')); ?> || 'Error saving category:';
+                    alert(errPrefix + ' ' + error);
                     submitBtn.text(originalText).prop('disabled', false);
                 });
             });
@@ -6329,7 +6011,7 @@ class WP_CCM_Admin {
             // Add new category
             $('#wpccm-add-category').on('click', function() {
                 
-                $('#modal-title').text('הוסף קטגוריה חדשה');
+                $('#modal-title').text(<?php echo json_encode(wpccm_text('category_modal_add_title')); ?>);
                 
                 // Reset form fields manually instead of using reset()
                 $('#category-id').val('');
@@ -6526,7 +6208,12 @@ class WP_CCM_Admin {
         update_option('wpccm_options', $current_options);
         
         wp_send_json_success([
-            'message' => 'הגדרות העיצוב נשמרו בהצלחה! מיקום באנר: ' . $banner_position . ', מיקום כפתור צף: ' . $floating_button_position . ', גודל: ' . $size,
+            'message' => sprintf(
+                wpccm_text('design_settings_saved'),
+                $banner_position,
+                $floating_button_position,
+                $size
+            ),
             'saved_data' => [
                 'banner_position' => $banner_position,
                 'floating_button_position' => $floating_button_position,

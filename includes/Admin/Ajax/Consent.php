@@ -58,13 +58,14 @@ class WP_CCM_Admin_Ajax_Consent {
 
         $page = max(1, intval($_POST['page'] ?? 1));
         $per_page = intval($_POST['per_page'] ?? 100);
-        $search_ip = sanitize_text_field($_POST['search_ip'] ?? '');
+        $search_term = sanitize_text_field($_POST['search_term'] ?? ($_POST['search_ip'] ?? ''));
 
         $where_clause = '';
         $where_params = [];
-        if (!empty($search_ip)) {
-            $where_clause = 'WHERE user_ip = %s';
-            $where_params[] = $search_ip;
+        if ($search_term !== '') {
+            $like = '%' . $wpdb->esc_like($search_term) . '%';
+            $where_clause = "WHERE user_ip LIKE %s OR action_type LIKE %s OR referer_url LIKE %s OR categories_accepted LIKE %s";
+            $where_params = [$like, $like, $like, $like];
         }
 
         if ($per_page <= 0) {
@@ -77,11 +78,11 @@ class WP_CCM_Admin_Ajax_Consent {
         } else {
             $offset = ($page - 1) * $per_page;
             $query = "SELECT SQL_CALC_FOUND_ROWS * FROM $table $where_clause ORDER BY created_at DESC LIMIT %d OFFSET %d";
-            $params = $where_params;
-            $params[] = $per_page;
-            $params[] = $offset;
+        $params = $where_params;
+        $params[] = $per_page;
+        $params[] = $offset;
 
-            $paged_results = $wpdb->get_results($wpdb->prepare($query, $params));
+        $paged_results = $wpdb->get_results($wpdb->prepare($query, $params));
             $total = intval($wpdb->get_var('SELECT FOUND_ROWS()'));
         }
 
@@ -108,7 +109,19 @@ class WP_CCM_Admin_Ajax_Consent {
             return;
         }
 
-        $all_records = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC", ARRAY_A);
+        $search_term = sanitize_text_field($_POST['search_term'] ?? ($_POST['search_ip'] ?? ''));
+        $where_clause = '';
+        $where_params = [];
+        if ($search_term !== '') {
+            $like = '%' . $wpdb->esc_like($search_term) . '%';
+            $where_clause = "WHERE user_ip LIKE %s OR action_type LIKE %s OR referer_url LIKE %s OR categories_accepted LIKE %s";
+            $where_params = [$like, $like, $like, $like];
+        }
+
+        $query = "SELECT * FROM $table $where_clause ORDER BY created_at DESC";
+        $all_records = $where_params
+            ? $wpdb->get_results($wpdb->prepare($query, $where_params), ARRAY_A)
+            : $wpdb->get_results($query, ARRAY_A);
         $format = sanitize_text_field($_POST['format'] ?? 'csv');
 
         if ($format === 'json') {

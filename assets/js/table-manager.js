@@ -143,6 +143,7 @@
     $('#wpccm-sync-to-purge').on('click', function() {
         const cookies = [];
         const handleCookies = {};
+        const noRelatedCookiesText = texts.no_related_cookies || 'No related cookies found';
         
         $('#wpccm-handles-table tbody tr').each(function() {
             const handle = $(this).find('.handle-input').val().trim();
@@ -153,7 +154,7 @@
             if (handle && cookiesStr && category && 
                 category !== 'necessary' && 
                 cookiesStr !== (texts.unknown_cookies || '(click to detect)') &&
-                cookiesStr !== 'לא נמצאו עוגיות קשורות' &&
+                cookiesStr !== noRelatedCookiesText &&
                 cookiesStr.trim() !== '') {
                 
                 handleCookies[handle] = cookiesStr;
@@ -504,7 +505,8 @@
         console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
         
         // Show loading message
-        $('#wpccm-sync-result').html('<span class="loading">סורק עוגיות מהאתר...</span>');
+        const scanningMsg = texts.scanning_site_cookies || 'Scanning cookies from the site...';
+        $('#wpccm-sync-result').html('<span class="loading">' + escapeHtml(scanningMsg) + '</span>');
         
         // First, try to get cookies from frontend site via iframe method
         const iframe = document.createElement('iframe');
@@ -534,7 +536,9 @@
                     //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
                     
                     // Show success message
-                    $('#wpccm-sync-result').html('<span class="success">נמצאו ' + frontendCookies.length + ' עוגיות מהאתר</span>');
+                    const foundMsgTpl = texts.site_cookies_found || 'Found %d cookies from the site';
+                    const foundMsg = foundMsgTpl.replace('%d', frontendCookies.length);
+                    $('#wpccm-sync-result').html('<span class="success">' + escapeHtml(foundMsg) + '</span>');
                     
                     // Now send to admin to process
                     let formData = {
@@ -551,13 +555,18 @@
                             if (response.success) {
                                 // Add cookies directly to the table instead of showing suggestions
                                 addCookiesDirectlyToTable(response.data);
-                                $('#wpccm-sync-result').html('<span class="success">✓ העוגיות נוספו לטבלה בהצלחה</span>');
+                                const addedMsg = texts.cookies_added_to_table || 'Cookies added to the table successfully';
+                                $('#wpccm-sync-result').html('<span class="success">✓ ' + escapeHtml(addedMsg) + '</span>');
                             } else {
-                                $('#wpccm-sync-result').html('<span class="error">✗ שגיאה: ' + (response.data || 'Unknown error') + '</span>');
+                                const errTpl = texts.error_with_message || 'Error: %s';
+                                const unknownErr = texts.unknown_error || 'Unknown error';
+                                const errMsg = errTpl.replace('%s', response.data || unknownErr);
+                                $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                             }
                         },
                         error: function(xhr, status, error) {
-                            $('#wpccm-sync-result').html('<span class="error">✗ שגיאה בשמירת העוגיות</span>');
+                            const errMsg = texts.error_saving_cookies || 'Error saving cookies';
+                            $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                         },
                         complete: function() {
                             button.text(originalText).prop('disabled', false);
@@ -603,7 +612,9 @@
                         const $result = $('#wpccm-sync-result');
                         
                         // Show success message
-                        $result.html('<span class="success">נמצאו ' + frontendCookies.length + ' עוגיות מהאתר</span>');
+                        const foundMsgTpl = texts.site_cookies_found || 'Found %d cookies from the site';
+                        const foundMsg = foundMsgTpl.replace('%d', frontendCookies.length);
+                        $result.html('<span class="success">' + escapeHtml(foundMsg) + '</span>');
                         
                         // Now send to admin to process
                         let formData = {
@@ -620,13 +631,18 @@
                                 if (response.success) {
                                     // Add cookies directly to the table instead of showing suggestions
                                     addCookiesDirectlyToTable(response.data);
-                                    $result.html('<span class="success">✓ העוגיות נוספו לטבלה בהצלחה</span>');
+                                    const addedMsg = texts.cookies_added_to_table || 'Cookies added to the table successfully';
+                                    $result.html('<span class="success">✓ ' + escapeHtml(addedMsg) + '</span>');
                                 } else {
-                                    $result.html('<span class="error">✗ שגיאה: ' + (response.data || 'Unknown error') + '</span>');
+                                    const errTpl = texts.error_with_message || 'Error: %s';
+                                    const unknownErr = texts.unknown_error || 'Unknown error';
+                                    const errMsg = errTpl.replace('%s', response.data || unknownErr);
+                                    $result.html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                                 }
                             },
                             error: function(xhr, status, error) {
-                                $result.html('<span class="error">✗ שגיאה בשמירת העוגיות</span>');
+                                const errMsg = texts.error_saving_cookies || 'Error saving cookies';
+                                $result.html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                             },
                             complete: function() {
                                 button.text(originalText).prop('disabled', false);
@@ -635,7 +651,8 @@
                     } else {
                         // Fallback to current method if frontend call fails
                         //console.log('WPCCM: Frontend call failed, falling back to current method');
-                        $('#wpccm-sync-result').html('<span class="error">✗ לא ניתן לגשת לאתר, משתמש בעוגיות האדמין</span>');
+                        const siteAccessErr = texts.error_accessing_site_using_admin || 'Could not access the site, using admin cookies';
+                        $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(siteAccessErr) + '</span>');
                         
                         // Get current cookies from browser (admin cookies)
                         const currentCookies = [];
@@ -666,13 +683,18 @@
                                 if (response.success) {
                                     // Add cookies directly to the table instead of showing suggestions
                                     addCookiesDirectlyToTable(response.data);
-                                    $('#wpccm-sync-result').html('<span class="success">✓ העוגיות נוספו לטבלה בהצלחה (מהאדמין)</span>');
+                                    const adminAddedMsg = texts.cookies_added_to_table_admin || 'Cookies added to the table successfully (from admin)';
+                                    $('#wpccm-sync-result').html('<span class="success">✓ ' + escapeHtml(adminAddedMsg) + '</span>');
                                 } else {
-                                    $('#wpccm-sync-result').html('<span class="error">✗ שגיאה: ' + (response.data || 'Unknown error') + '</span>');
+                                    const errTpl = texts.error_with_message || 'Error: %s';
+                                    const unknownErr = texts.unknown_error || 'Unknown error';
+                                    const errMsg = errTpl.replace('%s', response.data || unknownErr);
+                                    $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                                 }
                             },
                             error: function(xhr, status, error) {
-                                $('#wpccm-sync-result').html('<span class="error">✗ שגיאה בשמירת העוגיות</span>');
+                                const errMsg = texts.error_saving_cookies || 'Error saving cookies';
+                                $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                             },
                             complete: function() {
                                 button.text(originalText).prop('disabled', false);
@@ -682,7 +704,8 @@
                 },
                 error: function(xhr, status, error) {
                     //console.log('WPCCM: Frontend AJAX error:', {xhr: xhr, status: status, error: error});
-                    $('#wpccm-sync-result').html('<span class="error">✗ שגיאה בגישה לאתר, משתמש בעוגיות האדמין</span>');
+                    const siteAccessErr = texts.error_accessing_site_using_admin || 'Could not access the site, using admin cookies';
+                    $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(siteAccessErr) + '</span>');
                     
                     // Fallback to current method
                     const currentCookies = [];
@@ -711,13 +734,18 @@
                         success: function(response) {
                             if (response.success) {
                                 addCookiesDirectlyToTable(response.data);
-                                $('#wpccm-sync-result').html('<span class="success">✓ העוגיות נוספו לטבלה בהצלחה (מהאדמין)</span>');
+                                const adminAddedMsg = texts.cookies_added_to_table_admin || 'Cookies added to the table successfully (from admin)';
+                                $('#wpccm-sync-result').html('<span class="success">✓ ' + escapeHtml(adminAddedMsg) + '</span>');
                             } else {
-                                $('#wpccm-sync-result').html('<span class="error">✗ שגיאה: ' + (response.data || 'Unknown error') + '</span>');
+                                const errTpl = texts.error_with_message || 'Error: %s';
+                                const unknownErr = texts.unknown_error || 'Unknown error';
+                                const errMsg = errTpl.replace('%s', response.data || unknownErr);
+                                $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                             }
                         },
                         error: function(xhr, status, error) {
-                            $('#wpccm-sync-result').html('<span class="error">✗ שגיאה בשמירת העוגיות</span>');
+                            const errMsg = texts.error_saving_cookies || 'Error saving cookies';
+                            $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(errMsg) + '</span>');
                         },
                         complete: function() {
                             button.text(originalText).prop('disabled', false);
@@ -771,7 +799,7 @@
         tbody.append(row);
         
         // Update the manual input field with detected cookies after adding to DOM
-        if (cookiesValue && cookiesValue !== 'לא נמצאו עוגיות קשורות') {
+        if (cookiesValue && cookiesValue !== (texts.no_related_cookies || 'No related cookies found')) {
 
             setTimeout(function() {
                 row.find('.cookies-input-manual').val(cookiesValue);
@@ -872,7 +900,7 @@
         // Add suggested cookies for this handle if available
         if (handle) {
             const suggestedCookies = getRelatedCookiesForHandle(handle);
-            if (suggestedCookies && suggestedCookies !== 'לא נמצאו עוגיות קשורות') {
+            if (suggestedCookies && suggestedCookies !== (texts.no_related_cookies || 'No related cookies found')) {
                 const suggestedList = suggestedCookies.split(',').map(c => c.trim()).filter(c => c);
                 suggestedList.forEach(function(cookie) {
                     if (!purgeCookies.includes(cookie)) {
@@ -890,7 +918,7 @@
         html += '</select>';
         html += '<input type="text" class="cookies-input-manual" value="' + escapeHtml(cookiesValue) + '" placeholder="' + (texts.enter_cookies_separated || 'Enter cookies separated by commas') + '" style="width: 100%; font-size: 12px; margin-top: 5px;" title="' + (texts.cookies_input_help || 'Enter cookie names that this script creates, separated by commas') + '" />';
         html += '<div class="cookies-input-help" style="font-size: 11px; color: #666; margin-top: 3px;">';
-        html += 'בחר מהרשימה או הזן ידנית';
+        html += escapeHtml(texts.cookies_input_helper_text || 'Choose from the list or enter manually');
         html += '</div>';
         html += '</div>';
         
@@ -1599,7 +1627,7 @@
             return 'tracking cookies';
         }
 
-        return 'לא נמצאו עוגיות קשורות';
+        return texts.no_related_cookies || 'No related cookies found';
     }
 
     function escapeHtml(text) {
