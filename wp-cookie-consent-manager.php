@@ -3,7 +3,7 @@
  * Plugin Name: WP Cookie Consent Manager
  * Plugin URI: https://wordpress-1142719-5821343.cloudwaysapps.com
  * Description: A WordPress plugin for managing cookie consent and user preferences.
- * Version: 1.0.35
+ * Version: 1.0.36
  * Author: code&core
  * License: GPL v2 or later
  * Text Domain: wp-cookie-consent-manager
@@ -14,12 +14,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WPCCM_VERSION', '1.0.35');
+define('WPCCM_VERSION', '1.0.36');
 
 // Dashboard API Configuration
 define('WPCCM_DASHBOARD_API_URL', 'https://phplaravel-1142719-5823893.cloudwaysapps.com/api');
 // define('WPCCM_DASHBOARD_API_URL', 'http://localhost:8000/api');
-define('WPCCM_DASHBOARD_VERSION', '1.0.35');
+define('WPCCM_DASHBOARD_VERSION', '1.0.36');
 
 // === Plugin Update Checker bootstrap ===
 // Try Composer autoload first:
