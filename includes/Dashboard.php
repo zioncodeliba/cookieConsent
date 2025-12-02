@@ -11,6 +11,8 @@ class WP_CCM_Dashboard {
     private $api_url;
     private $license_key;
     private $website_id;
+    private $license_status_cache = null;
+    private $license_status_cache_key = 'wpccm_license_status';
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -80,10 +82,18 @@ class WP_CCM_Dashboard {
      */
     public function test_connection_silent() {
         if (empty($this->license_key)) {
-            return array(
+            $result = array(
                 'success' => false,
                 'error' => 'מפתח רישיון חסר'
             );
+
+            $this->set_cached_license_status($result, 5 * MINUTE_IN_SECONDS);
+            return $result;
+        }
+
+        $cached = $this->get_cached_license_status();
+        if (null !== $cached) {
+            return $cached;
         }
         
         $domain = parse_url(get_site_url(), PHP_URL_HOST);
@@ -96,7 +106,7 @@ class WP_CCM_Dashboard {
                 'license_key' => $this->license_key,
                 'domain' => $domain
             )),
-            'timeout' => 5
+            'timeout' => 3
         ));
         // echo '<pre>';
         // print_r($response);
@@ -105,10 +115,14 @@ class WP_CCM_Dashboard {
         // die();
         
         if (is_wp_error($response)) {
-            return array(
+            $result = array(
                 'success' => false,
-                'error' => 'שגיאת תקשורת: ' . $response->get_error_message()
+                'error' => 'שגיאת תקשורת: ' . $response->get_error_message(),
+                'code' => 0
             );
+
+            $this->set_cached_license_status($result, 5 * MINUTE_IN_SECONDS);
+            return $result;
         }
         
         $code = wp_remote_retrieve_response_code($response);
@@ -137,19 +151,25 @@ class WP_CCM_Dashboard {
                             $error_message = 'סטטוס האתר בדשבורד: ' . $website_status;
                     }
                     
-                    return array(
+                    $result = array(
                         'success' => false,
                         'error' => $error_message,
                         'code' => $code,
                         'website_status' => $website_status
                     );
+
+                    $this->set_cached_license_status($result, 10 * MINUTE_IN_SECONDS);
+                    return $result;
                 }
             }
             
-            return array(
+            $result = array(
                 'success' => true,
                 'message' => 'רישיון תקף'
             );
+
+            $this->set_cached_license_status($result, 30 * MINUTE_IN_SECONDS);
+            return $result;
         }
         
         // טיפול בהודעות שגיאה ספציפיות מהשרת
@@ -162,11 +182,44 @@ class WP_CCM_Dashboard {
             $error_message = 'שגיאת שרת: קוד ' . $code;
         }
         
-        return array(
+        $result = array(
             'success' => false,
             'error' => $error_message,
             'code' => $code
         );
+
+        $this->set_cached_license_status($result, 10 * MINUTE_IN_SECONDS);
+        return $result;
+    }
+
+    /**
+     * Cache helper for license validation to avoid blocking every request.
+     */
+    private function get_cached_license_status() {
+        if (is_array($this->license_status_cache)) {
+            return $this->license_status_cache;
+        }
+
+        $cached = get_transient($this->license_status_cache_key);
+        if (is_array($cached) && isset($cached['license_key'], $cached['result']) && $cached['license_key'] === $this->license_key) {
+            $this->license_status_cache = $cached['result'];
+            return $this->license_status_cache;
+        }
+
+        return null;
+    }
+
+    private function set_cached_license_status(array $result, $ttl) {
+        $this->license_status_cache = $result;
+        set_transient($this->license_status_cache_key, array(
+            'license_key' => $this->license_key,
+            'result' => $result
+        ), $ttl);
+    }
+
+    public function clear_cached_license_status() {
+        $this->license_status_cache = null;
+        delete_transient($this->license_status_cache_key);
     }
 
     /**

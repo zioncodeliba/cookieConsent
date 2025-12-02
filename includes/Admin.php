@@ -4206,6 +4206,7 @@ class WP_CCM_Admin {
         // if (!$skip_dashboard_validation) {
         // var_dump("WPCCM: License key:", $license_key);
         update_option('wpccm_license_key', $license_key);
+        WP_CCM_Dashboard::get_instance()->clear_cached_license_status();
         // }
         
         // Save banner settings
