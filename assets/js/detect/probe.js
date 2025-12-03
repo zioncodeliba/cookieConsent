@@ -27,7 +27,7 @@
             return;
         }
 
-        //console.log('CC Detection Probe initialized');
+        ////console.log('CC Detection Probe initialized');
 
         // Start scanning
         setTimeout(performScan, CONFIG.scanDelay);
@@ -64,7 +64,7 @@
             // Retry if possible
             if (scanAttempts < CONFIG.maxRetries) {
                 scanAttempts++;
-                //console.log(`Retrying scan (attempt ${scanAttempts})...`);
+                ////console.log(`Retrying scan (attempt ${scanAttempts})...`);
                 setTimeout(performScan, CONFIG.scanDelay);
             }
         }
@@ -408,7 +408,7 @@
                     items: uniqueItems
                 }, '*');
                 
-                //console.log(`CC Detection Probe: Sent ${uniqueItems.length} items to parent window`);
+                ////console.log(`CC Detection Probe: Sent ${uniqueItems.length} items to parent window`);
             }
             
         } catch (error) {

@@ -491,7 +491,7 @@
 
     
     $(document).on('click', '#wpccm-sync-current-cookies-btn', function() {
-        console.log('WPCCM: Syncing cookies from frontend URL:########################');
+        //console.log('WPCCM: Syncing cookies from frontend URL:########################');
         const button = $(this);
         const originalText = button.text();
         
@@ -501,8 +501,8 @@
         const currentUrl = window.location.href;
         const frontendUrl = currentUrl.replace(/\/wp-admin\/.*$/, '');
         
-        console.log('WPCCM: Syncing cookies from frontend URL:', currentUrl);
-        console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
+        //console.log('WPCCM: Syncing cookies from frontend URL:', currentUrl);
+        //console.log('WPCCM: Syncing cookies from frontend URL:', frontendUrl);
         
         // Show loading message
         const scanningMsg = texts.scanning_site_cookies || 'Scanning cookies from the site...';
@@ -513,7 +513,7 @@
         iframe.style.display = 'none';
         iframe.src = frontendUrl + '/wp-admin/admin-ajax.php?action=wpccm_get_frontend_cookies&_wpnonce=' + WPCCM_TABLE.nonce;
         
-        // console.log(iframe.src);
+        // //console.log(iframe.src);
         // die();
 
 
@@ -527,13 +527,13 @@
                 window.removeEventListener('message', messageListener);
                 document.body.removeChild(iframe);
                 
-                //console.log('WPCCM: Frontend cookies from iframe:', event.data);
+                ////console.log('WPCCM: Frontend cookies from iframe:', event.data);
                 
                 if (event.data.success) {
                     const frontendCookies = event.data.cookies || [];
                     
-                    console.log('WPCCM: Found cookies from frontend:', frontendCookies);
-                    //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
+                    //console.log('WPCCM: Found cookies from frontend:', frontendCookies);
+                    ////console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend');
                     
                     // Show success message
                     const foundMsgTpl = texts.site_cookies_found || 'Found %d cookies from the site';
@@ -587,7 +587,7 @@
             if (document.body.contains(iframe)) {
                 document.body.removeChild(iframe);
             }
-            //console.log('WPCCM: Iframe method timeout, falling back to AJAX');
+            ////console.log('WPCCM: Iframe method timeout, falling back to AJAX');
             fallbackToAjaxMethod();
         }, 5000);
         
@@ -603,12 +603,12 @@
                     _wpnonce: WPCCM_TABLE.nonce
                 },
                 success: function(frontendResponse) {
-                    //console.log('WPCCM: Frontend cookies response:', frontendResponse);
+                    ////console.log('WPCCM: Frontend cookies response:', frontendResponse);
                     
                     if (frontendResponse.success) {
                         const frontendCookies = frontendResponse.data.cookies || [];
                         
-                        console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
+                        //console.log('WPCCM: Found ' + frontendCookies.length + ' cookies from frontend (AJAX method)');
                         const $result = $('#wpccm-sync-result');
                         
                         // Show success message
@@ -650,7 +650,7 @@
                         });
                     } else {
                         // Fallback to current method if frontend call fails
-                        //console.log('WPCCM: Frontend call failed, falling back to current method');
+                        ////console.log('WPCCM: Frontend call failed, falling back to current method');
                         const siteAccessErr = texts.error_accessing_site_using_admin || 'Could not access the site, using admin cookies';
                         $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(siteAccessErr) + '</span>');
                         
@@ -666,7 +666,7 @@
                             });
                         }
                         
-                        //console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin');
+                        ////console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin');
                         
                         // Prepare form data
                         let formData = {
@@ -703,7 +703,7 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    //console.log('WPCCM: Frontend AJAX error:', {xhr: xhr, status: status, error: error});
+                    ////console.log('WPCCM: Frontend AJAX error:', {xhr: xhr, status: status, error: error});
                     const siteAccessErr = texts.error_accessing_site_using_admin || 'Could not access the site, using admin cookies';
                     $('#wpccm-sync-result').html('<span class="error">✗ ' + escapeHtml(siteAccessErr) + '</span>');
                     
@@ -719,7 +719,7 @@
                         });
                     }
                     
-                    //console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin (fallback)');
+                    ////console.log('WPCCM: Found ' + currentCookies.length + ' cookies from admin (fallback)');
                     
                     let formData = {
                         action: 'wpccm_get_current_non_essential_cookies',

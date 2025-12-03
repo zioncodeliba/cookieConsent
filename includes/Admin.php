@@ -653,7 +653,7 @@ class WP_CCM_Admin {
         
         <script>
         jQuery(document).ready(function($) {
-            //console.log('WPCCM: General settings page loaded');
+            ////console.log('WPCCM: General settings page loaded');
             
             // // Update design preview from general settings on page load
             // setTimeout(function() {
@@ -666,7 +666,7 @@ class WP_CCM_Admin {
                 e.preventDefault();
                 
                 var targetTab = $(this).data('tab');
-                //console.log('WPCCM Debug: Tab clicked:', targetTab);
+                ////console.log('WPCCM Debug: Tab clicked:', targetTab);
                 
                 // Update active tab
                 $('.wpccm-tabs .nav-tab').removeClass('nav-tab-active');
@@ -693,34 +693,34 @@ class WP_CCM_Admin {
             
             // Initialize first tab as active on page load
             var firstTab = $('.wpccm-tabs .nav-tab').first();
-            //console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
+            ////console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
             if (firstTab.length) {
                 var firstTabId = firstTab.data('tab');
-                //console.log('WPCCM Debug: Initializing first tab:', firstTabId);
+                ////console.log('WPCCM Debug: Initializing first tab:', firstTabId);
                 
                 // Set first tab as active
                 firstTab.addClass('nav-tab-active');
-                //console.log('WPCCM Debug: Added nav-tab-active to first tab');
+                ////console.log('WPCCM Debug: Added nav-tab-active to first tab');
                 
                 // Show first tab content
                 $('.wpccm-tab-content').removeClass('active');
                 $('#' + firstTabId).addClass('active');
-                //console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
+                ////console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
                 
                 // Show first tab submit button
                 $('[id$="-submit"]').removeClass('active');
                 $('#' + firstTabId + '-submit').addClass('active');
-                //console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
+                ////console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
                 
             } else {
-                //console.log('WPCCM Debug: No tabs found!');
+                ////console.log('WPCCM Debug: No tabs found!');
             }
             
             // Check if save button exists
             if ($('#save-general-settings').length) {
-                //console.log('WPCCM: Save general settings button found');
+                ////console.log('WPCCM: Save general settings button found');
             } else {
-                //console.log('WPCCM: Save general settings button not found');
+                ////console.log('WPCCM: Save general settings button not found');
             }
             
             // Auto sync functionality
@@ -790,7 +790,7 @@ class WP_CCM_Admin {
                     action: 'wpccm_get_auto_sync_status'
                 }).done(function(response) {
                     if (response.success) {
-                        console.log('WPCCM Debug: Response data', response.data);
+                        //console.log('WPCCM Debug: Response data', response.data);
                         updateAutoSyncUI(response.data);
                     }
                 });
@@ -844,26 +844,26 @@ class WP_CCM_Admin {
             
             // Save general settings via AJAX
             $('#save-general-settings').on('click', function() {
-                //console.log('WPCCM: Save general settings button clicked');
+                ////console.log('WPCCM: Save general settings button clicked');
                 var $button = $(this);
                 var $result = $('#general-settings-result');
                 
                 // Check if result element exists
                 if (!$result.length) {
-                    //console.log('WPCCM: Result element not found');
+                    ////console.log('WPCCM: Result element not found');
                     return;
                 }
                 
                 // Collect form data
                 
                 var licenseKey = $('input[name="wpccm_license_key"]').val();
-                console.log('WPCCM: License key:', licenseKey);
+                //console.log('WPCCM: License key:', licenseKey);
                 
                 var bannerTitle = $('input[name="wpccm_options[banner][title]"]').val();
                 var bannerDescription = $('textarea[name="wpccm_options[banner][description]"]').val();
                 var bannerPolicyUrl = $('input[name="wpccm_options[banner][policy_url]"]').val();
                 
-                //console.log('WPCCM: Form data collected:', {
+                ////console.log('WPCCM: Form data collected:', {
                 //     dashboardApiUrl: dashboardApiUrl,
                 //     licenseKey: licenseKey ? licenseKey.substring(0, 8) + '...' : 'empty',
                 //     websiteId: websiteId,
@@ -875,18 +875,18 @@ class WP_CCM_Admin {
                 
                 // Validate required fields
                 if (!licenseKey) {
-                    //console.log('WPCCM: Validation failed - missing activation fields');
+                    ////console.log('WPCCM: Validation failed - missing activation fields');
                     $result.html('<span class="error">' + wpccmGeneralStrings.missingActivation + '</span>');
                     return;
                 }
                 
                 if (!bannerTitle || !bannerDescription) {
-                    //console.log('WPCCM: Validation failed - missing banner fields');
+                    ////console.log('WPCCM: Validation failed - missing banner fields');
                     $result.html('<span class="error">' + wpccmGeneralStrings.missingBanner + '</span>');
                     return;
                 }
                 
-                //console.log('WPCCM: Validation passed, proceeding with save');
+                ////console.log('WPCCM: Validation passed, proceeding with save');
                 
                 // Disable button and show loading
                 $button.prop('disabled', true).text(wpccmGeneralStrings.savingButton);
@@ -902,14 +902,14 @@ class WP_CCM_Admin {
                     banner_policy_url: bannerPolicyUrl
                 };
                 
-                //console.log('WPCCM: Form data prepared for AJAX:', formData);
+                ////console.log('WPCCM: Form data prepared for AJAX:', formData);
                 
                 $.ajax({
                     url: ajaxurl,
                     type: 'POST',
                     data: formData,
                     success: function(response) {
-                        //console.log('WPCCM: AJAX response received:', response);
+                        ////console.log('WPCCM: AJAX response received:', response);
                         if (response.success) {
                             $result.html('<span class="success">✓ ' + response.data.message + '</span>');
                             // Reload page if plugin activation status changed
@@ -924,14 +924,14 @@ class WP_CCM_Admin {
                             // }
                             // Show saved data in console for debugging
                             if (response.data.saved_data) {
-                                //console.log('WPCCM: Saved general settings:', response.data.saved_data);
+                                ////console.log('WPCCM: Saved general settings:', response.data.saved_data);
                             }
                         } else {
                             $result.html('<span class="error">✗ ' + response.data + '</span>');
                         }
                     },
                     error: function(xhr, status, error) {
-                        //console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
+                        ////console.log('WPCCM: AJAX error:', {xhr: xhr, status: status, error: error});
                         $result.html('<span class="error">' + wpccmGeneralStrings.errorSaving + '</span>');
                     },
                     complete: function() {
@@ -1066,7 +1066,7 @@ class WP_CCM_Admin {
             });
 
             function updatePreviewDefault() {
-                // console.log("WPCCM: updatePreview555555");
+                // //console.log("WPCCM: updatePreview555555");
                 // Get text color from the only color field that exists
                 var textColor = $("#text_color").val() || '#000000';
                 
@@ -1248,7 +1248,7 @@ class WP_CCM_Admin {
                 $("#preview-floating-position").text(floatingTextMap[floatingButtonPosition] || floatingButtonPosition);
                 $("#preview-size").text(sizeTextMap[size] || size);
                 
-                console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
+                //console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
                 
                 // Apply theme styling AFTER all other updates to ensure it's not overridden
                 var themeClassFinal = (textColor === '#ffffff' || textColor === 'white' || textColor === '#fff' || textColor === '#FFFFFF') ? 'dark-theme' : 'light-theme';
@@ -1455,24 +1455,24 @@ class WP_CCM_Admin {
             
             // Initialize first tab as active on page load
             var firstTab = $('.wpccm-tabs .nav-tab').first();
-            //console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
+            ////console.log('WPCCM Debug: First tab element:', firstTab.length ? 'found' : 'not found');
             if (firstTab.length) {
                 var firstTabId = firstTab.data('tab');
-                //console.log('WPCCM Debug: Initializing first tab:', firstTabId);
+                ////console.log('WPCCM Debug: Initializing first tab:', firstTabId);
                 
                 // Set first tab as active
                 firstTab.addClass('nav-tab-active');
-                //console.log('WPCCM Debug: Added nav-tab-active to first tab');
+                ////console.log('WPCCM Debug: Added nav-tab-active to first tab');
                 
                 // Show first tab content
                 $('.wpccm-tab-content').removeClass('active');
                 $('#' + firstTabId).addClass('active');
-                //console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
+                ////console.log('WPCCM Debug: Made tab content active:', '#' + firstTabId);
                 
                 // Show first tab submit button
                 $('[id$="-submit"]').removeClass('active');
                 $('#' + firstTabId + '-submit').addClass('active');
-                //console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
+                ////console.log('WPCCM Debug: Made submit button active:', '#' + firstTabId + '-submit');
                 
             }
             
@@ -1851,9 +1851,9 @@ class WP_CCM_Admin {
 
         echo '<script>
         jQuery(document).ready(function($) {
-            // console.log("WPCCM: jQuery(document).ready555555");
+            // //console.log("WPCCM: jQuery(document).ready555555");
             function updatePreview() {
-                // console.log("WPCCM: updatePreview555555");
+                // //console.log("WPCCM: updatePreview555555");
                 var bgColor = $("#background_color").val();
                 var textColor = $("#text_color").val();
                 var acceptButtonColor = $("#accept_button_color").val();
@@ -1935,7 +1935,7 @@ class WP_CCM_Admin {
                 $("#preview-floating-position").text(floatingTextMap[floatingButtonPosition] || floatingButtonPosition);
                 $("#preview-size").text(sizeTextMap[size] || size);
                 
-                console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
+                //console.log("WPCCM: Preview updated - BG:", bgColor, "Text:", textColor, "Accept:", acceptButtonColor, "Reject:", rejectButtonColor, "Settings:", settingsButtonColor, "Size:", size, "Position:", bannerPosition);
             }
             
             // Update preview on any change
@@ -2115,7 +2115,7 @@ class WP_CCM_Admin {
                 unknown_error: "' . wpccm_text('unknown_error') . '"
             }
         };
-        //console.log("WPCCM Debug: WPCCM_TABLE initialized BEFORE script load:", window.WPCCM_TABLE);
+        ////console.log("WPCCM Debug: WPCCM_TABLE initialized BEFORE script load:", window.WPCCM_TABLE);
         </script>';
         
         // THEN load the script
@@ -2124,15 +2124,15 @@ class WP_CCM_Admin {
         // THEN initialize
         echo '<script>
         jQuery(document).ready(function($) {
-            //console.log("WPCCM Debug: jQuery ready in render_purge_tab");
-            //console.log("WPCCM Debug: WPCCM_TABLE available:", typeof window.WPCCM_TABLE !== "undefined");
+            ////console.log("WPCCM Debug: jQuery ready in render_purge_tab");
+            ////console.log("WPCCM Debug: WPCCM_TABLE available:", typeof window.WPCCM_TABLE !== "undefined");
             
             // Initialize table manager
             if (typeof initTableManager === "function") {
-                //console.log("WPCCM Debug: initTableManager found, initializing");
+                ////console.log("WPCCM Debug: initTableManager found, initializing");
                 initTableManager();
             } else {
-                //console.log("WPCCM Debug: initTableManager not found");
+                ////console.log("WPCCM Debug: initTableManager not found");
             }
         });
         </script>';
@@ -2371,7 +2371,7 @@ class WP_CCM_Admin {
 
             // Save category changes (old modal)
             $("#save-category-btn").on("click", function() {
-            console.log("Save category button clicked");
+            //console.log("Save category button clicked");
                 var cookieName = $("#category-edit-modal").data("cookie-name");
                 var newCategory = $("#edit-category-select").val();
                 var newCategoryDisplay = $("#edit-category-select option:selected").text();
@@ -2462,7 +2462,7 @@ class WP_CCM_Admin {
         //             action: "wpccm_check_categories_table",
         //             _wpnonce: "' . wp_create_nonce('wpccm_admin_nonce') . '"
         //         }).done(function(response) {
-        //             console.log("Table check response:", response);
+        //             //console.log("Table check response:", response);
         //             alert(response.data || response.message || "בדיקה הושלמה - בדוק קונסול");
         //         });
         //     });
@@ -5938,7 +5938,7 @@ class WP_CCM_Admin {
 
             // Save category
             $("#save-category-btn").on("click", function() {
-                console.log("Save category button clicked");
+                //console.log("Save category button clicked");
                 
                 // Define ajaxurl and nonce for this function
                 const ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
@@ -5957,7 +5957,7 @@ class WP_CCM_Admin {
                     _wpnonce: nonce
                 };
                 
-                console.log('Form data prepared:', formData);
+                //console.log('Form data prepared:', formData);
                 
                 // Show loading state
                 const submitBtn = $(this);
@@ -5966,7 +5966,7 @@ class WP_CCM_Admin {
                 
                 // Send AJAX request
                 $.post(ajaxurl, formData).done(function(response) {
-                    console.log('Save category response:', response);
+                    //console.log('Save category response:', response);
                     if (response.success) {
                         $('#category-management-modal').hide();
                         location.reload(); // Refresh to show changes
@@ -6001,13 +6001,13 @@ class WP_CCM_Admin {
             if (typeof wpccm_ajax !== 'undefined') {
                 ajaxurl = wpccm_ajax.ajaxurl;
                 nonce = wpccm_ajax.nonce;
-                console.log('Using wpccm_ajax:', wpccm_ajax);
+                //console.log('Using wpccm_ajax:', wpccm_ajax);
             } else {
                 console.warn('wpccm_ajax not defined, using fallback');
                 ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
                 nonce = '<?php echo wp_create_nonce('wpccm_admin_nonce'); ?>';
             }
-            console.log('Using ajaxurl:', ajaxurl);
+            //console.log('Using ajaxurl:', ajaxurl);
             
             // Add new category
             $('#wpccm-add-category').on('click', function() {
@@ -6023,9 +6023,9 @@ class WP_CCM_Admin {
                 $('#category-icon').val('');
                 $('#category-essential').prop('checked', false);
                 
-                console.log('About to show modal');
+                //console.log('About to show modal');
                 $('#category-management-modal').show();
-                console.log('Modal show() called');
+                //console.log('Modal show() called');
             });
             
             // Edit category
@@ -6091,7 +6091,7 @@ class WP_CCM_Admin {
             $('#category-form').on('submit', function(e) {
                 e.preventDefault();
                 
-                console.log('Form submitted, preparing data...');
+                //console.log('Form submitted, preparing data...');
                 
                 const formData = {
                     action: 'wpccm_save_category',
@@ -6105,18 +6105,18 @@ class WP_CCM_Admin {
                     _wpnonce: nonce
                 };
                 
-                console.log('Form data prepared:', formData);
+                //console.log('Form data prepared:', formData);
                 
                 // Show loading state
                 const submitBtn = $('#category-form button[type="submit"]');
                 const originalText = submitBtn.text();
                 submitBtn.text('🔄 שומר...').prop('disabled', true);
                 
-                console.log('Sending AJAX request to:', ajaxurl);
-                console.log('Request data:', formData);
+                //console.log('Sending AJAX request to:', ajaxurl);
+                //console.log('Request data:', formData);
                 
                 $.post(ajaxurl, formData).done(function(response) {
-                    console.log('Save category response:', response);
+                    //console.log('Save category response:', response);
                     if (response.success) {
                         $('#category-management-modal').hide();
                         // location.reload(); // Refresh to show changes

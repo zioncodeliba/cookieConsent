@@ -42,7 +42,7 @@ class ConsentLoader {
         // Listen for consent changes
         this.setupConsentListener();
         
-        // //console.log('CC Loader initialized');
+        // ////console.log('CC Loader initialized');
     }
 
     /**
@@ -99,7 +99,7 @@ class ConsentLoader {
      */
     setupConsentListener() {
         document.addEventListener('cc:changed', (event) => {
-            //console.log('Consent changed, rehydrating elements:', event.detail);
+            ////console.log('Consent changed, rehydrating elements:', event.detail);
             this.rehydrateAllElements();
         });
     }
@@ -203,7 +203,7 @@ class ConsentLoader {
             // Replace the blocked script
             script.parentNode.replaceChild(newScript, script);
             
-            //console.log('Script hydrated for category:', script.getAttribute('data-cc'));
+            ////console.log('Script hydrated for category:', script.getAttribute('data-cc'));
         } catch (error) {
             console.error('Error hydrating script:', error);
         }
@@ -217,7 +217,7 @@ class ConsentLoader {
         script.setAttribute('data-cc-blocked', 'true');
         script.style.display = 'none';
         
-        //console.log('Script blocked for category:', script.getAttribute('data-cc'));
+        ////console.log('Script blocked for category:', script.getAttribute('data-cc'));
     }
 
     /**
@@ -241,7 +241,7 @@ class ConsentLoader {
             iframe.removeAttribute('data-cc-blocked');
             iframe.style.display = '';
             
-            //console.log('Iframe hydrated for category:', iframe.getAttribute('data-cc'));
+            ////console.log('Iframe hydrated for category:', iframe.getAttribute('data-cc'));
         } catch (error) {
             console.error('Error hydrating iframe:', error);
         }
@@ -261,7 +261,7 @@ class ConsentLoader {
         iframe.setAttribute('data-cc-blocked', 'true');
         iframe.style.display = 'none';
         
-        //console.log('Iframe blocked for category:', iframe.getAttribute('data-cc'));
+        ////console.log('Iframe blocked for category:', iframe.getAttribute('data-cc'));
     }
 
     /**
@@ -274,7 +274,7 @@ class ConsentLoader {
         // Process all consent elements again
         this.processExistingElements();
         
-        //console.log('All elements rehydrated based on new consent');
+        ////console.log('All elements rehydrated based on new consent');
     }
 
     /**
@@ -289,7 +289,7 @@ class ConsentLoader {
         // Remove event listeners
         document.removeEventListener('cc:changed', this.setupConsentListener);
         
-        //console.log('CC Loader destroyed');
+        ////console.log('CC Loader destroyed');
     }
 }
 

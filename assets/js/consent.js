@@ -42,24 +42,24 @@ function setCookie(name, value, days) {
         name + '=' + (value || '') + expires + '; path=/; domain=' + window.location.hostname
     ];
     
-    console.log('WPCCM: Setting cookie:', name, '=', value, 'days:', days);
+    //console.log('WPCCM: Setting cookie:', name, '=', value, 'days:', days);
     
     // Try to set the cookie with different settings
     var cookieSet = false;
     for (var i = 0; i < cookieStrings.length; i++) {
         try {
-            console.log('WPCCM: Trying cookie string:', cookieStrings[i]);
+            //console.log('WPCCM: Trying cookie string:', cookieStrings[i]);
             document.cookie = cookieStrings[i];
             
             // Check if it was set
             var testValue = getCookie(name);
             if (testValue !== null) {
-                console.log('WPCCM: Cookie set successfully with string', i + 1);
+                //console.log('WPCCM: Cookie set successfully with string', i + 1);
                 cookieSet = true;
                 break;
             }
         } catch (e) {
-            console.log('WPCCM: Failed to set cookie with string', i + 1, 'Error:', e);
+            //console.log('WPCCM: Failed to set cookie with string', i + 1, 'Error:', e);
         }
     }
     
@@ -70,12 +70,12 @@ function setCookie(name, value, days) {
     // Verify cookie was set
     setTimeout(function() {
         var savedValue = getCookie(name);
-        console.log('WPCCM: Cookie verification -', name, '=', savedValue, 'Expected:', value);
+        //console.log('WPCCM: Cookie verification -', name, '=', savedValue, 'Expected:', value);
     }, 100);
 }
 
 function deleteCookie(name) {
-    console.log('Deleting cookie:', name);
+    //console.log('Deleting cookie:', name);
     
     var methods = [
         name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;',
@@ -86,16 +86,16 @@ function deleteCookie(name) {
     ];
     
     for (var i = 0; i < methods.length; i++) {
-        console.log('Trying method', i + 1, ':', methods[i]);
+        //console.log('Trying method', i + 1, ':', methods[i]);
         document.cookie = methods[i];
         
         // // Check if cookie was deleted
         // setTimeout(function(methodIndex) {
         //     var cookieExists = getCookie(name);
         //     if (cookieExists === null) {
-        //         console.log('Method', methodIndex + 1, 'successful - cookie deleted');
+        //         //console.log('Method', methodIndex + 1, 'successful - cookie deleted');
         //     } else {
-        //         console.log('Method', methodIndex + 1, 'failed - cookie still exists');
+        //         //console.log('Method', methodIndex + 1, 'failed - cookie still exists');
         //     }
         // }, 100, i);
     }
@@ -115,7 +115,7 @@ function ensureConsentCookies(state) {
 }
 
 function deleteCookieViaServer(name) {
-    console.log('Deleting cookie via server:', name);
+    //console.log('Deleting cookie via server:', name);
     
     if (typeof WPCCM === 'undefined' || !WPCCM.ajaxUrl) {
         console.error('WPCCM AJAX URL not found');
@@ -131,7 +131,7 @@ function deleteCookieViaServer(name) {
             try {
                 var response = JSON.parse(xhr.responseText);
                 if (response.success) {
-                    console.log('Cookie deleted via server:', name);
+                    //console.log('Cookie deleted via server:', name);
                 } else {
                     console.error('Failed to delete cookie via server:', response.message);
                 }
@@ -358,7 +358,7 @@ function applyPendingConsentState() {
 function storeNewState(state) {
     var days = 180; // Default cookie expiry days
     
-    console.log('WPCCM: Storing new state:', state);
+    //console.log('WPCCM: Storing new state:', state);
     
     // Store state for all defined categories
     Object.keys(state).forEach(function(key) {
@@ -366,7 +366,7 @@ function storeNewState(state) {
     });
 
     // Set main consent cookie to indicate user has made a choice
-    console.log('WPCCM: Setting consent resolved cookie');
+    //console.log('WPCCM: Setting consent resolved cookie');
     setCookie('wpccm_consent_resolved', '1', days);
     
     // Also set a simpler cookie as backup
@@ -385,7 +385,7 @@ function storeNewState(state) {
     // Try direct cookie setting as last resort
     try {
         document.cookie = 'wpccm_simple=1; path=/; max-age=' + (days * 24 * 60 * 60);
-        console.log('WPCCM: Set simple cookie directly');
+        //console.log('WPCCM: Set simple cookie directly');
     } catch (e) {
         console.error('WPCCM: Failed to set simple cookie:', e);
     }
@@ -394,9 +394,9 @@ function storeNewState(state) {
     setTimeout(function() {
         var resolvedCookie = getCookie('wpccm_consent_resolved');
         var simpleCookie = getCookie('wpccm_simple');
-        console.log('WPCCM: Consent resolved cookie verification:', resolvedCookie);
-        console.log('WPCCM: Simple cookie verification:', simpleCookie);
-        console.log('WPCCM: All cookies:', document.cookie);
+        //console.log('WPCCM: Consent resolved cookie verification:', resolvedCookie);
+        //console.log('WPCCM: Simple cookie verification:', simpleCookie);
+        //console.log('WPCCM: All cookies:', document.cookie);
     }, 200);
 
     // Synchronize with consent store for real-time script handling
@@ -444,7 +444,7 @@ function isResolved(state) {
     var hasOldConsentCookie = getCookie('wpccm_consent') !== null;
     
     var resolved = hasNewConsentCookie || hasSimpleConsentCookie || hasDirectCookie || hasOldConsentCookie || hasLocalStorageFlag;
-    console.log('WPCCM: isResolved check - new:', hasNewConsentCookie, 'simple:', hasSimpleConsentCookie, 'direct:', hasDirectCookie, 'old:', hasOldConsentCookie, 'localStorage:', hasLocalStorageFlag, 'resolved:', resolved);
+    //console.log('WPCCM: isResolved check - new:', hasNewConsentCookie, 'simple:', hasSimpleConsentCookie, 'direct:', hasDirectCookie, 'old:', hasOldConsentCookie, 'localStorage:', hasLocalStorageFlag, 'resolved:', resolved);
     
     return resolved;
 }
@@ -479,7 +479,7 @@ function activateDeferredScripts() {
 }
 
 function purgeOnReject() {
-    console.log('WPCCM: purgeOnReject() called - deleting cookies from rejected categories');
+    //console.log('WPCCM: purgeOnReject() called - deleting cookies from rejected categories');
 
     // Use the same smart cookie deletion logic as in purgeNonEssentialCookies
     if (typeof WPCCM !== 'undefined' && WPCCM.cookies && Array.isArray(WPCCM.cookies)) {
@@ -492,7 +492,7 @@ function purgeOnReject() {
             // Only delete cookies from categories that user has NOT approved
             // Skip 'necessary' category as it's always approved
             if (cookieCategory !== 'necessary' && !userConsentState[cookieCategory]) {
-                console.log('WPCCM: Deleting cookie from rejected category:', cookieName, 'category:', cookieCategory);
+                //console.log('WPCCM: Deleting cookie from rejected category:', cookieName, 'category:', cookieCategory);
 
                 // Handle wildcard cookies (e.g., woocommerce_*)
                 if (cookieName && cookieName.includes('*')) {
@@ -501,12 +501,12 @@ function purgeOnReject() {
                     cookies.forEach(function(cookie) {
                         var name = cookie.split('=')[0].trim();
                         if (name.startsWith(prefix)) {
-                            console.log('WPCCM: Purging wildcard cookie:', name);
+                            //console.log('WPCCM: Purging wildcard cookie:', name);
                             deleteCookie(name);
                         }
                     });
                 } else if (cookieName) {
-                    console.log('WPCCM: Purging cookie:', cookieName);
+                    //console.log('WPCCM: Purging cookie:', cookieName);
                     deleteCookie(cookieName);
                 }
             }
@@ -617,7 +617,7 @@ function generateCategoryToggles(texts, cookiesByCategory, designSettings) {
             contentHtml = '<div class="wpccm-empty-category" style="margin-top: 10px; font-size: 12px; color: #999; font-style: italic;">' +
                 (texts.no_content_found || 'אין עוגיות או סקריפטים בקטגוריה זו כרגע') +
                 '</div>';
-            console.log('WPCCM: No content found for category:', cat.key);
+            //console.log('WPCCM: No content found for category:', cat.key);
         }
         
         cookiesHtml = contentHtml;
@@ -1230,7 +1230,7 @@ function acceptAll() {
 }
 
 function rejectAll() {
-    console.log('WPCCM: rejectAll() called');
+    //console.log('WPCCM: rejectAll() called');
     var newState = {};
     
     // Get categories from WPCCM global or use defaults
@@ -1254,7 +1254,7 @@ function rejectAll() {
         newState[cat.key] = cat.required === true || cat.key === 'necessary';
     });
     
-    console.log('WPCCM: rejectAll newState:', newState);
+    //console.log('WPCCM: rejectAll newState:', newState);
     storeNewState(newState);
     
     // Log the consent action
@@ -1318,7 +1318,7 @@ function purgeNonEssentialCookies() {
             // Only delete cookies from categories that user has NOT approved
             // Skip 'necessary' category as it's always approved
             if (cookieCategory !== 'necessary' && !userConsentState[cookieCategory]) {
-                console.log('WPCCM: Deleting cookie from unapproved category:', cookieName, 'category:', cookieCategory);
+                //console.log('WPCCM: Deleting cookie from unapproved category:', cookieName, 'category:', cookieCategory);
 
                 // Handle wildcard cookies (e.g., woocommerce_*)
                 if (cookieName && cookieName.includes('*')) {
@@ -1382,13 +1382,13 @@ function setupCookieMonitoring() {
     if (window.wpccmCookieMonitor) {
         clearInterval(window.wpccmCookieMonitor);
         window.wpccmCookieMonitor = null;
-        console.log('🔁 WPCCM Cookie Monitor: אתחול מחדש של המעקב אחר עוגיות.');
+        //console.log('🔁 WPCCM Cookie Monitor: אתחול מחדש של המעקב אחר עוגיות.');
     }
 
     if (window.wpccmAutoSyncTimer) {
         clearInterval(window.wpccmAutoSyncTimer);
         window.wpccmAutoSyncTimer = null;
-        console.log('🔁 WPCCM Auto Sync: מנקה טיימר קודם לפני יצירת חדש.');
+        //console.log('🔁 WPCCM Auto Sync: מנקה טיימר קודם לפני יצירת חדש.');
     }
 
     if (!document || typeof document.cookie === 'undefined') {
@@ -1417,7 +1417,7 @@ function setupCookieMonitoring() {
     
     // Store the monitor so we can stop it later if needed
     window.wpccmCookieMonitor = cookieMonitor;
-    console.log('🛰️ WPCCM Cookie Monitor: המעקב פועל - מרווח 60 שניות.');
+    //console.log('🛰️ WPCCM Cookie Monitor: המעקב פועל - מרווח 60 שניות.');
 
     // Auto sync timer based on admin settings
     if (typeof window.WPCCM !== 'undefined' && window.WPCCM.ajaxUrl) {
@@ -1425,26 +1425,26 @@ function setupCookieMonitoring() {
         if (isNaN(syncInterval) || syncInterval < 1) {
             syncInterval = 60;
         }
-        console.log('⏱️ WPCCM Auto Sync: תדירות שנבחרה באדמין (דקות):', syncInterval);
+        //console.log('⏱️ WPCCM Auto Sync: תדירות שנבחרה באדמין (דקות):', syncInterval);
         var syncIntervalMs = syncInterval * 60 * 1000; // Convert to milliseconds
 
         // Calculate next run time
         var nextRunTime = new Date(Date.now() + syncIntervalMs);
 
-        console.log('🔄 WPCCM Auto Sync: מערכת סינכרון אוטומטי מופעלת');
-        console.log('⏱️ WPCCM Auto Sync: תדירות - כל', syncInterval, 'דקות');
-        console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRunTime.toLocaleString('he-IL'));
+        //console.log('🔄 WPCCM Auto Sync: מערכת סינכרון אוטומטי מופעלת');
+        //console.log('⏱️ WPCCM Auto Sync: תדירות - כל', syncInterval, 'דקות');
+        //console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRunTime.toLocaleString('he-IL'));
 
         var autoSyncTimer = setInterval(function() {
             // Check if banner root or floating button is visible (user is on site)
             var bannerRoot = document.getElementById('wpccm-banner-root');
             var floatingButton = document.querySelector('.wpccm-floating-button');
 
-            console.log('🔍 WPCCM Auto Sync: בדיקת אלמנטים - banner root:', !!bannerRoot, 'floating button:', !!floatingButton);
+            //console.log('🔍 WPCCM Auto Sync: בדיקת אלמנטים - banner root:', !!bannerRoot, 'floating button:', !!floatingButton);
 
             if (bannerRoot || floatingButton) {
                 var currentTime = new Date();
-                console.log('🚀 WPCCM Auto Sync: מתחיל סינכרון - ' + currentTime.toLocaleString('he-IL'));
+                //console.log('🚀 WPCCM Auto Sync: מתחיל סינכרון - ' + currentTime.toLocaleString('he-IL'));
 
                 var payload = new URLSearchParams();
                 payload.append('action', 'wpccm_frontend_auto_sync');
@@ -1466,23 +1466,23 @@ function setupCookieMonitoring() {
                     .then(function(response) {
                         var endTime = new Date();
                         if (response.success) {
-                            console.log('✅ WPCCM Auto Sync: סינכרון הושלם בהצלחה!');
-                            console.log('📊 WPCCM Auto Sync: תוצאות:', response.data);
+                            //console.log('✅ WPCCM Auto Sync: סינכרון הושלם בהצלחה!');
+                            //console.log('📊 WPCCM Auto Sync: תוצאות:', response.data);
 
                             // Calculate next run
                             var nextRun = new Date(Date.now() + syncIntervalMs);
-                            console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRun.toLocaleString('he-IL'));
+                            //console.log('⏰ WPCCM Auto Sync: הסינכרון הבא יתבצע ב:', nextRun.toLocaleString('he-IL'));
                         } else {
-                            console.log('❌ WPCCM Auto Sync: סינכרון נכשל:', response.data);
+                            //console.log('❌ WPCCM Auto Sync: סינכרון נכשל:', response.data);
                         }
                         var duration = endTime.getTime() - currentTime.getTime();
-                        console.log('⏱️ WPCCM Auto Sync: זמן ביצוע:', duration + 'ms');
+                        //console.log('⏱️ WPCCM Auto Sync: זמן ביצוע:', duration + 'ms');
                     })
                     .catch(function(error) {
-                        console.log('❌ WPCCM Auto Sync: שגיאת AJAX - החיבור לשרת נכשל', error);
+                        //console.log('❌ WPCCM Auto Sync: שגיאת AJAX - החיבור לשרת נכשל', error);
                     });
             } else {
-                console.log('⏸️ WPCCM Auto Sync: מדלג על סינכרון - אין באנר/כפתור צף באתר');
+                //console.log('⏸️ WPCCM Auto Sync: מדלג על סינכרון - אין באנר/כפתור צף באתר');
             }
         }, syncIntervalMs);
 
@@ -1490,15 +1490,15 @@ function setupCookieMonitoring() {
         window.wpccmAutoSyncTimer = autoSyncTimer;
 
         // Log timer info for debugging
-        console.log('📝 WPCCM Auto Sync: Timer ID:', autoSyncTimer);
-        console.log('🔧 WPCCM Auto Sync: ניתן לעצור עם: clearInterval(window.wpccmAutoSyncTimer)');
+        //console.log('📝 WPCCM Auto Sync: Timer ID:', autoSyncTimer);
+        //console.log('🔧 WPCCM Auto Sync: ניתן לעצור עם: clearInterval(window.wpccmAutoSyncTimer)');
     } else {
-        console.log('❌ WPCCM Auto Sync: הגדרות לא נמצאו - הסינכרון לא יופעל');
-        console.log('🔍 WPCCM Auto Sync: Debug - window.WPCCM:', typeof window.WPCCM);
+        //console.log('❌ WPCCM Auto Sync: הגדרות לא נמצאו - הסינכרון לא יופעל');
+        //console.log('🔍 WPCCM Auto Sync: Debug - window.WPCCM:', typeof window.WPCCM);
         if (typeof window.WPCCM !== 'undefined') {
-            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM object:', window.WPCCM);
-            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.ajaxUrl:', window.WPCCM.ajaxUrl);
-            console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.syncIntervalMinutes:', window.WPCCM.syncIntervalMinutes);
+            //console.log('🔍 WPCCM Auto Sync: Debug - WPCCM object:', window.WPCCM);
+            //console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.ajaxUrl:', window.WPCCM.ajaxUrl);
+            //console.log('🔍 WPCCM Auto Sync: Debug - WPCCM.syncIntervalMinutes:', window.WPCCM.syncIntervalMinutes);
         }
     }
 }
@@ -1714,10 +1714,10 @@ function loadCookiesByCategory(callback) {
         if (xhr.status === 200) {
             try {
                 var response = JSON.parse(xhr.responseText);
-                console.log('WPCCM: Server response:', response);
+                //console.log('WPCCM: Server response:', response);
                 
                 if (response.success && response.data) {
-                    console.log('WPCCM: Cookies by category from server:', response.data);
+                    //console.log('WPCCM: Cookies by category from server:', response.data);
                     callback(response.data);
                 } else {
                     console.warn('Failed to load cookies by category:', response);
@@ -2165,17 +2165,17 @@ window.editCookieSettings = editCookieSettings;
  * Log consent action to database
  */
 function logConsentAction(actionType, consentData, categoriesAccepted) {
-    //console.log('WPCCM: logConsentAction called with:', { actionType, consentData, categoriesAccepted });
+    ////console.log('WPCCM: logConsentAction called with:', { actionType, consentData, categoriesAccepted });
     
     // Check if we have AJAX URL and nonce
     if (typeof WPCCM === 'undefined' || !WPCCM.ajaxUrl || !WPCCM.nonce) {
         console.warn('WPCCM: Cannot log consent - missing AJAX configuration');
-        console.log('WPCCM: WPCCM object:', WPCCM);
+        //console.log('WPCCM: WPCCM object:', WPCCM);
         return;
     }
     
-    console.log('WPCCM: AJAX URL:', WPCCM.ajaxUrl);
-    console.log('WPCCM: Nonce:', WPCCM.nonce);
+    //console.log('WPCCM: AJAX URL:', WPCCM.ajaxUrl);
+    //console.log('WPCCM: Nonce:', WPCCM.nonce);
     
     // Prepare data for logging
     var logData = {
@@ -2197,7 +2197,7 @@ function logConsentAction(actionType, consentData, categoriesAccepted) {
                 try {
                     var response = JSON.parse(xhr.responseText);
                     if (response.success) {
-                        //console.log('WPCCM: Consent logged successfully:', response.data);
+                        ////console.log('WPCCM: Consent logged successfully:', response.data);
                     } else {
                         console.error('WPCCM: Failed to log consent:', response.data);
                     }
@@ -2219,7 +2219,7 @@ function logConsentAction(actionType, consentData, categoriesAccepted) {
         return encodeURIComponent(key) + '=' + encodeURIComponent(value);
     }).join('&');
     
-    //console.log('WPCCM: Sending AJAX request with params:', params);
+    ////console.log('WPCCM: Sending AJAX request with params:', params);
     xhr.send(params);
 }
 
@@ -2264,7 +2264,7 @@ function createConsentCharts() {
     var categoryChartElement = document.getElementById('consentCategoryChart');
     
     if (!timeChartElement || !categoryChartElement) {
-        //console.log('WPCCM: Chart elements not found, skipping chart creation');
+        ////console.log('WPCCM: Chart elements not found, skipping chart creation');
         return;
     }
     
